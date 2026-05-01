@@ -1901,7 +1901,15 @@ function renderClientes() {
       </div>
     ` : ''}
 
-    <div class="clientes-list" id="clientesTable">
+    <div class="serv-table" id="clientesTable">
+      <div class="serv-table-header" style="grid-template-columns: 2.2fr 1.5fr 1fr 1.2fr 1fr 90px;">
+        <span>Cliente</span>
+        <span>Línea · Plan</span>
+        <span>Frecuencia</span>
+        <span>Pago / monto</span>
+        <span>Próximo cobro</span>
+        <span>Estado</span>
+      </div>
       <div id="clientesRows">
         ${clientes.length === 0 ? `
           <div style="padding: 30px; text-align: center; color: var(--gray-light);">
@@ -1949,17 +1957,16 @@ function renderClienteRow(c) {
     statusColor = 'var(--danger)';
     const diasVenc = Math.ceil((today - vencido.dt) / 86400000);
     statusName = 'vencido';
-    proxText = `Atrasado ${diasVenc}d`;
+    proxText = 'Atrasado ' + diasVenc + 'd';
   } else if (proximo) {
     const dias = Math.ceil((proximo.dt - today) / 86400000);
-    proxText = dias === 0 ? 'Hoy' : dias === 1 ? 'Mañana' : `En ${dias} días`;
+    proxText = dias === 0 ? 'Hoy' : dias === 1 ? 'Mañana' : 'En ' + dias + ' días';
     if (dias <= 7) {
       statusColor = 'var(--orange-light)';
       statusName = 'próximo';
     }
   }
 
-  // Calcular MRR desglosado
   const monto = Number(c.monto || 0);
   let mensual = 0, semanal = 0, quincenal = 0;
   if (c.frecuencia === 'mensual') {
@@ -1971,14 +1978,13 @@ function renderClienteRow(c) {
     semanal = Math.round(mensual / 4.33);
     quincenal = Math.round(mensual / 2);
   } else {
-    mensual = monto; // único · solo mostrar el monto
+    mensual = monto;
   }
 
-  // Numero de contrato/referencia · usa c.numeroContrato si existe, si no, genera de id
   const numContrato = c.numeroContrato || c.id.replace('cli_', 'C-').slice(0, 14).toUpperCase();
 
   return `
-    <div class="cliente-card" data-cli-id="${c.id}" onclick="openModalCliente('${c.id}')" style="background:#0F1729;border:1px solid rgba(255,79,0,0.15);border-left:3px solid ${cat.color};border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color 0.15s;">
+    <div class="cliente-card" data-cli-id="${c.id}" onclick="openModalCliente('${c.id}')" style="background:#0F1729;border:1px solid rgba(255,79,0,0.15);border-left:3px solid ${cat.color};border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;">
         <div style="flex:1;min-width:0;">
           <div style="font-family:var(--display);font-size:16px;color:#fff;font-weight:600;line-height:1.2;margin-bottom:3px;">${escapeHTML(c.nombre || 'Sin nombre')}</div>
@@ -1986,7 +1992,6 @@ function renderClienteRow(c) {
         </div>
         <span class="pill" style="background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}55;font-size:9px;padding:3px 8px;white-space:nowrap;">${statusName}</span>
       </div>
-
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:10px;color:var(--gray);letter-spacing:0.05em;margin-bottom:2px;">${cat.label}${c.plan ? ' · ' + escapeHTML(c.plan) : ''}</div>
@@ -2004,6 +2009,7 @@ function renderClienteRow(c) {
     </div>
   `;
 }
+
 
 function filterClientes(filter) {
   const all = load(STORAGE.CLIENTES, []);
@@ -2030,8 +2036,9 @@ function filterClientes(filter) {
 // ============================================
 // MODAL · CLIENTE GANADO
 // ============================================
-function openModalCliente() {
+function openModalCliente(cliId) {
   const today = new Date().toISOString().slice(0,10);
+  window._cliEditId = cliId || null;
 
   const html = `
     <div class="modal-overlay" id="modalCli" onclick="if(event.target.id==='modalCli')closeModal()">
@@ -2131,8 +2138,9 @@ function openModalCliente() {
           </div>
         </div>
         <div class="modal-footer">
-          <button class="action-btn" style="background:transparent;color:var(--gray-light);border-color:rgba(255,255,255,0.1);padding: 8px 14px; font-size: 9px;" onclick="closeModal()">Cancelar</button>
-          <button class="action-btn action-btn-success" style="padding: 8px 14px; font-size: 9px;" onclick="saveCliente()">✓ Registrar cliente</button>
+          <button class="action-btn" style="background:rgba(230,57,70,0.1);color:var(--danger);border-color:rgba(230,57,70,0.3);" onclick="deleteClienteFromModal()">Eliminar</button>
+          <button class="action-btn action-btn-orange" onclick="markClientePagadoFromModal()">Marcar pagado</button>
+          <button class="action-btn action-btn-success" onclick="saveCliente()">Guardar</button>
         </div>
       </div>
     </div>
@@ -2173,6 +2181,42 @@ function updateClienteImpact() {
   `;
   const el = document.getElementById('cliImpactText');
   if (el) el.innerHTML = txt || 'Llena los campos para ver el impacto...';
+}
+
+
+function markClientePagadoFromModal() {
+  const cliId = window._cliEditId;
+  if (!cliId) {
+    showToast('Primero abre un cliente existente', true);
+    return;
+  }
+  const cal = load(STORAGE.CALENDARIO, []);
+  const cobros = cal.filter(e => e.sourceId === cliId && e.category === 'cobro' && !e.cobrado)
+    .sort((a,b) => a.date.localeCompare(b.date));
+  if (cobros.length === 0) {
+    showToast('No hay cobros pendientes', true);
+    return;
+  }
+  const proximo = cobros[0];
+  if (!confirm('Marcar como cobrado: ' + proximo.title + ' del ' + proximo.date + '?')) return;
+  executeTool({
+    action: 'mark_cobro_recibido',
+    module: 'cobro',
+    data: { evento_id: proximo.id, fechaCobro: new Date().toISOString().slice(0,10), metodoPago: 'transferencia' }
+  });
+  showToast('Cobro marcado como recibido');
+  closeModal();
+  if (typeof renderClientes === 'function') renderClientes();
+}
+
+function deleteClienteFromModal() {
+  const cliId = window._cliEditId;
+  if (!cliId) { closeModal(); return; }
+  if (!confirm('Eliminar este cliente y sus cobros futuros?')) return;
+  executeTool({ action: 'delete_cliente', module: 'cliente', data: { id: cliId } });
+  showToast('Cliente eliminado');
+  closeModal();
+  if (typeof renderClientes === 'function') renderClientes();
 }
 
 function saveCliente() {

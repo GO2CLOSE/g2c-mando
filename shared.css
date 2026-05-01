@@ -1607,21 +1607,26 @@ body:has(#floatBack) .pen-shell .pen-content {
   }
 
   .chat-input-wrap {
-    display: block !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    gap: 8px !important;
     width: 100% !important;
+    max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
   }
 
   .chat-input {
-    width: 100% !important;
+    flex: 1 1 auto !important;
     min-width: 0 !important;
+    width: auto !important;
     font-size: 16px !important;
-    padding: 14px 16px !important;
+    padding: 12px 14px !important;
     background: #0F1729 !important;
     border: 1.5px solid rgba(255,79,0,0.35) !important;
-    border-radius: 12px !important;
+    border-radius: 10px !important;
     color: #FFFFFF !important;
     box-sizing: border-box !important;
     line-height: 1.3 !important;
@@ -1681,139 +1686,44 @@ body:has(#floatBack) .pen-shell .pen-content {
   }
 }
 
-
-
 /* ============================================
-   v0.7.5 · PWA NAV SIEMPRE VISIBLE iOS
-   Forzar nav arriba del home indicator
+   v0.7.4 · PWA STANDALONE iOS · safe-area
    ============================================ */
 
-@media (max-width: 880px) {
+@media (max-width: 880px) and (display-mode: standalone) {
   
-  /* Nav · siempre visible · respeta home indicator iOS */
+  /* Bottom nav · respetar safe-area iOS PWA */
   nav.bottomnav {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
     height: auto !important;
-    min-height: 70px !important;
-    padding: 8px 0 !important;
-    padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
-    background-color: #0F1729 !important;
-    background: #0F1729 !important;
-    border-top: 2px solid #FF4F00 !important;
-    z-index: 999999 !important;
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    min-height: 64px !important;
   }
   
-  /* Body · padding suficiente */
+  /* Body padding cuando es PWA */
   body {
-    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
   }
   
-  /* Chat input · arriba del nav con espacio */
+  /* Chat input · subir mas en PWA standalone */
   .chat-input-area {
-    bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
-    left: 10px !important;
-    right: 10px !important;
+    bottom: calc(110px + env(safe-area-inset-bottom)) !important;
   }
   
   .chat-shell {
-    padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(180px + env(safe-area-inset-bottom)) !important;
   }
 }
 
-/* PWA standalone · ajuste extra */
-@media (max-width: 880px) and (display-mode: standalone) {
+/* Tambien para iOS Safari normal (no standalone) · safe area */
+@media (max-width: 880px) {
   nav.bottomnav {
-    padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
-    min-height: 80px !important;
-  }
-  
-  body {
-    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-  
-  .chat-input-area {
-    bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 8px)) !important;
   }
 }
 
 /* ============================================
-   v0.7.5 · MODAL GLOBAL FIX
-   Margenes responsivos · sin boton Enviar
+   v0.7.5 · MODAL GLOBAL RESPONSIVO
    ============================================ */
-
-/* Modal overlay base · todos los breakpoints */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  z-index: 100000;
-  padding: 20px;
-  overflow-y: auto;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-}
-
-.modal-overlay.active,
-.modal-overlay.show,
-.modal-overlay[style*="flex"] {
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content,
-.modal-card,
-.modal-box {
-  background: #0F1729;
-  border: 1px solid rgba(255, 79, 0, 0.25);
-  border-radius: 14px;
-  width: 100%;
-  max-width: 580px;
-  max-height: calc(100vh - 40px);
-  overflow-y: auto;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
-  position: relative;
-}
-
-.modal-header,
-.modal-title-bar {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid rgba(255, 79, 0, 0.15);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  background: #0F1729;
-  z-index: 10;
-}
-
-.modal-body,
-.modal-content-body {
-  padding: 20px 24px;
-}
-
-.modal-footer,
-.modal-actions {
-  padding: 16px 24px 20px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  border-top: 1px solid rgba(255, 79, 0, 0.1);
-  position: sticky;
-  bottom: 0;
-  background: #0F1729;
-}
-
-/* Mobile · responsive */
 @media (max-width: 880px) {
   .modal-overlay {
     padding: 12px !important;
@@ -1841,8 +1751,6 @@ body:has(#floatBack) .pen-shell .pen-content {
     justify-content: space-between !important;
   }
 }
-
-/* Tablet */
 @media (min-width: 881px) and (max-width: 1100px) {
   .modal-content,
   .modal-card,
@@ -1851,54 +1759,87 @@ body:has(#floatBack) .pen-shell .pen-content {
   }
 }
 
-
-/* Chat send btn · removido visualmente · Enter envia */
+/* Chat input full-width sin boton (Enter envia) */
+@media (max-width: 880px) {
+  .chat-input-wrap {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .chat-input {
+    width: 100% !important;
+    font-size: 16px !important;
+    padding: 14px 16px !important;
+    border-radius: 12px !important;
+  }
+}
 .chat-send-btn { display: none !important; }
 
 /* ============================================
-   v0.7.6 · MARGENES MODAL · TODAS LAS VARIANTES
-   Cubre .modal · .modal-content · .modal-card · .modal-box
+   v0.7.7 · MODAL MARGENES FIX MOBILE
+   Cubre .modal y .modal-box · botones visibles
    ============================================ */
 @media (max-width: 880px) {
+  /* Overlay · padding chico para que el modal use el ancho */
   .modal-overlay {
-    padding: 12px !important;
+    padding: 8px !important;
     align-items: flex-start !important;
     overflow-y: auto !important;
   }
+  /* Container del modal · todas las clases */
   .modal,
   .modal-content,
   .modal-card,
-  .modal-box {
-    max-width: 100% !important;
-    width: 100% !important;
-    margin: 8px 0 !important;
-    max-height: calc(100vh - 24px) !important;
+  .modal-box,
+  .modal-overlay > div {
+    max-width: calc(100vw - 16px) !important;
+    width: calc(100vw - 16px) !important;
+    margin: 8px auto !important;
+    max-height: calc(100vh - 16px) !important;
     overflow-y: auto !important;
     box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
+  /* Header */
   .modal-header,
   .modal-title-bar {
-    padding: 14px 16px !important;
+    padding: 12px 14px !important;
+    flex-shrink: 0 !important;
   }
+  /* Body · permite scroll */
   .modal-body,
   .modal-content-body {
-    padding: 14px 16px !important;
+    padding: 12px 14px !important;
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
   }
+  /* Footer · SIEMPRE visible · botones grandes */
   .modal-footer,
   .modal-actions {
-    padding: 12px 16px 14px !important;
+    padding: 10px 12px 12px !important;
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: wrap !important;
     gap: 6px !important;
     justify-content: flex-end !important;
+    flex-shrink: 0 !important;
+    background: inherit !important;
+    border-top: 1px solid rgba(255,79,0,0.1) !important;
   }
+  /* Cada boton del footer */
   .modal-footer .btn,
   .modal-footer button,
-  .modal-footer .action-btn {
-    flex: 1 1 auto !important;
-    min-width: 80px !important;
-    padding: 10px 12px !important;
+  .modal-footer .action-btn,
+  .modal-actions .btn,
+  .modal-actions button,
+  .modal-actions .action-btn {
+    flex: 1 1 calc(33% - 6px) !important;
+    min-width: 70px !important;
+    padding: 12px 10px !important;
     font-size: 11px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
   }
 }

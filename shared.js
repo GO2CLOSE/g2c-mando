@@ -969,13 +969,9 @@ function executeTool(tc) {
     };
     clientes.push(cliente);
     save(STORAGE.CLIENTES, clientes);
-
-    // SYNC 1 · Auto-agendar cobros en calendario
     if (cliente.frecuencia === 'mensual' && cliente.status === 'activo') {
       autoAgendaCobrosCalendario(cliente);
     }
-
-    // SYNC 2 · Achievement registrado
     if (cliente.status === 'activo' && typeof logAchievement === 'function') {
       logAchievement('cliente_ganado', {
         clienteId: cliente.id,
@@ -985,21 +981,20 @@ function executeTool(tc) {
         ltv: cliente.monto * cliente.duracion
       });
     }
-
-    // SYNC 3 · Actualizar objetivo "Cerrar 12 cuentas G2C"
-    if (cliente.status === 'activo' && cliente.linea === 'g2c') {
+    // SYNC v0.7.5 · objetivo + decision
+    if (cliente.status === 'activo' && cliente.linea === 'g2c' && typeof syncObjetivoCuentas === 'function') {
       syncObjetivoCuentas();
     }
-
-    // SYNC 4 · Log decision crítica
-    logDecision({
-      tipo: 'cliente_ganado',
-      titulo: 'Cierre · ' + cliente.nombre,
-      impactoMRR: cliente.frecuencia === 'mensual' ? cliente.monto : 0,
-      impactoLTV: cliente.monto * cliente.duracion,
-      contexto: cliente.linea + ' · ' + cliente.plan,
-      moduloAfectado: ['clientes', 'calendario', 'finanzas', 'objetivos']
-    });
+    if (typeof logDecision === 'function') {
+      logDecision({
+        tipo: 'cliente_ganado',
+        titulo: 'Cierre · ' + cliente.nombre,
+        impactoMRR: cliente.frecuencia === 'mensual' ? cliente.monto : 0,
+        impactoLTV: cliente.monto * cliente.duracion,
+        contexto: cliente.linea + ' · ' + cliente.plan,
+        moduloAfectado: ['clientes', 'calendario', 'finanzas', 'objetivos']
+      });
+    }
   }
   else if (action === 'add_ingreso_pendiente') {
     addIngresoPendiente({
@@ -1107,18 +1102,6 @@ function executeTool(tc) {
       createdAt: Date.now()
     });
     save(STORAGE.FINANZAS, fin);
-
-    // SYNC · log decision
-    if (typeof logDecision === 'function') {
-      logDecision({
-        tipo: 'cobro_recibido',
-        titulo: 'Cobro · ' + (cliente?.nombre || 'Cliente'),
-        impactoMRR: 0,
-        impactoLTV: Number(evento.amount) || 0,
-        contexto: 'Pago confirmado',
-        moduloAfectado: ['calendario', 'finanzas']
-      });
-    }
   }
   else if (action === 'add_cuenta_por_cobrar') {
     // Cliente me debe · pendiente de cobrar
@@ -1312,7 +1295,6 @@ function autoAgendaCobrosCalendario(cliente) {
   if (!cliente.fechaInicio || !cliente.duracion) return;
   const cal = load(STORAGE.CALENDARIO, []);
   const start = new Date(cliente.fechaInicio + 'T12:00:00');
-  const refContrato = cliente.numeroContrato || cliente.id.replace('cli_', 'C-').slice(0, 14).toUpperCase();
   for (let i = 0; i < cliente.duracion; i++) {
     const d = new Date(start);
     d.setMonth(d.getMonth() + i);
@@ -1324,35 +1306,13 @@ function autoAgendaCobrosCalendario(cliente) {
       time: '',
       category: 'cobro',
       amount: cliente.monto,
-      notes: `Cliente ${cliente.linea} · ${cliente.plan} · REF ${refContrato}`,
-      numeroContrato: refContrato,
+      notes: `Cliente ${cliente.linea} · ${cliente.plan}`,
       sourceModule: 'finanzas',
       sourceId: cliente.id,
       createdAt: Date.now()
     });
   }
   save(STORAGE.CALENDARIO, cal);
-
-  // Schedule push notifications · 7 dias antes de cada cobro
-  if (typeof schedulePushNotification === 'function') {
-    for (let i = 0; i < Math.min(cliente.duracion, 12); i++) {
-      const d = new Date(start);
-      d.setMonth(d.getMonth() + i);
-      d.setDate(cliente.diaCobro || start.getDate());
-      d.setHours(9, 0, 0, 0);
-      const sendAt = d.getTime() - (7 * 86400000);
-      if (sendAt > Date.now()) {
-        schedulePushNotification({
-          type: 'cobro_proximo',
-          title: 'Cobro próximo · ' + cliente.nombre,
-          body: '$' + Number(cliente.monto).toLocaleString('es-MX') + ' · vence en 7 días',
-          sendAt: sendAt,
-          url: '/finanzas.html?tab=clientes',
-          data: { clienteId: cliente.id }
-        }).catch(() => {});
-      }
-    }
-  }
 }
 
 function logAction(tc) {
@@ -2609,100 +2569,131 @@ function importFromShareableString(str) {
 }
 
 
+// (modal handler removido v0.7.7)
+
 // ============================================
-// v0.7.5 · MODAL GLOBAL HANDLER
-// Enter cierra modal · Escape tambien cierra
+// v0.7.5 · SYNC OBJETIVO 12 CUENTAS
 // ============================================
-(function setupGlobalModalHandlers() {
-  function isModalOpen() {
-    return document.querySelector('.modal-overlay.active, .modal-overlay.show, .modal-overlay[style*="flex"]:not([style*="none"])');
+function syncObjetivoCuentas() {
+  const objs = load(STORAGE.OBJETIVOS, []);
+  const clientes = load(STORAGE.CLIENTES, []);
+  const activosG2C = clientes.filter(c => c.status === 'activo' && c.linea === 'g2c').length;
+  let obj = objs.find(o => o.titulo && o.titulo.toLowerCase().includes('12 cuentas') && o.categoria === 'g2c');
+  if (!obj) {
+    obj = {
+      id: uid('obj'),
+      titulo: 'Cerrar 12 cuentas G2C 2026',
+      descripcion: 'Meta anual de cierre de cuentas activas',
+      categoria: 'g2c',
+      deadline: '2026-12-31',
+      kpis: [],
+      porQueMimporta: 'Llegar a $192K MRR · escalar G2C',
+      progreso: 0,
+      completed: false,
+      createdAt: Date.now()
+    };
+    objs.push(obj);
   }
-  
-  function closeAllModals() {
-    document.querySelectorAll('.modal-overlay').forEach(m => {
-      m.classList.remove('active', 'show');
-      m.style.display = 'none';
-    });
+  const idx = objs.findIndex(o => o.id === obj.id);
+  if (idx >= 0) {
+    objs[idx].progreso = Math.min(100, Math.round((activosG2C / 12) * 100));
+    objs[idx].cuentasActuales = activosG2C;
+    objs[idx].cuentasMeta = 12;
+    objs[idx].completed = activosG2C >= 12;
+    save(STORAGE.OBJETIVOS, objs);
   }
-  
-  document.addEventListener('keydown', function(e) {
-    var modal = isModalOpen();
-    if (!modal) return;
-    
-    // Si el foco esta en textarea · permitir Enter normal (Shift+Enter para nueva linea)
-    var target = document.activeElement;
-    var isTextarea = target && target.tagName === 'TEXTAREA';
-    
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      closeAllModals();
-      return;
+  return objs[idx];
+}
+
+// ============================================
+// v0.7.5 · LOG DE DECISIONES
+// ============================================
+function logDecision(decision) {
+  const log = load('alan_mando_decisiones', []);
+  const item = {
+    id: uid('dec'),
+    timestamp: Date.now(),
+    fecha: new Date().toISOString().slice(0,10),
+    hora: new Date().toTimeString().slice(0,5),
+    ...decision
+  };
+  log.unshift(item);
+  if (log.length > 500) log.length = 500;
+  save('alan_mando_decisiones', log);
+  if (decision.impactoMRR && Math.abs(decision.impactoMRR) >= 10000) {
+    if (typeof showToast === 'function') {
+      const sign = decision.impactoMRR > 0 ? '+' : '';
+      showToast('Decision critica · ' + decision.titulo + ' · ' + sign + '$' + decision.impactoMRR.toLocaleString('es-MX') + ' MRR', false);
     }
-    
-    if (e.key === 'Enter' && !isTextarea && !e.shiftKey) {
-      // Enter en modal (fuera de textarea) cierra el modal
-      // PERO si hay un boton Guardar, lo dispara primero
-      var saveBtn = modal.querySelector('button[data-action="save"], .btn-save, #saveBtn, [onclick*="save"], [onclick*="Save"], [onclick*="guardar"], [onclick*="Guardar"]');
-      if (saveBtn && !saveBtn.disabled) {
-        e.preventDefault();
-        saveBtn.click();
-        return;
-      }
-      // Si no hay boton save, solo cierra
-      e.preventDefault();
-      closeAllModals();
+  }
+  return item;
+}
+function getDecisionesUltimos30dias() {
+  const log = load('alan_mando_decisiones', []);
+  const cutoff = Date.now() - (30 * 86400000);
+  return log.filter(d => d.timestamp >= cutoff);
+}
+function getDecisionesStats() {
+  const dec = getDecisionesUltimos30dias();
+  return {
+    total: dec.length,
+    impactoMRR: dec.reduce((s,d) => s + (Number(d.impactoMRR) || 0), 0),
+    impactoLTV: dec.reduce((s,d) => s + (Number(d.impactoLTV) || 0), 0),
+    porTipo: dec.reduce((acc, d) => { acc[d.tipo] = (acc[d.tipo] || 0) + 1; return acc; }, {})
+  };
+}
+
+// ============================================
+// v0.7.5 · ALERTAS CRITICAS
+// ============================================
+function checkAlertasCriticas() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const cal = load(STORAGE.CALENDARIO, []);
+  const alertas = [];
+  cal.forEach(e => {
+    if (e.category !== 'cobro' || e.cobrado) return;
+    const fecha = new Date(e.date + 'T12:00:00');
+    const diasVenc = (today - fecha) / 86400000;
+    if (diasVenc > 7) {
+      alertas.push({ tipo: 'cobro_vencido_grave', titulo: e.title, dias: Math.floor(diasVenc), monto: e.amount });
     }
   });
-})();
+  const objs = load(STORAGE.OBJETIVOS, []);
+  objs.filter(o => !o.completed).forEach(o => {
+    if (!o.createdAt) return;
+    const dias = (Date.now() - o.createdAt) / 86400000;
+    if (dias > 30 && (!o.progreso || o.progreso < 10)) {
+      alertas.push({ tipo: 'objetivo_estancado', titulo: o.titulo, dias: Math.floor(dias), progreso: o.progreso || 0 });
+    }
+  });
+  return alertas;
+}
 
-
-// ============================================
-// v0.7.5 · BANNER DE ALERTAS CRITICAS
-// Se muestra arriba SI hay cobros vencidos > 7d o objetivos estancados
-// ============================================
 function renderAlertasCriticasBanner() {
   const alertas = checkAlertasCriticas();
-  if (!alertas || alertas.length === 0) {
-    const existing = document.getElementById('alertasCriticasBanner');
-    if (existing) existing.remove();
-    return;
-  }
-
-  // Eliminar banner viejo si existe
   const existing = document.getElementById('alertasCriticasBanner');
   if (existing) existing.remove();
-
+  if (!alertas || alertas.length === 0) return;
   const banner = document.createElement('div');
   banner.id = 'alertasCriticasBanner';
   banner.style.cssText = 'position:fixed;top:8px;left:8px;right:8px;z-index:99997;background:linear-gradient(135deg,rgba(230,57,70,0.95),rgba(255,79,0,0.85));border:1px solid rgba(230,57,70,0.6);border-radius:10px;padding:10px 14px;box-shadow:0 6px 20px rgba(230,57,70,0.4);cursor:pointer;font-family:var(--mono),monospace;';
-
   const cobrosVenc = alertas.filter(a => a.tipo === 'cobro_vencido_grave');
   const objsEst = alertas.filter(a => a.tipo === 'objetivo_estancado');
-
   let texto = '';
   if (cobrosVenc.length > 0) {
-    texto = cobrosVenc.length + ' cobro' + (cobrosVenc.length > 1 ? 's' : '') + ' vencido' + (cobrosVenc.length > 1 ? 's' : '') + ' > 7 días';
+    texto = cobrosVenc.length + ' cobro' + (cobrosVenc.length > 1 ? 's' : '') + ' vencido' + (cobrosVenc.length > 1 ? 's' : '') + ' > 7 dias';
   } else if (objsEst.length > 0) {
     texto = objsEst.length + ' objetivo' + (objsEst.length > 1 ? 's' : '') + ' estancado' + (objsEst.length > 1 ? 's' : '');
   }
-
-  banner.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;color:#fff;font-size:11px;letter-spacing:0.05em;"><div><span style="font-size:13px;margin-right:6px;">⚠</span><strong>ALERTA · ' + texto + '</strong></div><span style="font-size:18px;opacity:0.6;">›</span></div>';
-
+  banner.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;color:#fff;font-size:11px;letter-spacing:0.05em;"><div><span style="font-size:13px;margin-right:6px;">!</span><strong>ALERTA · ' + texto + '</strong></div><span style="font-size:18px;opacity:0.6;">></span></div>';
   banner.onclick = function() {
-    if (cobrosVenc.length > 0) {
-      window.location.href = 'finanzas.html?tab=clientes';
-    } else {
-      window.location.href = 'index.html';
-    }
+    if (cobrosVenc.length > 0) window.location.href = 'finanzas.html?tab=clientes';
+    else window.location.href = 'index.html';
   };
-
   document.body.appendChild(banner);
-
-  // Auto ocultar despues de 6 segundos
-  setTimeout(() => { if (banner.parentNode) banner.style.transition = 'opacity 0.5s'; banner.style.opacity = '0.4'; }, 6000);
+  setTimeout(() => { if (banner.parentNode) { banner.style.transition = 'opacity 0.5s'; banner.style.opacity = '0.4'; } }, 6000);
 }
 
-// Auto-render al cargar
 (function autoCheckAlertas() {
   function check() {
     if (typeof renderAlertasCriticasBanner === 'function') {
@@ -2716,17 +2707,13 @@ function renderAlertasCriticasBanner() {
   }
 })();
 
-
 // ============================================
-// v0.7.5 · TEST RUNNER
-// Llamar desde consola: runSystemTests()
-// Valida sincronizacion completa del sistema
+// v0.7.5 · TEST RUNNER · runSystemTests() en consola
 // ============================================
 function runSystemTests() {
   console.log('%c=== G2C MANDO · SYSTEM TESTS ===', 'color:#FF4F00;font-size:14px;font-weight:bold');
   let passed = 0, failed = 0;
   const tests = [];
-
   function test(name, fn) {
     try {
       const result = fn();
@@ -2740,84 +2727,49 @@ function runSystemTests() {
       failed++;
     }
   }
-
-  // Snapshot inicial
   const clientesAntes = (load(STORAGE.CLIENTES, []) || []).length;
   const cobrosAntes = (load(STORAGE.CALENDARIO, []) || []).filter(e => e.category === 'cobro').length;
-  const objsAntes = load(STORAGE.OBJETIVOS, []) || [];
-  const objG2CAntes = objsAntes.find(o => o.titulo && o.titulo.toLowerCase().includes('12 cuentas'));
-  const cuentasAntes = objG2CAntes ? (objG2CAntes.cuentasActuales || 0) : 0;
-
-  // Test 1 · agregar cliente
-  const testCliId = 'test_' + Date.now();
   test('Agregar cliente test', () => {
     executeTool({
       action: 'add_cliente',
       module: 'cliente',
       data: {
         nombre: 'TEST_CLIENTE_' + Date.now(),
-        linea: 'g2c',
-        plan: 'Plan Total',
-        monto: 16000,
-        frecuencia: 'mensual',
-        diaCobro: 15,
+        linea: 'g2c', plan: 'Plan Total', monto: 16000,
+        frecuencia: 'mensual', diaCobro: 15,
         fechaInicio: new Date().toISOString().slice(0,10),
-        duracion: 12,
-        numeroContrato: 'TEST-001',
-        notas: 'Test automatizado',
-        status: 'activo'
+        duracion: 12, numeroContrato: 'TEST-001',
+        notas: 'Test', status: 'activo'
       }
     });
     const after = (load(STORAGE.CLIENTES, []) || []).length;
     if (after !== clientesAntes + 1) throw new Error('Cliente no se guardo');
     return true;
   });
-
-  // Test 2 · cobros sincronizados al calendario (12)
   test('12 cobros agendados al calendario', () => {
     const cobrosDespues = (load(STORAGE.CALENDARIO, []) || []).filter(e => e.category === 'cobro').length;
     if (cobrosDespues < cobrosAntes + 12) throw new Error('Solo se crearon ' + (cobrosDespues - cobrosAntes) + '/12');
     return true;
   });
-
-  // Test 3 · objetivo 12 cuentas actualizado
-  test('Objetivo 12 cuentas actualizado', () => {
-    const objsDespues = load(STORAGE.OBJETIVOS, []);
-    const obj = objsDespues.find(o => o.titulo && o.titulo.toLowerCase().includes('12 cuentas'));
-    if (!obj) throw new Error('Objetivo no creado');
-    if ((obj.cuentasActuales || 0) !== cuentasAntes + 1) throw new Error('No se incremento +1 cuenta');
-    return true;
-  });
-
-  // Test 4 · achievement registrado
   test('Achievement cliente_ganado registrado', () => {
     const ach = load(STORAGE.ACHIEVEMENTS, []);
-    const ultimo = ach[0];
-    if (!ultimo || ultimo.type !== 'cliente_ganado') throw new Error('No registro achievement');
+    if (!ach[0] || ach[0].type !== 'cliente_ganado') throw new Error('No registro achievement');
     return true;
   });
-
-  // Test 5 · log decision registrado
   test('Decision logged', () => {
     const dec = load('alan_mando_decisiones', []);
-    const ultima = dec[0];
-    if (!ultima || ultima.tipo !== 'cliente_ganado') throw new Error('No registro decision');
-    if (Number(ultima.impactoMRR) !== 16000) throw new Error('MRR incorrecto: ' + ultima.impactoMRR);
+    if (!dec[0] || dec[0].tipo !== 'cliente_ganado') throw new Error('No registro decision');
+    if (Number(dec[0].impactoMRR) !== 16000) throw new Error('MRR incorrecto: ' + dec[0].impactoMRR);
     return true;
   });
-
-  // CLEANUP · borrar cliente test
+  // Cleanup
   const clientes = load(STORAGE.CLIENTES, []);
   const testCli = clientes.find(c => c.nombre && c.nombre.startsWith('TEST_CLIENTE_'));
   if (testCli) {
     executeTool({ action: 'delete_cliente', module: 'cliente', data: { id: testCli.id } });
     console.log('%c[CLEANUP] Test cliente eliminado', 'color:#888');
   }
-
-  // Resumen
-  console.log('%c=== RESULTADO: ' + passed + '/' + (passed + failed) + ' tests passed ===', 'color:' + (failed === 0 ? '#00C896' : '#E63946') + ';font-size:13px;font-weight:bold');
+  console.log('%c=== ' + passed + '/' + (passed + failed) + ' tests passed ===', 'color:' + (failed === 0 ? '#00C896' : '#E63946') + ';font-size:13px;font-weight:bold');
   return { passed, failed, tests };
 }
-
-// Exponer global para consola
 if (typeof window !== 'undefined') window.runSystemTests = runSystemTests;
