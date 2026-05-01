@@ -1732,7 +1732,7 @@ function saveBitacora(categoria) {
 
 function openModalIngreso() { askAi('Quiero registrar un ingreso'); }
 function openModalEgreso() { askAi('Quiero registrar un egreso'); }
-function openModalCliente() { askAi('Cerré un cliente nuevo · ayúdame a registrarlo'); }
+// (funcion duplicada removida)
 
 function closeModal() {
   document.getElementById('modalsMount').innerHTML = '';
@@ -2039,15 +2039,60 @@ function filterClientes(filter) {
 function openModalCliente(cliId) {
   const today = new Date().toISOString().slice(0,10);
   window._cliEditId = cliId || null;
+  
+  // Si hay cliId, cargar datos del cliente existente
+  let cliExistente = null;
+  let infoBlock = '';
+  if (cliId) {
+    const clientes = load(STORAGE.CLIENTES, []);
+    cliExistente = clientes.find(c => c.id === cliId);
+    if (cliExistente) {
+      const cal = load(STORAGE.CALENDARIO, []);
+      const cobros = cal.filter(e => e.sourceId === cliId && e.category === 'cobro').sort((a,b) => a.date.localeCompare(b.date));
+      const cobradosOk = cobros.filter(c => c.cobrado).length;
+      const cobrosPendientes = cobros.filter(c => !c.cobrado);
+      const totalGenerado = cobradosOk * Number(cliExistente.monto || 0);
+      const ltv = Number(cliExistente.monto || 0) * Number(cliExistente.duracion || 0);
+      const proximoCobro = cobrosPendientes[0];
+      const numContrato = cliExistente.numeroContrato || cliId.replace('cli_', 'C-').slice(0,14).toUpperCase();
+      
+      infoBlock = `
+        <div style="background:rgba(255,79,0,0.08);border:1px solid rgba(255,79,0,0.25);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--orange);letter-spacing:0.15em;margin-bottom:6px;">REF · ${numContrato}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;">
+            <div><span style="color:var(--gray);">Status:</span> <strong style="color:var(--success);">${cliExistente.status}</strong></div>
+            <div><span style="color:var(--gray);">Monto:</span> <strong>$${Number(cliExistente.monto||0).toLocaleString('es-MX')}/${cliExistente.frecuencia}</strong></div>
+            <div><span style="color:var(--gray);">Duración:</span> <strong>${cliExistente.duracion || 0} meses</strong></div>
+            <div><span style="color:var(--gray);">LTV:</span> <strong style="color:var(--orange);">$${ltv.toLocaleString('es-MX')}</strong></div>
+            <div><span style="color:var(--gray);">Cobrado:</span> <strong style="color:var(--success);">${cobradosOk}/${cobros.length}</strong></div>
+            <div><span style="color:var(--gray);">Generado:</span> <strong>$${totalGenerado.toLocaleString('es-MX')}</strong></div>
+          </div>
+          ${proximoCobro ? `
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,79,0,0.15);">
+              <div style="font-size:10px;color:var(--gray);margin-bottom:4px;">PRÓXIMO COBRO</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                  <div style="font-size:13px;color:#fff;">${proximoCobro.date}</div>
+                  <div style="font-size:10px;color:var(--gray);">$${Number(proximoCobro.amount||0).toLocaleString('es-MX')}</div>
+                </div>
+                <button class="action-btn action-btn-success" style="padding:8px 14px;font-size:10px;" onclick="markCobroNow('${proximoCobro.id}', '${cliId}')">✓ Marcar pagado</button>
+              </div>
+            </div>
+          ` : '<div style="margin-top:10px;font-size:10px;color:var(--gray);">Sin cobros pendientes</div>'}
+        </div>
+      `;
+    }
+  }
 
   const html = `
-    <div class="modal-overlay" id="modalCli" onclick="if(event.target.id==='modalCli')closeModal()">
+    <div class="modal-overlay" id="modalCli" onclick="if(event.target.id===\'modalCli\')closeModal()" style="display:flex;">
       <div class="modal-box success-border">
         <div class="modal-header">
-          <div class="modal-title">Nuevo cliente ganado</div>
+          <div class="modal-title">${cliExistente ? cliExistente.nombre : 'Nuevo cliente ganado'}</div>
           <button class="modal-close" onclick="closeModal()">✕</button>
         </div>
         <div class="modal-body">
+          ${infoBlock}
           <div class="ai-banner success" style="margin-bottom: 14px;">
             <div class="ai-banner-row">
               <span class="g2c-star sm solid"><span class="g2c-star-glyph">★</span></span>
@@ -2059,7 +2104,7 @@ function openModalCliente(cliId) {
 
           <div class="field">
             <div class="field-label">Nombre del cliente</div>
-            <input type="text" class="field-input" id="cliNombre" placeholder="Ej. Restaurante La Diferencia" oninput="updateClienteImpact()">
+            <input type="text" class="field-input" id="cliNombre" placeholder="Ej. Restaurante La Diferencia" value="${cliExistente?escapeHTML(cliExistente.nombre):''}" oninput="updateClienteImpact()">
           </div>
 
           <div class="field-row cols-2">
@@ -2183,6 +2228,18 @@ function updateClienteImpact() {
   if (el) el.innerHTML = txt || 'Llena los campos para ver el impacto...';
 }
 
+
+function markCobroNow(eventoId, cliId) {
+  if (!confirm('Marcar este cobro como pagado?')) return;
+  executeTool({
+    action: 'mark_cobro_recibido',
+    module: 'cobro',
+    data: { evento_id: eventoId, fechaCobro: new Date().toISOString().slice(0,10), metodoPago: 'transferencia' }
+  });
+  showToast('Cobro registrado · MRR actualizado');
+  closeModal();
+  if (typeof renderClientes === 'function') renderClientes();
+}
 
 function markClientePagadoFromModal() {
   const cliId = window._cliEditId;

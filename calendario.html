@@ -405,13 +405,6 @@
 
     <aside class="cal-sidebar">
       <div class="cal-side-panel">
-        <div class="cal-side-header" id="dayHeader">
-          <span>Día seleccionado</span>
-        </div>
-        <div id="dayEvents"></div>
-      </div>
-
-      <div class="cal-side-panel">
         <div class="cal-side-header"><span>Próximos 7 días</span></div>
         <div class="upcoming-list" id="upcomingList"></div>
       </div>
@@ -473,8 +466,7 @@ let editingEventId = null;
 
   document.getElementById('weekdays').innerHTML = DIAS_SHORT.map(d => `<div class="cal-weekday">${d}</div>`).join('');
   renderCalendar();
-  renderSelectedDay();
-  renderUpcoming();
+    renderUpcoming();
 })();
 
 function formatDateKey(d) {
@@ -493,8 +485,7 @@ function goToday() {
   currentDate = new Date();
   selectedDate = new Date();
   renderCalendar();
-  renderSelectedDay();
-}
+  }
 
 function renderCalendar() {
   const year = currentDate.getFullYear();
@@ -547,7 +538,74 @@ function renderCalendar() {
 function selectDay(key) {
   selectedDate = parseDateKey(key);
   renderCalendar();
-  renderSelectedDay();
+  openDayResumeModal(key);
+}
+
+function openDayResumeModal(key) {
+  const dayEvents = events.filter(e => e.date === key).sort((a,b) => (a.time||'').localeCompare(b.time||''));
+  const d = parseDateKey(key);
+  const isToday = key === formatDateKey(new Date());
+  const fechaTxt = (isToday ? 'Hoy · ' : '') + d.getDate() + ' ' + MESES[d.getMonth()] + ' ' + d.getFullYear();
+  const total = dayEvents.length;
+  const totalMonto = dayEvents.reduce((s,e) => s + (Number(e.amount) || 0), 0);
+  
+  let html = '<div class="modal-overlay active" id="dayResumeModal" onclick="if(event.target.id===\'dayResumeModal\')closeDayResume()" style="display:flex;">';
+  html += '<div class="modal" style="max-width:560px;width:100%;">';
+  html += '<div class="modal-header"><div class="modal-title">' + fechaTxt + '</div>';
+  html += '<button class="modal-close" onclick="closeDayResume()">x</button></div>';
+  html += '<div class="modal-body" style="max-height:60vh;overflow-y:auto;">';
+  
+  if (total === 0) {
+    html += '<div style="text-align:center;padding:30px 16px;color:var(--gray);">';
+    html += '<div style="font-family:var(--display);font-size:16px;color:var(--white);margin-bottom:8px;">Sin eventos este día</div>';
+    html += '<div style="font-size:12px;margin-bottom:16px;">Día libre · agéndate algo</div>';
+    html += '<button class="btn btn-primary" onclick="closeDayResume();openEventModal(\'' + key + '\')">+ Agendar este día</button>';
+    html += '</div>';
+  } else {
+    html += '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,79,0,0.08);border-radius:8px;margin-bottom:14px;font-family:var(--mono);font-size:11px;">';
+    html += '<span>' + total + ' evento' + (total>1?'s':'') + '</span>';
+    if (totalMonto > 0) html += '<span style="color:var(--orange);">$' + formatMoney(totalMonto) + '</span>';
+    html += '</div>';
+    
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+    dayEvents.forEach(e => {
+      const cat = CATEGORIES[e.category] || { name: e.category };
+      html += '<div style="background:#0F1729;border:1px solid rgba(255,79,0,0.15);border-left:3px solid var(--orange);border-radius:8px;padding:10px 12px;cursor:pointer;" onclick="closeDayResume();handleEventClick(\'' + e.id + '\')">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;">';
+      html += '<div style="font-family:var(--display);font-size:14px;color:#fff;font-weight:600;flex:1;">' + escapeHTML(e.title) + '</div>';
+      if (e.amount) html += '<div style="font-family:var(--mono);color:var(--orange);font-size:12px;font-weight:700;white-space:nowrap;">$' + formatMoney(e.amount) + '</div>';
+      html += '</div>';
+      html += '<div style="display:flex;gap:10px;font-size:10px;color:var(--gray);font-family:var(--mono);">';
+      if (e.time) html += '<span style="color:var(--orange-light);">' + e.time + '</span>';
+      html += '<span>' + escapeHTML(cat.name) + '</span>';
+      if (e.sourceModule) html += '<span style="opacity:0.6;">de ' + e.sourceModule + '</span>';
+      html += '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  
+  html += '</div>';
+  html += '<div class="modal-footer">';
+  html += '<button class="btn btn-secondary" onclick="closeDayResume()">Cerrar</button>';
+  html += '<button class="btn btn-primary" onclick="closeDayResume();openEventModal(\'' + key + '\')">+ Nuevo</button>';
+  html += '</div></div></div>';
+  
+  // Inyectar
+  let mount = document.getElementById('dayResumeMount');
+  if (!mount) {
+    mount = document.createElement('div');
+    mount.id = 'dayResumeMount';
+    document.body.appendChild(mount);
+  }
+  mount.innerHTML = html;
+}
+
+function closeDayResume() {
+  const m = document.getElementById('dayResumeModal');
+  if (m) { m.classList.remove('active'); m.style.display = 'none'; }
+  const mount = document.getElementById('dayResumeMount');
+  if (mount) mount.innerHTML = '';
 }
 
 function renderSelectedDay() {
@@ -605,8 +663,7 @@ function handleUpcomingClick(date, id) {
   selectedDate = parseDateKey(date);
   currentDate = new Date(selectedDate);
   renderCalendar();
-  renderSelectedDay();
-  setTimeout(() => handleEventClick(id), 50);
+    setTimeout(() => handleEventClick(id), 50);
 }
 
 function handleEventClick(id) {
@@ -729,8 +786,7 @@ function saveEvent() {
   closeEventModal();
   selectedDate = parseDateKey(date);
   renderCalendar();
-  renderSelectedDay();
-  renderUpcoming();
+    renderUpcoming();
   showToast(editingEventId ? '✓ Evento actualizado' : '✓ Evento creado');
 }
 
@@ -741,8 +797,7 @@ function deleteEvent() {
   save(STORAGE.CALENDARIO, events);
   closeEventModal();
   renderCalendar();
-  renderSelectedDay();
-  renderUpcoming();
+    renderUpcoming();
   showToast('Evento eliminado');
 }
 

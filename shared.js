@@ -458,6 +458,35 @@ Cambias de modo según el módulo activo y la pregunta. UN solo cerebro, 5 roles
 - **Datos concretos** · números, fechas, montos · NUNCA generalices
 - **Proyecciones definidas** · cuando hables de futuro, da rangos con escenarios (conservador/realista/optimista)
 
+# REGLAS DE RESPUESTA · ULTRA AL GRANO (PRIORITARIO)
+- ${name} TIENE TOC y le saturan los textos largos. RESPONDE LO MINIMO POSIBLE.
+- Si te pide REGISTRAR/AGREGAR/AGENDAR algo: NO expliques, NO platiques, SOLO confirma con CLARIFY de [Confirmar | Editar | Cancelar] + el tool_call al confirmar
+- Si pide UNA accion clara: ejecuta tool + UNA linea de confirmacion. NADA MAS.
+- Si te pide MULTIPLES acciones en un mensaje (ej. "registra X y agenda Y"): DETECTA cada una, confirma una por una con CLARIFY antes de ejecutar todas
+- NO hagas resumen de movimientos a menos que ${name} lo pida explicitamente
+- Si ${name} pregunta info: 1-2 lineas maximo
+- Cuando uses CLARIFY, NUNCA escribas la pregunta tambien en texto fuera del bloque · solo el bloque CLARIFY
+- Si tienes duda entre opciones: SIEMPRE CLARIFY con botones · NO le pidas que escriba
+- Despues de ejecutar tool, mensaje de confirmacion: 1 sola linea estilo "Registrado: $698 ATT" + UN CLARIFY [Editar | Listo]
+
+# DETECCION DE MULTIPLES ACCIONES
+Si el mensaje contiene 2+ acciones (palabras: "y", "tambien", "ademas", "agrega tambien"), ENUMERA primero las acciones detectadas en CLARIFY y confirma una por una:
+EJEMPLO entrada: "Registra pago de 698 a ATT y agenda reunion con NEOS mañana 10am"
+RESPUESTA:
+"Detecté 2 acciones:"
+<<<CLARIFY>>>
+{
+  "intro": "Detecte 2 acciones · confirma una por una",
+  "questions": [
+    { "label": "Accion 1: Registrar pago $698 ATT", "options": [
+      { "value": "ok1", "text": "Confirmar 1" },
+      { "value": "edit1", "text": "Editar 1" },
+      { "value": "skip1", "text": "Saltar 1" }
+    ]}
+  ]
+}
+<<<END_CLARIFY>>>
+
 # REGLAS DE LENGUAJE
 - Español MX neutro · NUNCA "vos"
 - **PROHIBIDO emojis** (      etc.) · NUNCA · ni para celebrar
@@ -470,8 +499,18 @@ Cambias de modo según el módulo activo y la pregunta. UN solo cerebro, 5 roles
 # TIPS Y CONSEJOS · DA SIEMPRE QUE PUEDAS
 Cuando respondas, agrega valor proactivo:
 
-## Apps de proveedores · cuando ${name} TIENE QUE PAGAR algo
-Estas apps son para que ${name} pague o gestione servicios contratados. Si menciona o registra un MOVIMIENTO DE GASTO con alguno de estos proveedores, MENCIONA el link de la app al final de tu respuesta:
+## Apps de proveedores · LIGA SEGUN PROVEEDOR
+REGLA CRITICA: Cuando ${name} pague o registre gasto a un servicio fijo, sugiere SOLO la app del proveedor especifico, NO la mezcles con la liga de cobros G2C.
+
+- Si paga TELNOR/INFINITUM → solo app Telnor
+- Si paga BANORTE → solo app Banorte
+- Si paga AT&T → solo app AT&T
+- Si paga MERCADOPAGO → solo app MercadoPago
+- Si paga ZOHO → solo app Zoho
+
+NUNCA menciones cobros.g2c.com.mx cuando este pagando un servicio · esa liga es DIFERENTE.
+
+Apps disponibles:
 
 - **Telnor / Infinitum** · https://apps.apple.com/app/id1643041499
 - **Banorte** · https://apps.apple.com/app/id374817863
@@ -700,6 +739,10 @@ Cascada: registra ingreso en finanzas · marca cuenta como cobrada.
 ### action="mark_cuenta_pagada" · module="cuenta_pagar"
 data: { cuenta_id, fechaPago, metodoPago }
 Cascada: registra gasto en finanzas · marca cuenta como pagada.
+
+### action="add_bitacora_motivacion" · module="finanzas"
+data: { tipo (cierre|reflexion|motivacion|alerta), titulo, texto, contexto, relacionadoCon }
+USAR cuando ${name} mencione un cierre importante, una reflexion sobre el negocio, una motivacion o cuando detectes momento clave para registrar como Coach motivador en bitacora de finanzas.
 
 ### action="add_skill" · module="skill"
 data: { text, priority (true|false), category (personal|profesional|fiscal|musical|otro) }
@@ -1186,6 +1229,33 @@ function executeTool(tc) {
         createdAt: Date.now()
       });
       save(STORAGE.FINANZAS, fin);
+    }
+  }
+  // ============ BITACORA DE MOTIVACION (Coach) ============
+  else if (action === 'add_bitacora_motivacion') {
+    const bit = load(STORAGE.BITACORAS, []);
+    bit.unshift({
+      id: uid('bit'),
+      tipo: data.tipo || 'general',
+      titulo: data.titulo || '',
+      texto: data.texto || '',
+      modulo: data.modulo || 'finanzas',
+      contexto: data.contexto || {},
+      relacionadoCon: data.relacionadoCon || null,
+      fecha: data.fecha || new Date().toISOString().slice(0,10),
+      hora: new Date().toTimeString().slice(0,5),
+      timestamp: Date.now()
+    });
+    if (bit.length > 500) bit.length = 500;
+    save(STORAGE.BITACORAS, bit);
+    if (typeof logDecision === 'function') {
+      logDecision({
+        tipo: 'bitacora',
+        titulo: 'Coach · ' + (data.titulo || 'Bitacora'),
+        impactoMRR: 0,
+        contexto: data.tipo,
+        moduloAfectado: ['finanzas']
+      });
     }
   }
   // ============ TOOLS DE ELIMINACIÓN ============

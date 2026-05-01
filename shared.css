@@ -1860,3 +1860,77 @@ body:has(#floatBack) .pen-shell .pen-content {
     margin-bottom: 90px !important;
   }
 }
+
+
+/* ============================================
+   v0.7.9 · MODAL FIX DEFINITIVO TOC
+   Pop-up con margenes correctos en mobile
+   Footer SIEMPRE visible sobre bottom nav
+   ============================================ */
+@media (max-width: 880px) {
+  .modal-overlay {
+    padding: 10px 10px 100px 10px !important;
+    align-items: flex-start !important;
+    overflow-y: auto !important;
+    background: rgba(0,0,0,0.85) !important;
+  }
+  .modal-overlay.active,
+  .modal-overlay[style*="flex"] {
+    display: flex !important;
+  }
+  .modal,
+  .modal-content,
+  .modal-card,
+  .modal-box {
+    max-width: calc(100vw - 20px) !important;
+    width: calc(100vw - 20px) !important;
+    margin: 0 auto 90px auto !important;
+    max-height: calc(100vh - 110px) !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 14px !important;
+  }
+  .modal-header,
+  .modal-title-bar {
+    padding: 14px 16px !important;
+    border-bottom: 1px solid rgba(255,79,0,0.15) !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+  .modal-body,
+  .modal-content-body {
+    padding: 14px 16px !important;
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+  }
+  .modal-footer,
+  .modal-actions {
+    padding: 12px 14px 14px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    justify-content: flex-end !important;
+    flex-shrink: 0 !important;
+    border-top: 1px solid rgba(255,79,0,0.1) !important;
+  }
+  .modal-footer button,
+  .modal-footer .btn,
+  .modal-footer .action-btn,
+  .modal-actions button,
+  .modal-actions .btn,
+  .modal-actions .action-btn {
+    flex: 1 1 calc(33% - 4px) !important;
+    min-width: 70px !important;
+    padding: 11px 8px !important;
+    font-size: 10px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+  }
+}
