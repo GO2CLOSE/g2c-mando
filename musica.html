@@ -891,7 +891,7 @@ function renderSongEdit(song) {
 }
 
 // Toggle YouTube embed dentro del modal
-function toggleSongVideo() {
+async function toggleSongVideo() {
   const embed = document.getElementById('songVideoEmbed');
   const btn = document.getElementById('songVideoToggleBtn');
   if (!embed) return;
@@ -912,21 +912,41 @@ function toggleSongVideo() {
     return m ? m[1] : null;
   };
 
-  const ytId = getYTId(ytUrl);
+  let ytId = getYTId(ytUrl);
 
+  // Si NO hay URL · buscar automaticamente con YouTube API
   if (!ytId) {
-    // No hay URL válida · buscar en YouTube con título + artista
     const titulo = document.getElementById('songTitulo')?.value || '';
     const artista = document.getElementById('songArtista')?.value || '';
     if (!titulo) {
-      showToast('Captura el título primero o pega URL de YouTube', true);
+      showToast('Captura el título primero', true);
       return;
     }
-    // Abrir búsqueda de YouTube en pestaña nueva (no se puede embed sin ID)
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(titulo + ' ' + artista)}`;
-    window.open(searchUrl, '_blank');
-    showToast('Pega URL del video en "URL personalizada" para reproducir aquí', true);
-    return;
+
+    const config = getConfig();
+    if (!config.youtubeApiKey) {
+      // Sin API key · abrir busqueda en pestaña externa
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(titulo + ' ' + artista)}`;
+      window.open(searchUrl, '_blank');
+      showToast('Configura YouTube API key en Config para reproducir inline', true);
+      return;
+    }
+
+    // Buscar con API · auto-tomar el primer resultado
+    showToast('Buscando en YouTube...', false);
+    try {
+      const results = await executeYouTubeSearch(titulo + ' ' + artista, 1);
+      if (!results || results.length === 0) {
+        showToast('No se encontró video', true);
+        return;
+      }
+      ytId = results[0].videoId;
+      // Guardar URL al input para futuras reproducciones
+      if (ytUrlInput) ytUrlInput.value = `https://www.youtube.com/watch?v=${ytId}`;
+    } catch (err) {
+      showToast('Error: ' + err.message, true);
+      return;
+    }
   }
 
   // Inyectar iframe del embed

@@ -1117,26 +1117,28 @@ function executeTool(tc) {
     }
   }
   else if (action === 'mark_cobro_recibido') {
-    // Marcar un cobro de cliente como recibido · cascada a finanzas
+    // Marcar un cobro de cliente como recibido · cascada total
     const cal = load(STORAGE.CALENDARIO, []);
     const idx = cal.findIndex(e => e.id === data.evento_id);
     if (idx < 0) throw new Error('Evento de cobro no encontrado');
     const evento = cal[idx];
     if (evento.category !== 'cobro') throw new Error('No es evento de cobro');
     const fechaCobro = data.fechaCobro || new Date().toISOString().slice(0,10);
+    const monto = Number(evento.amount) || 0;
     evento.cobrado = true;
     evento.fechaCobroReal = fechaCobro;
     evento.metodoPago = data.metodoPago || '';
     cal[idx] = evento;
     save(STORAGE.CALENDARIO, cal);
-    // Cascada · registrar ingreso en finanzas
+
+    // Cascada 1 · registrar ingreso en finanzas
     const fin = load(STORAGE.FINANZAS, []);
     const clientes = load(STORAGE.CLIENTES, []);
     const cliente = clientes.find(c => c.id === evento.sourceId);
     fin.push({
       id: uid('fin_cobro'),
       concepto: `Cobro · ${cliente?.nombre || 'Cliente'}`,
-      monto: Number(evento.amount) || 0,
+      monto: monto,
       categoria: cliente?.linea || 'g2c',
       fecha: fechaCobro,
       tipo: 'ingreso',
@@ -1145,6 +1147,33 @@ function executeTool(tc) {
       createdAt: Date.now()
     });
     save(STORAGE.FINANZAS, fin);
+
+    // Cascada 2 · actualizar objetivos financieros (ahorro casa, etc.)
+    if (typeof syncObjetivosFinancieros === 'function') {
+      syncObjetivosFinancieros(monto);
+    }
+
+    // Cascada 3 · log decision
+    if (typeof logDecision === 'function') {
+      logDecision({
+        tipo: 'cobro_recibido',
+        titulo: 'Cobro · ' + (cliente?.nombre || 'Cliente'),
+        impactoMRR: 0,
+        impactoLTV: monto,
+        contexto: 'Pago confirmado',
+        moduloAfectado: ['calendario', 'finanzas', 'objetivos']
+      });
+    }
+
+    // Cascada 4 · achievement
+    if (typeof logAchievement === 'function') {
+      logAchievement('cobro_recibido', {
+        clienteId: evento.sourceId,
+        clienteNombre: cliente?.nombre || 'Cliente',
+        monto: monto,
+        fecha: fechaCobro
+      });
+    }
   }
   else if (action === 'add_cuenta_por_cobrar') {
     // Cliente me debe · pendiente de cobrar

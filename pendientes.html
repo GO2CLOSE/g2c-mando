@@ -406,17 +406,47 @@ function toggleDone(id) {
     pend[idx].completedAt = pend[idx].done ? Date.now() : null;
     save(STORAGE.PENDIENTES, pend);
 
-    // Registrar en histórico unificado
-    if (pend[idx].done && typeof logAchievement === 'function') {
-      logAchievement('pendiente_done', {
-        pendienteId: id,
-        text: pend[idx].text,
-        categoria: pend[idx].categoria || 'general',
-        priority: pend[idx].priority || 'media'
+    // Sincronizacion total al completar
+    if (pend[idx].done) {
+      // 1. Eliminar del calendario · todos los eventos de este pendiente futuros
+      const cal = load(STORAGE.CALENDARIO, []);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const todayStr = today.toISOString().slice(0,10);
+      const calFiltered = cal.filter(e => {
+        // Si es de este pendiente Y la fecha es hoy o futura, eliminar
+        if (e.sourceId === id && e.sourceModule === 'pendientes' && e.date >= todayStr) return false;
+        return true;
       });
+      save(STORAGE.CALENDARIO, calFiltered);
+
+      // 2. Achievement
+      if (typeof logAchievement === 'function') {
+        logAchievement('pendiente_done', {
+          pendienteId: id,
+          text: pend[idx].text,
+          categoria: pend[idx].categoria || 'general',
+          priority: pend[idx].priority || 'media'
+        });
+      }
+
+      // 3. Decision log
+      if (typeof logDecision === 'function') {
+        logDecision({
+          tipo: 'pendiente_completado',
+          titulo: 'Tarea: ' + pend[idx].text.slice(0,40),
+          impactoMRR: 0,
+          contexto: pend[idx].priority || 'media',
+          moduloAfectado: ['pendientes', 'calendario']
+        });
+      }
+    } else {
+      // Reactivar · re-sincronizar al calendario
+      if (typeof syncPendienteToCalendar === 'function') {
+        syncPendienteToCalendar(pend[idx]);
+      }
     }
 
-    showToast(pend[idx].done ? '✓ Tarea completada' : 'Tarea reactivada');
+    showToast(pend[idx].done ? '✓ Completada · sincronizado' : 'Tarea reactivada');
     loadPendientes();
   }
 }
