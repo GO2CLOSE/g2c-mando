@@ -782,7 +782,7 @@ async function sendMessage() {
   renderMessages();
 
   isSending = true;
-  document.getElementById('sendBtn').disabled = true;
+  var _sendBtn = document.getElementById('sendBtn'); if (_sendBtn) _sendBtn.disabled = true;
   input.disabled = true;
 
   const aiMsgIdx = currentMessages.length;
@@ -824,7 +824,7 @@ async function sendMessage() {
   }
 
   isSending = false;
-  document.getElementById('sendBtn').disabled = false;
+  var _sb2 = document.getElementById('sendBtn'); if (_sb2) _sb2.disabled = false;
   input.disabled = false;
   if (window.innerWidth > 880) input.focus();
 }
