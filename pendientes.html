@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#080D1A">
+<title>Pendientes · G2C Mando</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="shared.css">
+<style>
+.pen-shell { min-height: 100vh; display: flex; flex-direction: column; background: var(--dark); }
+.pen-shell::before {
+  content:''; position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 70% 20%, rgba(255,79,0,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(74,158,255,0.04) 0%, transparent 50%);
+  pointer-events: none; z-index: 0;
+}
+.pen-content { position: relative; z-index: 5; flex: 1; padding: 16px 22px 60px; max-width: 1100px; margin: 0 auto; width: 100%; }
+.pen-header { margin-bottom: 18px; }
+.pen-eyebrow { font-family: var(--mono); font-size: 10px; color: var(--orange); letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 5px; }
+.pen-eyebrow::before { content: '▸ '; }
+.pen-title { font-family: var(--display); font-size: 28px; color: var(--white); margin-bottom: 4px; line-height: 1.1; }
+.pen-subtitle { color: var(--gray-light); font-size: 12px; }
+
+.pen-ai-hero {
+  background: linear-gradient(135deg, rgba(255,79,0,0.06), var(--dark-2) 60%);
+  border: 1px solid rgba(255,79,0,0.2); border-radius: 4px;
+  padding: 14px; margin-bottom: 16px;
+}
+.pen-ai-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.pen-ai-input {
+  flex: 1; min-width: 220px; padding: 11px 14px;
+  background: rgba(0,0,0,0.4); border: 1px solid rgba(255,79,0,0.2);
+  color: var(--gray-light); font-style: italic; font-size: 13px;
+  border-radius: 2px; cursor: pointer; transition: border-color var(--t-fast);
+}
+.pen-ai-input:hover { border-color: var(--orange); }
+.pen-ai-btn {
+  padding: 11px 18px; background: var(--orange); color: var(--white);
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; font-weight: 700; border: none; border-radius: 2px;
+  cursor: pointer; transition: all var(--t-fast);
+}
+.pen-ai-btn:hover { background: var(--orange-light); transform: translateY(-1px); }
+
+.pen-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.pen-metric {
+  background: var(--dark-2); border: 1px solid rgba(255,79,0,0.15);
+  border-left: 2px solid var(--orange); padding: 12px 14px; border-radius: 3px;
+  cursor: pointer; transition: transform var(--t-fast);
+}
+.pen-metric:hover { transform: translateY(-1px); }
+.pen-metric-label { font-family: var(--mono); font-size: 8px; color: var(--gray); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 4px; }
+.pen-metric-value { font-family: var(--display); font-size: 22px; color: var(--white); line-height: 1; margin-bottom: 3px; }
+.pen-metric-trend { font-family: var(--mono); font-size: 9px; }
+
+.pen-list {
+  background: var(--dark-2); border: 1px solid rgba(255,79,0,0.1); border-radius: 3px;
+  overflow: hidden;
+}
+.pen-row {
+  display: grid; grid-template-columns: 26px 1fr auto auto; gap: 12px;
+  padding: 12px 16px; align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background var(--t-fast);
+}
+.pen-row:hover { background: rgba(255,79,0,0.03); }
+.pen-row:last-child { border-bottom: none; }
+.pen-row.done { opacity: 0.55; }
+.pen-row.vencido { background: rgba(230,57,70,0.04); border-left: 2px solid var(--danger); }
+.pen-checkbox {
+  width: 18px; height: 18px; border: 1px solid rgba(255,79,0,0.4);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--white); font-size: 11px; cursor: pointer;
+  transition: all var(--t-fast);
+  background: transparent;
+}
+.pen-checkbox.checked {
+  background: var(--success); border-color: var(--success);
+}
+.pen-checkbox:hover { border-color: var(--orange); }
+.pen-text-wrap { min-width: 0; }
+.pen-text { font-size: 13px; color: var(--white); font-weight: 600; margin-bottom: 3px; }
+.pen-text.tachado { text-decoration: line-through; }
+.pen-meta { font-family: var(--mono); font-size: 9px; color: var(--gray); letter-spacing: 0.05em; }
+.pen-meta-vencido { color: var(--danger); font-weight: 700; }
+.pen-row-actions { display: flex; gap: 4px; }
+.pen-row-action {
+  background: transparent; border: 1px solid rgba(255,255,255,0.1);
+  color: var(--gray); padding: 4px 8px; cursor: pointer;
+  font-family: var(--mono); font-size: 9px; border-radius: 2px;
+  transition: all var(--t-fast);
+}
+.pen-row-action:hover { color: var(--orange); border-color: var(--orange); }
+.pen-row-action.danger:hover { color: var(--danger); border-color: var(--danger); }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 1000;
+  display: flex; align-items: flex-start; padding: 30px 16px; justify-content: center;
+  overflow-y: auto; animation: fadeIn var(--t-fast);
+}
+.modal-box {
+  background: var(--dark-2); border: 1px solid rgba(255,79,0,0.4);
+  border-radius: 5px; max-width: 540px; width: 100%;
+  max-height: calc(100vh - 60px); overflow: hidden;
+  display: flex; flex-direction: column; animation: slideUp var(--t-med);
+}
+.modal-header {
+  padding: 14px 18px; border-bottom: 1px solid rgba(255,79,0,0.2);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-title { font-family: var(--display); font-size: 17px; color: var(--white); }
+.modal-close {
+  width: 26px; height: 26px; border: 1px solid rgba(255,255,255,0.1);
+  background: transparent; color: var(--gray); font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; border-radius: 2px;
+}
+.modal-close:hover { color: var(--danger); border-color: var(--danger); }
+.modal-body { padding: 18px; overflow-y: auto; flex: 1; }
+.modal-footer {
+  padding: 12px 18px; border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex; gap: 6px; justify-content: flex-end;
+}
+
+.field { margin-bottom: 12px; }
+.field-label {
+  font-family: var(--mono); font-size: 9px; color: var(--orange);
+  letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 4px;
+}
+.field-input, .field-select, .field-textarea {
+  width: 100%; padding: 9px 12px; background: var(--dark);
+  border: 1px solid rgba(255,79,0,0.2); color: var(--white);
+  font-size: 13px; font-family: var(--body); border-radius: 2px;
+  transition: border-color var(--t-fast);
+}
+.field-input:focus, .field-select:focus, .field-textarea:focus {
+  outline: none; border-color: var(--orange);
+}
+.field-textarea { min-height: 60px; resize: vertical; }
+.field-row { display: grid; gap: 8px; }
+.field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+.field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.action-btn {
+  padding: 8px 14px; text-align: center; font-family: var(--mono);
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  font-weight: 700; border: 1px solid; border-radius: 3px; cursor: pointer;
+  transition: all var(--t-fast);
+}
+.action-btn-orange { background: rgba(255,79,0,0.08); border-color: var(--orange); color: var(--orange); }
+.action-btn-orange:hover { background: rgba(255,79,0,0.18); }
+.action-btn-success { background: rgba(0,217,126,0.08); border-color: var(--success); color: var(--success); }
+.action-btn-danger { background: rgba(230,57,70,0.08); border-color: var(--danger); color: var(--danger); }
+
+@media (max-width: 880px) {
+  .pen-content { padding: 12px 14px 60px; }
+  .pen-metrics { grid-template-columns: repeat(2, 1fr); }
+  .field-row.cols-3 { grid-template-columns: 1fr; }
+  .modal-overlay { padding: 16px 8px; }
+  .pen-row { grid-template-columns: 24px 1fr auto; gap: 8px; }
+  .pen-row-actions { display: none; }
+  .pen-row.show-actions .pen-row-actions { display: flex; }
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<a href="index.html" id="floatBack" style="position:fixed;top:10px;left:10px;z-index:99999;display:inline-flex;align-items:center;gap:5px;padding:8px 12px;background:var(--orange);color:white;text-decoration:none;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;border-radius:3px;box-shadow:0 4px 12px rgba(255,79,0,0.4);">
+  <span style="font-size:14px;line-height:1;">‹</span>
+  <span>Mando</span>
+</a>
+<div id="passwordGate"></div>
+
+<div class="pen-shell">
+
+  <div class="pen-content">
+    
+
+    <div class="pen-header">
+      <div class="pen-eyebrow">Tareas y seguimiento</div>
+      <h1 class="pen-title">Pendientes</h1>
+      <p class="pen-subtitle">Tareas, recurrencias, recordatorios · sincronizado con calendario</p>
+    </div>
+
+    <div class="pen-ai-hero">
+      <div class="pen-ai-row">
+        <span class="g2c-star md solid"><span class="g2c-star-glyph">★</span></span>
+        <div class="pen-ai-input" onclick="askAi('Quiero agregar una tarea pendiente')">Agrega tarea: 'pagar internet cada mes', 'llamar contador viernes', 'meditar diario'...</div>
+        <button class="pen-ai-btn" onclick="askAi('Quiero agregar una tarea pendiente')">▸ Agregar IA</button>
+        <button class="pen-ai-btn" onclick="openModalNew()" style="background:transparent; border:1px solid rgba(255,79,0,0.4); color:var(--orange);">+ Manual</button>
+      </div>
+    </div>
+
+    <div class="pen-metrics">
+      <div class="pen-metric" style="border-left-color:var(--danger);" onclick="filterPendientes('vencidos')">
+        <div class="pen-metric-label">Vencidos</div>
+        <div class="pen-metric-value" style="color:var(--danger);" id="metVencidos">0</div>
+        <div class="pen-metric-trend" style="color:var(--danger);">acción inmediata</div>
+      </div>
+      <div class="pen-metric" style="border-left-color:var(--orange);" onclick="filterPendientes('hoy')">
+        <div class="pen-metric-label">Hoy</div>
+        <div class="pen-metric-value" id="metHoy">0</div>
+        <div class="pen-metric-trend" style="color:var(--orange);">vencen hoy</div>
+      </div>
+      <div class="pen-metric" style="border-left-color:var(--orange-light);" onclick="filterPendientes('semana')">
+        <div class="pen-metric-label">Esta semana</div>
+        <div class="pen-metric-value" style="color:var(--orange-light);" id="metSemana">0</div>
+        <div class="pen-metric-trend" style="color:var(--orange-light);">próximos 7 días</div>
+      </div>
+      <div class="pen-metric" style="border-left-color:var(--success);" onclick="filterPendientes('todos')">
+        <div class="pen-metric-label">Total activos</div>
+        <div class="pen-metric-value" style="color:var(--success);" id="metTotal">0</div>
+        <div class="pen-metric-trend" style="color:var(--success);">pendientes</div>
+      </div>
+    </div>
+
+    <div id="alertasContainer"></div>
+
+    <div class="filter-row">
+      <span class="chip chip-active" id="penFTodos" onclick="filterPendientes('todos')">▣ Todos</span>
+      <span class="chip chip-danger" id="penFVencidos" onclick="filterPendientes('vencidos')">⚠ Vencidos</span>
+      <span class="chip chip-warning" id="penFHoy" onclick="filterPendientes('hoy')">⏱ Hoy</span>
+      <span class="chip chip-default" id="penFSemana" onclick="filterPendientes('semana')">▸ Semana</span>
+      <span class="chip chip-default" id="penFRecurrentes" onclick="filterPendientes('recurrentes')">↻ Recurrentes</span>
+      <span class="chip chip-default" id="penFCompletados" onclick="filterPendientes('completados')">✓ Hechos</span>
+      <div style="flex:1;"></div>
+      <span class="chip chip-success" onclick="openModalNew()">+ Nueva tarea</span>
+    </div>
+
+    <div class="pen-list" id="penList"></div>
+  </div>
+</div>
+
+<div id="modalsMount"></div>
+<div id="toast"></div>
+
+<script src="shared.js"></script>
+<script>
+let currentFilter = 'todos';
+
+function loadPendientes() {
+  const alertas = getPendientesAlertas();
+  document.getElementById('metVencidos').textContent = alertas.vencidos.length;
+  document.getElementById('metHoy').textContent = alertas.hoy.length;
+  document.getElementById('metSemana').textContent = alertas.semana.length;
+  document.getElementById('metTotal').textContent = alertas.todos.length;
+
+  // Banner alerta IA si hay vencidos
+  const alertEl = document.getElementById('alertasContainer');
+  if (alertas.vencidos.length > 0) {
+    alertEl.innerHTML = `
+      <div class="ai-banner danger" style="margin-bottom: 14px;">
+        <div class="ai-banner-row">
+          <span class="g2c-star md solid"><span class="g2c-star-glyph">★</span></span>
+          <div class="ai-banner-content">
+            <div class="ai-banner-eyebrow" style="color:var(--danger);">⚠ Coach IA · alerta</div>
+            <div class="ai-banner-text">
+              Tienes <strong style="color:var(--danger);">${alertas.vencidos.length} tarea${alertas.vencidos.length>1?'s':''} vencida${alertas.vencidos.length>1?'s':''}</strong>:<br>
+              ${alertas.vencidos.slice(0,3).map(p => {
+                const dias = Math.ceil((new Date() - new Date(p.dueDate)) / 86400000);
+                return `<span style="color:var(--orange-light);">•</span> ${escapeHTML(p.text)} · vencida hace ${dias}d`;
+              }).join('<br>')}
+            </div>
+            <div class="ai-banner-actions">
+              <button class="pen-ai-btn" style="background:var(--danger);" onclick="askAi('Tengo tareas vencidas · ayúdame a priorizar y darles seguimiento')">▸ Estrategia IA</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (alertas.hoy.length > 0) {
+    alertEl.innerHTML = `
+      <div class="ai-banner warning" style="margin-bottom: 14px;">
+        <div class="ai-banner-row">
+          <span class="g2c-star md solid"><span class="g2c-star-glyph">★</span></span>
+          <div class="ai-banner-content">
+            <div class="ai-banner-eyebrow" style="color:var(--orange-light);">⏱ Coach IA · plan de hoy</div>
+            <div class="ai-banner-text">
+              <strong style="color:var(--orange-light);">${alertas.hoy.length} tarea${alertas.hoy.length>1?'s':''}</strong> vencen hoy. Te dejo apoyo IA si quieres priorizar.
+            </div>
+            <div class="ai-banner-actions">
+              <button class="pen-ai-btn" onclick="askAi('Mira mis pendientes de hoy · ayúdame a priorizar y dame plan de ejecución')">▸ Plan del día</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    alertEl.innerHTML = '';
+  }
+
+  renderList();
+}
+
+function renderList() {
+  const pendientes = load(STORAGE.PENDIENTES, []);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().slice(0,10);
+
+  let filtered = [...pendientes];
+  if (currentFilter === 'todos') filtered = pendientes.filter(p => !p.done);
+  else if (currentFilter === 'vencidos') filtered = pendientes.filter(p => !p.done && p.dueDate && new Date(p.dueDate) < today);
+  else if (currentFilter === 'hoy') filtered = pendientes.filter(p => !p.done && p.dueDate === todayStr);
+  else if (currentFilter === 'semana') filtered = pendientes.filter(p => {
+    if (p.done || !p.dueDate) return false;
+    const d = new Date(p.dueDate);
+    const diff = (d - today) / 86400000;
+    return diff >= 0 && diff <= 7;
+  });
+  else if (currentFilter === 'recurrentes') filtered = pendientes.filter(p => !p.done && p.recurrencia && p.recurrencia !== 'none');
+  else if (currentFilter === 'completados') filtered = pendientes.filter(p => p.done);
+
+  filtered.sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    if (a.dueDate && !b.dueDate) return -1;
+    if (!a.dueDate && b.dueDate) return 1;
+    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    const prioWeight = { alta: 0, media: 1, baja: 2 };
+    return (prioWeight[a.priority] || 1) - (prioWeight[b.priority] || 1);
+  });
+
+  const listEl = document.getElementById('penList');
+  if (filtered.length === 0) {
+    listEl.innerHTML = `
+      <div style="padding: 30px; text-align: center; color: var(--gray-light);">
+        <div style="font-family: var(--display); font-size: 14px; color: var(--white); margin-bottom: 8px;">${currentFilter === 'completados' ? 'Aún sin tareas completadas' : currentFilter === 'todos' ? 'Sin tareas pendientes' : 'Sin tareas en esta categoría'}</div>
+        <div style="font-size: 12px; margin-bottom: 14px;">${currentFilter === 'todos' ? 'Crea tu primera tarea o pídele a la IA' : 'Cambia de filtro o agrega una nueva tarea'}</div>
+        <button class="pen-ai-btn" onclick="openModalNew()">+ Nueva tarea</button>
+      </div>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(p => renderRow(p, today)).join('');
+}
+
+function renderRow(p, today) {
+  const isVencido = !p.done && p.dueDate && new Date(p.dueDate) < today;
+  const prio = p.priority || 'media';
+  const prioColor = prio === 'alta' ? 'var(--danger)' : prio === 'media' ? 'var(--orange)' : 'var(--success)';
+
+  let metaParts = [];
+  if (p.dueDate) {
+    const d = new Date(p.dueDate);
+    const diff = Math.ceil((d - today) / 86400000);
+    let texto;
+    if (isVencido) texto = `vencida hace ${Math.abs(diff)}d`;
+    else if (diff === 0) texto = 'hoy';
+    else if (diff === 1) texto = 'mañana';
+    else if (diff > 0 && diff <= 7) texto = `en ${diff}d`;
+    else texto = d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    metaParts.push(`<span style="color:${isVencido ? 'var(--danger)' : 'var(--gray)'}; ${isVencido ? 'font-weight:700;' : ''}">${texto}</span>`);
+  }
+  if (p.recurrencia && p.recurrencia !== 'none') {
+    metaParts.push(`<span style="color:var(--purple);">↻ ${p.recurrencia}</span>`);
+  }
+  if (p.categoria && p.categoria !== 'general') {
+    metaParts.push(`<span style="color:var(--gray);">${p.categoria}</span>`);
+  }
+
+  return `
+    <div class="pen-row ${p.done ? 'done' : ''} ${isVencido ? 'vencido' : ''}" data-id="${p.id}">
+      <button class="pen-checkbox ${p.done ? 'checked' : ''}" onclick="toggleDone('${p.id}')">${p.done ? '✓' : ''}</button>
+      <div class="pen-text-wrap">
+        <div class="pen-text ${p.done ? 'tachado' : ''}">${escapeHTML(p.text)}</div>
+        <div class="pen-meta">${metaParts.join(' · ')}</div>
+      </div>
+      <span class="pill" style="background:${prioColor}22;color:${prioColor};">${prio}</span>
+      <div class="pen-row-actions">
+        <button class="pen-row-action" onclick="openModalEdit('${p.id}')">edit</button>
+        <button class="pen-row-action danger" onclick="deletePend('${p.id}')">✗</button>
+      </div>
+    </div>
+  `;
+}
+
+function filterPendientes(filter) {
+  currentFilter = filter;
+  ['Todos','Vencidos','Hoy','Semana','Recurrentes','Completados'].forEach(f => {
+    const el = document.getElementById('penF' + f);
+    if (el) {
+      el.classList.remove('chip-active');
+      el.classList.add(f === 'Vencidos' ? 'chip-danger' : f === 'Hoy' ? 'chip-warning' : 'chip-default');
+    }
+  });
+  const activeId = 'penF' + filter.charAt(0).toUpperCase() + filter.slice(1);
+  const activeEl = document.getElementById(activeId);
+  if (activeEl) {
+    activeEl.classList.remove('chip-default','chip-danger','chip-warning');
+    activeEl.classList.add('chip-active');
+  }
+  renderList();
+}
+
+function toggleDone(id) {
+  const pend = load(STORAGE.PENDIENTES, []);
+  const idx = pend.findIndex(p => p.id === id);
+  if (idx >= 0) {
+    const wasDone = pend[idx].done;
+    pend[idx].done = !wasDone;
+    pend[idx].completedAt = pend[idx].done ? Date.now() : null;
+    save(STORAGE.PENDIENTES, pend);
+
+    // Registrar en histórico unificado
+    if (pend[idx].done && typeof logAchievement === 'function') {
+      logAchievement('pendiente_done', {
+        pendienteId: id,
+        text: pend[idx].text,
+        categoria: pend[idx].categoria || 'general',
+        priority: pend[idx].priority || 'media'
+      });
+    }
+
+    showToast(pend[idx].done ? '✓ Tarea completada' : 'Tarea reactivada');
+    loadPendientes();
+  }
+}
+
+function deletePend(id) {
+  if (!confirm('¿Eliminar esta tarea? Si tiene recurrencias se eliminan también.')) return;
+  const pend = load(STORAGE.PENDIENTES, []);
+  const filtered = pend.filter(p => p.id !== id);
+  save(STORAGE.PENDIENTES, filtered);
+  // Eliminar también del calendario
+  const cal = load(STORAGE.CALENDARIO, []);
+  const calFiltered = cal.filter(e => e.sourceId !== id);
+  save(STORAGE.CALENDARIO, calFiltered);
+  showToast('Tarea eliminada');
+  loadPendientes();
+}
+
+function openModalNew() { openModalEdit(null); }
+
+function openModalEdit(id) {
+  const pendientes = load(STORAGE.PENDIENTES, []);
+  const p = id ? pendientes.find(x => x.id === id) : null;
+  const today = new Date().toISOString().slice(0,10);
+
+  document.getElementById('modalsMount').innerHTML = `
+    <div class="modal-overlay" id="modalPen" onclick="if(event.target.id==='modalPen')closeModal()">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div class="modal-title">${p ? 'Editar tarea' : 'Nueva tarea'}</div>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <div class="field-label">¿Qué hay que hacer?</div>
+            <input type="text" class="field-input" id="penText" placeholder="Ej. Llamar al contador" value="${p ? escapeHTML(p.text) : ''}" autofocus>
+          </div>
+          <div class="field-row cols-2">
+            <div class="field">
+              <div class="field-label">Fecha límite</div>
+              <input type="date" class="field-input" id="penFecha" value="${p?.dueDate || ''}">
+            </div>
+            <div class="field">
+              <div class="field-label">Prioridad</div>
+              <select class="field-select" id="penPrio">
+                <option value="alta" ${p?.priority === 'alta' ? 'selected' : ''}>Alta</option>
+                <option value="media" ${p?.priority === 'media' || !p ? 'selected' : ''}>Media</option>
+                <option value="baja" ${p?.priority === 'baja' ? 'selected' : ''}>Baja</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row cols-2">
+            <div class="field">
+              <div class="field-label">Recurrencia</div>
+              <select class="field-select" id="penRecur">
+                <option value="none" ${!p?.recurrencia || p.recurrencia === 'none' ? 'selected' : ''}>Sin recurrencia</option>
+                <option value="diario" ${p?.recurrencia === 'diario' ? 'selected' : ''}>Diario</option>
+                <option value="semanal" ${p?.recurrencia === 'semanal' ? 'selected' : ''}>Semanal</option>
+                <option value="mensual" ${p?.recurrencia === 'mensual' ? 'selected' : ''}>Mensual</option>
+                <option value="anual" ${p?.recurrencia === 'anual' ? 'selected' : ''}>Anual</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label">Categoría</div>
+              <select class="field-select" id="penCat">
+                <option value="general" ${!p?.categoria || p.categoria === 'general' ? 'selected' : ''}>General</option>
+                <option value="g2c" ${p?.categoria === 'g2c' ? 'selected' : ''}>G2C</option>
+                <option value="musica" ${p?.categoria === 'musica' ? 'selected' : ''}>Música</option>
+                <option value="personal" ${p?.categoria === 'personal' ? 'selected' : ''}>Personal</option>
+                <option value="financiero" ${p?.categoria === 'financiero' ? 'selected' : ''}>Financiero</option>
+                <option value="fiscal" ${p?.categoria === 'fiscal' ? 'selected' : ''}>Fiscal/SAT</option>
+              </select>
+            </div>
+          </div>
+          <div class="ai-banner info" style="margin: 12px 0;">
+            <div class="ai-banner-row">
+              <span class="g2c-star sm solid"><span class="g2c-star-glyph">★</span></span>
+              <div class="ai-banner-content">
+                <div class="ai-banner-text" style="font-size:11px; margin:0;" id="penImpact">
+                  Llena los campos para ver el impacto en calendario...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          ${p ? `<button class="action-btn action-btn-danger" onclick="deletePend('${p.id}'); closeModal();">✗ Eliminar</button>` : ''}
+          <button class="action-btn" style="background:transparent;color:var(--gray-light);border-color:rgba(255,255,255,0.1);" onclick="closeModal()">Cancelar</button>
+          <button class="action-btn action-btn-orange" onclick="savePendiente('${p?.id || ''}')">✓ ${p ? 'Guardar' : 'Crear'}</button>
+        </div>
+      </div>
+    </div>
+  `;
+  ['penText','penFecha','penRecur'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updatePenImpact);
+    if (el) el.addEventListener('change', updatePenImpact);
+  });
+  setTimeout(updatePenImpact, 100);
+}
+
+function updatePenImpact() {
+  const text = document.getElementById('penText')?.value.trim();
+  const fecha = document.getElementById('penFecha')?.value;
+  const recur = document.getElementById('penRecur')?.value;
+  const el = document.getElementById('penImpact');
+  if (!el) return;
+
+  if (!text) { el.innerHTML = 'Llena los campos para ver el impacto...'; return; }
+
+  let txt = '';
+  if (fecha) {
+    if (recur && recur !== 'none') {
+      const occ = recur === 'diario' ? 30 : recur === 'semanal' ? 12 : recur === 'mensual' ? 12 : recur === 'anual' ? 3 : 1;
+      txt = `<strong style="color:var(--info);">${occ} ocurrencias</strong> auto-agendadas al calendario (${recur})<br>`;
+    } else {
+      txt = `<strong style="color:var(--info);">1 evento</strong> agendado al calendario el ${fecha}<br>`;
+    }
+  } else {
+    txt = `<span style="color:var(--gray-light);">Sin fecha · solo en lista de pendientes</span><br>`;
+  }
+  txt += `<span style="color:var(--gray);">Aparecerá en el contexto de la IA en cualquier módulo</span>`;
+  el.innerHTML = txt;
+}
+
+function savePendiente(existingId) {
+  const text = document.getElementById('penText').value.trim();
+  if (!text) { showToast('Falta texto de la tarea', true); return; }
+
+  const data = {
+    text,
+    dueDate: document.getElementById('penFecha').value || '',
+    priority: document.getElementById('penPrio').value,
+    recurrencia: document.getElementById('penRecur').value,
+    categoria: document.getElementById('penCat').value
+  };
+
+  if (existingId) {
+    const pend = load(STORAGE.PENDIENTES, []);
+    const idx = pend.findIndex(p => p.id === existingId);
+    if (idx >= 0) {
+      // Eliminar eventos calendario antiguos
+      const cal = load(STORAGE.CALENDARIO, []);
+      save(STORAGE.CALENDARIO, cal.filter(e => e.sourceId !== existingId));
+      pend[idx] = { ...pend[idx], ...data };
+      save(STORAGE.PENDIENTES, pend);
+      if (pend[idx].dueDate) syncPendienteToCalendar(pend[idx]);
+      showToast('✓ Tarea actualizada');
+    }
+  } else {
+    executeTool({
+      action: 'add_pendiente',
+      module: 'pendientes',
+      data: data,
+      summary: 'Pendiente creado'
+    });
+    showToast('✓ Tarea creada' + (data.recurrencia !== 'none' && data.dueDate ? ' · sincronizada al calendario' : ''));
+  }
+  closeModal();
+  loadPendientes();
+}
+
+function closeModal() {
+  document.getElementById('modalsMount').innerHTML = '';
+}
+
+function askAi(prompt) {
+  sessionStorage.setItem('alan_mando_pending_prompt', prompt);
+  window.location.href = 'index.html';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  if (!isAuthenticated()) {
+    renderPasswordGate('passwordGate', () => {
+      loadPendientes();
+    });
+    return;
+  }
+  loadPendientes();
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (typeof mountBottomnav === 'function') mountBottomnav('pendientes');
+  }, 150);
+});
+if (document.readyState !== 'loading' && typeof mountBottomnav === 'function') {
+  setTimeout(function() { mountBottomnav('pendientes'); }, 150);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>★ Calendario · G2C Mando</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#FF4F00">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito+Sans:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared.css">
+<style>
+.cal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.cal-header-left { flex: 1; min-width: 200px; }
+.module-eyebrow { font-family: var(--mono); font-size: 10px; color: var(--orange); letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 6px; }
+.module-title { font-family: var(--display); font-size: 30px; line-height: 1; color: var(--white); margin-bottom: 6px; }
+.module-sub { color: var(--gray-light); font-size: 13px; }
+
+.cal-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.cal-month-display {
+  font-family: var(--display);
+  font-size: 22px;
+  color: var(--white);
+  padding: 0 14px;
+  text-transform: capitalize;
+  min-width: 180px;
+  text-align: center;
+}
+.cal-nav-btn {
+  width: 36px; height: 36px;
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.2);
+  color: var(--orange);
+  cursor: pointer;
+  border-radius: 2px;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.cal-nav-btn:hover { background: rgba(255,79,0,0.1); border-color: var(--orange); }
+
+.cal-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 18px;
+}
+
+.cal-grid-wrap {
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.15);
+  border-radius: 4px;
+  padding: 16px;
+}
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.cal-weekday {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--orange);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 6px 0;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-day {
+  aspect-ratio: 1 / 1.1;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,79,0,0.05);
+  border-radius: 3px;
+  padding: 6px 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+  overflow: hidden;
+}
+.cal-day:hover {
+  border-color: rgba(255,79,0,0.4);
+  background: rgba(255,79,0,0.06);
+}
+.cal-day.empty {
+  cursor: default;
+  opacity: 0.2;
+  background: transparent;
+  border: none;
+}
+.cal-day.today {
+  border-color: var(--orange);
+  background: rgba(255,79,0,0.1);
+}
+.cal-day.today .cal-day-num { color: var(--orange); font-weight: 800; }
+.cal-day.selected {
+  border-color: var(--orange);
+  box-shadow: inset 0 0 0 1px var(--orange);
+  background: rgba(255,79,0,0.15);
+}
+.cal-day-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--white);
+  font-weight: 600;
+  line-height: 1;
+}
+.cal-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: auto;
+}
+.cal-event-pill {
+  font-family: var(--mono);
+  font-size: 8px;
+  padding: 2px 4px;
+  border-radius: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.05em;
+  line-height: 1.3;
+}
+.cal-event-pill.g2c { background: rgba(255,79,0,0.25); color: var(--orange-light); }
+.cal-event-pill.personal { background: rgba(74,158,255,0.25); color: var(--info); }
+.cal-event-pill.musica { background: rgba(139,133,255,0.25); color: var(--purple); }
+.cal-event-pill.pago { background: rgba(230,57,70,0.25); color: var(--danger); }
+.cal-event-pill.cobro { background: rgba(0,217,126,0.25); color: var(--success); }
+.cal-event-pill.evento { background: rgba(255,215,0,0.25); color: var(--gold); }
+.cal-event-more {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--gray);
+  padding: 1px 4px;
+  letter-spacing: 0.1em;
+}
+
+/* Sidebar */
+.cal-sidebar { display: flex; flex-direction: column; gap: 14px; }
+.cal-side-panel {
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.15);
+  border-radius: 4px;
+  padding: 16px;
+}
+.cal-side-header {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--orange);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,79,0,0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cal-side-header::before { content:'★'; }
+
+.day-events-list { display: flex; flex-direction: column; gap: 8px; }
+.day-event {
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.3);
+  border-left: 2px solid var(--orange);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.day-event:hover { background: rgba(255,79,0,0.06); }
+.day-event.musica { border-left-color: var(--purple); }
+.day-event.pago { border-left-color: var(--danger); }
+.day-event.cobro { border-left-color: var(--success); }
+.day-event.personal { border-left-color: var(--info); }
+.day-event.evento { border-left-color: var(--gold); }
+.day-event-time {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--orange);
+  letter-spacing: 0.1em;
+  margin-bottom: 3px;
+}
+.day-event-title {
+  font-size: 13px;
+  color: var(--white);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+.day-event-meta {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--gray);
+  letter-spacing: 0.05em;
+}
+.day-event-amount {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--orange);
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.upcoming-list { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow-y: auto; }
+.upcoming-row {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(0,0,0,0.25);
+  border-left: 2px solid var(--orange);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.upcoming-row:hover { background: rgba(255,79,0,0.05); }
+.upcoming-row.musica { border-left-color: var(--purple); }
+.upcoming-row.pago { border-left-color: var(--danger); }
+.upcoming-row.cobro { border-left-color: var(--success); }
+.upcoming-row.personal { border-left-color: var(--info); }
+.upcoming-row.evento { border-left-color: var(--gold); }
+.upcoming-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.upcoming-day {
+  font-family: var(--display);
+  font-size: 18px;
+  color: var(--white);
+  line-height: 1;
+}
+.upcoming-mon {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--orange);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.upcoming-info { min-width: 0; }
+.upcoming-title {
+  font-size: 12px;
+  color: var(--white);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+.upcoming-meta {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--gray);
+  letter-spacing: 0.05em;
+}
+
+.empty-state {
+  padding: 24px 14px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--gray);
+  letter-spacing: 0.15em;
+}
+.empty-state::before { content:'★'; display: block; font-size: 22px; color: var(--orange); margin-bottom: 8px; }
+
+/* Modal · evento form */
+.event-form { display: flex; flex-direction: column; gap: 14px; }
+.event-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.event-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.event-cat-btn {
+  padding: 10px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,79,0,0.1);
+  color: var(--gray-light);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+.event-cat-btn:hover { border-color: rgba(255,79,0,0.4); }
+.event-cat-btn.active.g2c { background: var(--orange); color: var(--white); border-color: var(--orange); }
+.event-cat-btn.active.personal { background: var(--info); color: var(--white); border-color: var(--info); }
+.event-cat-btn.active.musica { background: var(--purple); color: var(--white); border-color: var(--purple); }
+.event-cat-btn.active.pago { background: var(--danger); color: var(--white); border-color: var(--danger); }
+.event-cat-btn.active.cobro { background: var(--success); color: var(--white); border-color: var(--success); }
+.event-cat-btn.active.evento { background: var(--gold); color: var(--dark); border-color: var(--gold); }
+
+.linked-event-warning {
+  padding: 12px 14px;
+  background: rgba(139,133,255,0.08);
+  border-left: 3px solid var(--purple);
+  border-radius: 2px;
+  font-size: 12px;
+  color: var(--gray-light);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.linked-event-warning strong { color: var(--purple); }
+.linked-event-warning .btn-link {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: var(--purple);
+  color: var(--white);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+
+@media (max-width: 880px) {
+  .cal-layout { grid-template-columns: 1fr; }
+  .cal-grid-wrap { padding: 10px; }
+  .cal-weekday { font-size: 8px; padding: 4px 0; }
+  .cal-day { padding: 4px 3px; }
+  .cal-day-num { font-size: 10px; }
+  .cal-event-pill { font-size: 7px; padding: 1px 3px; }
+  .cal-month-display { font-size: 18px; min-width: 140px; padding: 0 8px; }
+  .cal-controls { width: 100%; justify-content: space-between; }
+  .cal-nav-btn { width: 32px; height: 32px; }
+  .module-title { font-size: 24px; }
+  .event-form-row { grid-template-columns: 1fr; }
+  .event-cat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .cal-day { padding: 3px 2px; }
+  .cal-day-events { gap: 1px; }
+}
+
+/* Solo punto en mobile cuando hay muchos eventos */
+@media (max-width: 600px) {
+  .cal-event-pill {
+    height: 4px;
+    width: 100%;
+    padding: 0;
+    color: transparent;
+    font-size: 0;
+  }
+}
+</style>
+</head>
+<body>
+<a href="index.html" id="floatBack" style="position:fixed;top:10px;left:10px;z-index:99999;display:inline-flex;align-items:center;gap:5px;padding:8px 12px;background:var(--orange);color:white;text-decoration:none;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;border-radius:3px;box-shadow:0 4px 12px rgba(255,79,0,0.4);">
+  <span style="font-size:14px;line-height:1;">‹</span>
+  <span>Mando</span>
+</a>
+
+<main class="container">
+  
+  <div class="cal-header">
+    <div class="cal-header-left">
+      <div class="module-eyebrow">▸ Tiempo & agenda</div>
+      <h1 class="module-title">Calendario</h1>
+      <p class="module-sub">Eventos, pagos, cobros, ensayos · todo en un lugar</p>
+    </div>
+    <div class="cal-controls">
+      <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+      <div class="cal-month-display" id="monthDisplay"></div>
+      <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+      <button class="btn btn-secondary" onclick="goToday()">Hoy</button>
+      <button class="btn btn-primary" onclick="openEventModal()">+ Nuevo</button>
+    </div>
+  </div>
+
+  <div class="cal-layout">
+    <div class="cal-grid-wrap">
+      <div class="cal-weekdays" id="weekdays"></div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <aside class="cal-sidebar">
+      <div class="cal-side-panel">
+        <div class="cal-side-header" id="dayHeader">
+          <span>Día seleccionado</span>
+        </div>
+        <div id="dayEvents"></div>
+      </div>
+
+      <div class="cal-side-panel">
+        <div class="cal-side-header"><span>Próximos 7 días</span></div>
+        <div class="upcoming-list" id="upcomingList"></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<!-- Modal evento -->
+<div class="modal-overlay" id="eventModal">
+  <div class="modal" style="max-width: 580px;">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Nuevo evento</div>
+      <button class="modal-close" onclick="closeEventModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="deleteBtn" onclick="deleteEvent()" style="display:none;">Eliminar</button>
+      <button class="btn btn-secondary" onclick="closeEventModal()">Cerrar</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveEvent()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const DIAS_SHORT = ['D','L','M','M','J','V','S'];
+const CATEGORIES = {
+  g2c: { name: 'G2C / Trabajo' },
+  personal: { name: 'Personal' },
+  musica: { name: 'Música' },
+  pago: { name: 'Pago' },
+  cobro: { name: 'Cobro' },
+  evento: { name: 'Evento' }
+};
+
+let events = load(STORAGE.CALENDARIO, []);
+let currentDate = new Date();
+let selectedDate = new Date();
+let selectedCategory = 'g2c';
+let editingEventId = null;
+
+(async () => {
+  const ok = await authGuard();
+  if (!ok) return;
+
+  // Deep link ?date=YYYY-MM-DD
+  const params = new URLSearchParams(window.location.search);
+  const dateParam = params.get('date');
+  if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    const d = new Date(dateParam + 'T12:00:00');
+    if (!isNaN(d)) {
+      currentDate = d;
+      selectedDate = d;
+    }
+  }
+
+  document.getElementById('weekdays').innerHTML = DIAS_SHORT.map(d => `<div class="cal-weekday">${d}</div>`).join('');
+  renderCalendar();
+  renderSelectedDay();
+  renderUpcoming();
+})();
+
+function formatDateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function parseDateKey(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function changeMonth(dir) {
+  currentDate.setMonth(currentDate.getMonth() + dir);
+  renderCalendar();
+}
+function goToday() {
+  currentDate = new Date();
+  selectedDate = new Date();
+  renderCalendar();
+  renderSelectedDay();
+}
+
+function renderCalendar() {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  document.getElementById('monthDisplay').textContent = `${MESES[month]} ${year}`;
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const grid = document.getElementById('calGrid');
+  let html = '';
+
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const key = formatDateKey(d);
+    const dayEvents = events.filter(e => e.date === key);
+    const isToday = d.getTime() === today.getTime();
+    const isSelected = formatDateKey(d) === formatDateKey(selectedDate);
+
+    let pillsHTML = '';
+    const isMobile = window.innerWidth <= 600;
+    if (isMobile) {
+      // En mobile solo puntos de color
+      dayEvents.slice(0, 3).forEach(e => {
+        pillsHTML += `<div class="cal-event-pill ${e.category}"></div>`;
+      });
+    } else {
+      const visiblePills = dayEvents.slice(0, 2);
+      visiblePills.forEach(e => {
+        pillsHTML += `<div class="cal-event-pill ${e.category}" title="${escapeHTML(e.title)}">${escapeHTML(e.title)}</div>`;
+      });
+      if (dayEvents.length > 2) {
+        pillsHTML += `<div class="cal-event-more">+${dayEvents.length - 2}</div>`;
+      }
+    }
+
+    html += `
+      <div class="cal-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}"
+           data-date="${key}"
+           onclick="selectDay('${key}')">
+        <span class="cal-day-num">${day}</span>
+        <div class="cal-day-events">${pillsHTML}</div>
+      </div>
+    `;
+  }
+  grid.innerHTML = html;
+}
+
+function selectDay(key) {
+  selectedDate = parseDateKey(key);
+  renderCalendar();
+  renderSelectedDay();
+}
+
+function renderSelectedDay() {
+  const key = formatDateKey(selectedDate);
+  const dayEvents = events.filter(e => e.date === key).sort((a,b) => (a.time||'').localeCompare(b.time||''));
+  const isToday = key === formatDateKey(new Date());
+  document.getElementById('dayHeader').innerHTML = `<span>${isToday ? 'Hoy · ' : ''}${selectedDate.getDate()} ${MESES[selectedDate.getMonth()]}</span><span style="font-family:var(--mono);font-size:10px;color:var(--white);background:rgba(255,79,0,0.15);padding:2px 8px;border-radius:2px;">${dayEvents.length}</span>`;
+
+  const container = document.getElementById('dayEvents');
+  if (dayEvents.length === 0) {
+    container.innerHTML = `<div class="empty-state">Sin eventos<br><br><button class="btn btn-secondary" onclick="openEventModal('${key}')" style="margin-top:8px;">+ Agendar este día</button></div>`;
+    return;
+  }
+  container.innerHTML = `<div class="day-events-list">${dayEvents.map(e => `
+    <div class="day-event ${e.category}" onclick="handleEventClick('${e.id}')">
+      ${e.time ? `<div class="day-event-time">${e.time}</div>` : ''}
+      <div class="day-event-title">${escapeHTML(e.title)}</div>
+      <div class="day-event-meta">${escapeHTML(CATEGORIES[e.category]?.name || e.category)}${e.sourceModule ? ' · de '+e.sourceModule : ''}</div>
+      ${e.amount ? `<div class="day-event-amount">$${formatMoney(e.amount)}</div>` : ''}
+    </div>
+  `).join('')}</div>`;
+}
+
+function renderUpcoming() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const next7 = new Date(today); next7.setDate(next7.getDate() + 7);
+  const upcoming = events.filter(e => {
+    const d = parseDateKey(e.date);
+    return d >= today && d < next7;
+  }).sort((a,b) => a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||''));
+
+  const container = document.getElementById('upcomingList');
+  if (upcoming.length === 0) {
+    container.innerHTML = `<div class="empty-state">Sin eventos próximos</div>`;
+    return;
+  }
+  container.innerHTML = upcoming.slice(0, 12).map(e => {
+    const d = parseDateKey(e.date);
+    return `
+      <div class="upcoming-row ${e.category}" onclick="handleUpcomingClick('${e.date}', '${e.id}')">
+        <div class="upcoming-date">
+          <div class="upcoming-day">${d.getDate()}</div>
+          <div class="upcoming-mon">${MESES_SHORT[d.getMonth()]}</div>
+        </div>
+        <div class="upcoming-info">
+          <div class="upcoming-title">${escapeHTML(e.title)}</div>
+          <div class="upcoming-meta">${e.time || 'sin hora'}${e.amount ? ' · $'+formatMoney(e.amount) : ''}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function handleUpcomingClick(date, id) {
+  selectedDate = parseDateKey(date);
+  currentDate = new Date(selectedDate);
+  renderCalendar();
+  renderSelectedDay();
+  setTimeout(() => handleEventClick(id), 50);
+}
+
+function handleEventClick(id) {
+  const ev = events.find(e => e.id === id);
+  if (!ev) return;
+  if (ev.sourceModule) {
+    // Evento sincronizado · pregunta si quiere ir al módulo origen
+    if (confirm(`Este evento está sincronizado desde el módulo "${ev.sourceModule}". ¿Quieres ir a editarlo allí?`)) {
+      const tab = ev.sourceTab || '';
+      const params = new URLSearchParams();
+      if (tab) params.set('tab', tab);
+      if (ev.sourceId) params.set('id', ev.sourceId);
+      window.location.href = `/${ev.sourceModule}.html?${params.toString()}`;
+    } else {
+      // Modo solo lectura
+      openEventModal(null, id, true);
+    }
+  } else {
+    openEventModal(null, id);
+  }
+}
+
+function openEventModal(preselectDate, editId, readOnly) {
+  editingEventId = editId || null;
+  const ev = editId ? events.find(e => e.id === editId) : null;
+  const date = ev ? ev.date : (preselectDate || formatDateKey(selectedDate));
+  selectedCategory = ev ? ev.category : 'g2c';
+
+  document.getElementById('modalTitle').textContent = ev ? (readOnly ? 'Evento sincronizado · solo lectura' : 'Editar evento') : 'Nuevo evento';
+  document.getElementById('deleteBtn').style.display = (ev && !readOnly && !ev.sourceModule) ? 'inline-flex' : 'none';
+  document.getElementById('saveBtn').style.display = readOnly ? 'none' : 'inline-flex';
+
+  let warningHTML = '';
+  if (ev && ev.sourceModule) {
+    warningHTML = `
+      <div class="linked-event-warning">
+        <strong>★ Evento sincronizado</strong><br>
+        Origen: <strong>${escapeHTML(ev.sourceModule)}</strong>${ev.sourceTab ? ' (tab: '+escapeHTML(ev.sourceTab)+')' : ''}<br>
+        Edita en el módulo origen para que los cambios persistan.
+        <br><a class="btn-link" href="${ev.sourceModule}.html?tab=${encodeURIComponent(ev.sourceTab||'')}&id=${encodeURIComponent(ev.sourceId||'')}">▸ Ir al módulo</a>
+      </div>
+    `;
+  }
+
+  document.getElementById('modalBody').innerHTML = `
+    ${warningHTML}
+    <div class="event-form">
+      <div>
+        <label class="label">Título</label>
+        <input type="text" class="input" id="evTitle" value="${escapeHTML(ev?.title || '')}" placeholder="Reunión con cliente, pago renta...">
+      </div>
+      <div class="event-form-row">
+        <div>
+          <label class="label">Fecha</label>
+          <input type="date" class="input" id="evDate" value="${date}">
+        </div>
+        <div>
+          <label class="label">Hora (opcional)</label>
+          <input type="time" class="input" id="evTime" value="${ev?.time || ''}">
+        </div>
+      </div>
+      <div>
+        <label class="label">Categoría</label>
+        <div class="event-cat-grid" id="catGrid">
+          ${Object.entries(CATEGORIES).map(([k,v]) => `
+            <button class="event-cat-btn ${selectedCategory === k ? 'active '+k : ''}" data-cat="${k}" onclick="selectCategory('${k}')">${v.name}</button>
+          `).join('')}
+        </div>
+      </div>
+      <div>
+        <label class="label">Monto (opcional)</label>
+        <input type="number" class="input" id="evAmount" value="${ev?.amount || ''}" placeholder="500">
+      </div>
+      <div>
+        <label class="label">Notas</label>
+        <textarea class="textarea" id="evNotes" rows="3" placeholder="Detalles, contacto, link...">${escapeHTML(ev?.notes || '')}</textarea>
+      </div>
+    </div>
+  `;
+
+  // Si es solo lectura · disable inputs
+  if (readOnly) {
+    document.querySelectorAll('#modalBody input, #modalBody textarea, #modalBody button').forEach(el => {
+      if (!el.classList.contains('btn-link')) el.disabled = true;
+    });
+  }
+
+  document.getElementById('eventModal').classList.add('show');
+}
+
+function selectCategory(cat) {
+  selectedCategory = cat;
+  document.querySelectorAll('.event-cat-btn').forEach(btn => {
+    const isActive = btn.dataset.cat === cat;
+    btn.className = `event-cat-btn ${isActive ? 'active '+cat : ''}`;
+  });
+}
+
+function saveEvent() {
+  const title = document.getElementById('evTitle').value.trim();
+  const date = document.getElementById('evDate').value;
+  if (!title) { showToast('Captura el título', true); return; }
+  if (!date) { showToast('Selecciona la fecha', true); return; }
+
+  const data = {
+    title, date,
+    time: document.getElementById('evTime').value,
+    category: selectedCategory,
+    amount: document.getElementById('evAmount').value || '',
+    notes: document.getElementById('evNotes').value.trim()
+  };
+
+  if (editingEventId) {
+    const idx = events.findIndex(e => e.id === editingEventId);
+    if (idx >= 0) events[idx] = { ...events[idx], ...data };
+  } else {
+    events.push({ id: uid('ev'), ...data, createdAt: Date.now() });
+  }
+  save(STORAGE.CALENDARIO, events);
+  closeEventModal();
+  selectedDate = parseDateKey(date);
+  renderCalendar();
+  renderSelectedDay();
+  renderUpcoming();
+  showToast(editingEventId ? '✓ Evento actualizado' : '✓ Evento creado');
+}
+
+function deleteEvent() {
+  if (!editingEventId) return;
+  if (!confirm('¿Eliminar este evento?')) return;
+  events = events.filter(e => e.id !== editingEventId);
+  save(STORAGE.CALENDARIO, events);
+  closeEventModal();
+  renderCalendar();
+  renderSelectedDay();
+  renderUpcoming();
+  showToast('Evento eliminado');
+}
+
+function closeEventModal() {
+  document.getElementById('eventModal').classList.remove('show');
+  editingEventId = null;
+}
+
+// Re-render al cambiar tamaño (desktop ↔ mobile)
+let _resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => renderCalendar(), 200);
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (typeof mountBottomnav === 'function') mountBottomnav('calendario');
+  }, 150);
+});
+if (document.readyState !== 'loading' && typeof mountBottomnav === 'function') {
+  setTimeout(function() { mountBottomnav('calendario'); }, 150);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+name = "g2c-mando-push"
+main = "worker.js"
+compatibility_date = "2025-01-15"
+
+# KV namespace · reemplazar el id después de crear con `wrangler kv:namespace create "PUSH_KV"`
+[[kv_namespaces]]
+binding = "PUSH_KV"
+id = "REPLACE_WITH_KV_ID"
+
+# Cron trigger · ejecuta cada minuto para procesar notificaciones programadas
+[triggers]
+crons = ["* * * * *"]
+
+# Variables públicas (la VAPID public key se setea como secret abajo, pero también puede ser env var)
+# Secrets requeridos (no se ponen aquí, se setean con wrangler secret put):
+# - VAPID_PUBLIC_KEY
+# - VAPID_PRIVATE_KEY
+# - VAPID_SUBJECT  (ej. "mailto:hola@g2c.com.mx")
+# - ADMIN_SECRET   (para endpoint /send-now)
+
+# Custom domain (opcional · setear después en CF dashboard)
+# routes = [
+#   { pattern = "push.g2c.com.mx/*", custom_domain = true }
+# ]

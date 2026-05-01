@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>★ Música · G2C Mando</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#FF4F00">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito+Sans:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared.css">
+<style>
+.module-header {
+  margin-bottom: 22px;
+}
+.module-eyebrow { font-family: var(--mono); font-size: 10px; color: var(--orange); letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 6px; }
+.module-title { font-family: var(--display); font-size: 30px; line-height: 1; color: var(--white); margin-bottom: 6px; }
+.module-sub { color: var(--gray-light); font-size: 13px; }
+
+/* AI Search Hero */
+.ai-hero {
+  background: linear-gradient(135deg, rgba(255,79,0,0.06) 0%, var(--dark-2) 60%, rgba(255,122,0,0.04) 100%);
+  border: 1px solid rgba(255,79,0,0.2);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 22px;
+  position: relative;
+  overflow: hidden;
+}
+.ai-hero::before {
+  content:'';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--orange), transparent);
+  animation: scanline 3s ease-in-out infinite;
+}
+@keyframes scanline { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+.ai-hero-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.ai-hero-input {
+  flex: 1; min-width: 240px;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,79,0,0.2);
+  color: var(--white);
+  font-family: var(--body); font-size: 14px;
+  border-radius: 2px;
+  transition: all 0.25s;
+}
+.ai-hero-input:focus { outline: none; border-color: var(--orange); background: rgba(0,0,0,0.6); box-shadow: 0 0 0 3px rgba(255,79,0,0.08); }
+.ai-hero-input::placeholder { color: var(--gray); font-style: italic; }
+.ai-hero-btn {
+  padding: 12px 20px;
+  background: var(--orange); color: var(--white);
+  border: none; cursor: pointer;
+  font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  border-radius: 2px; font-weight: 700;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.ai-hero-btn:hover:not(:disabled) { background: var(--orange-light); }
+.ai-hero-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.ai-hero-hint { font-family: var(--mono); font-size: 9px; color: var(--gray); letter-spacing: 0.15em; text-transform: uppercase; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); }
+
+.ai-results { margin-top: 14px; }
+
+/* Top words / quick chips */
+.quick-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.quick-chip {
+  padding: 6px 12px;
+  background: rgba(255,79,0,0.06);
+  border: 1px solid rgba(255,79,0,0.2);
+  color: var(--orange-light);
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.quick-chip:hover { background: var(--orange); color: var(--white); border-color: var(--orange); }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--dark-2);
+  border-radius: 4px;
+  padding: 4px;
+  margin-bottom: 22px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  padding: 10px 16px;
+  background: transparent;
+  color: var(--gray);
+  border: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 100px;
+}
+.tab-btn:hover { color: var(--orange-light); }
+.tab-btn.active { background: var(--orange); color: var(--white); }
+
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* Repertorio · LISTA MINIMALISTA */
+.repertoire-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.repertoire-search {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.15);
+  color: var(--white);
+  font-family: var(--body);
+  font-size: 13px;
+  border-radius: 2px;
+}
+.repertoire-search:focus { outline: none; border-color: var(--orange); }
+.repertoire-filter {
+  padding: 10px 14px;
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.15);
+  color: var(--white);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.repertoire-filter:focus { outline: none; border-color: var(--orange); }
+
+/* LISTA · diseño tabular minimalista */
+.song-list {
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.song-list-header {
+  display: grid;
+  grid-template-columns: 3fr 2fr 1.2fr 1fr 60px;
+  gap: 12px;
+  padding: 12px 18px;
+  background: rgba(0,0,0,0.4);
+  border-bottom: 1px solid rgba(255,79,0,0.15);
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--orange);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+.song-row {
+  display: grid;
+  grid-template-columns: 3fr 2fr 1.2fr 1fr 60px;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: all 0.15s;
+  align-items: center;
+}
+.song-row:last-child { border-bottom: none; }
+.song-row:hover { background: rgba(255,79,0,0.05); }
+.song-title {
+  font-size: 14px;
+  color: var(--white);
+  font-weight: 600;
+  line-height: 1.3;
+  word-break: break-word;
+}
+.song-artist {
+  font-size: 13px;
+  color: var(--gray-light);
+  word-break: break-word;
+}
+.song-genre {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--orange-light);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.song-status {
+  display: inline-flex;
+  padding: 4px 10px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  font-weight: 700;
+  width: fit-content;
+}
+.song-status.aprender { background: rgba(255,255,255,0.08); color: var(--gray-light); }
+.song-status.ensayando { background: rgba(255,79,0,0.15); color: var(--orange); }
+.song-status.dominada { background: rgba(0,217,126,0.15); color: var(--success); }
+.song-arrow {
+  color: var(--gray);
+  font-family: var(--mono);
+  font-size: 16px;
+  text-align: right;
+  transition: all 0.2s;
+}
+.song-row:hover .song-arrow { color: var(--orange); transform: translateX(4px); }
+
+/* Mobile · stack */
+@media (max-width: 700px) {
+  .song-list-header { display: none; }
+  .song-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title status"
+      "artist arrow"
+      "genre genre";
+    gap: 6px;
+    padding: 14px 16px;
+  }
+  .song-title { grid-area: title; }
+  .song-artist { grid-area: artist; }
+  .song-genre { grid-area: genre; }
+  .song-status { grid-area: status; }
+  .song-arrow { grid-area: arrow; }
+}
+
+.song-empty {
+  padding: 40px 24px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--gray);
+  letter-spacing: 0.15em;
+}
+.song-empty .star { color: var(--orange); font-size: 24px; display: block; margin-bottom: 12px; }
+
+/* Add new */
+.add-row {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* MODAL DETALLE */
+.song-modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.song-modal-actions .btn { flex: 1; min-width: 130px; justify-content: center; }
+
+.song-detail-section { margin-bottom: 18px; }
+.song-detail-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--orange);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.song-detail-value {
+  font-size: 14px;
+  color: var(--white);
+  word-break: break-word;
+}
+.song-detail-link {
+  color: var(--orange-light);
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(255,79,0,0.3);
+  word-break: break-all;
+  font-size: 13px;
+}
+.song-detail-link:hover { color: var(--white); border-bottom-color: var(--orange); }
+
+.detail-form { display: flex; flex-direction: column; gap: 14px; }
+.detail-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 600px) { .detail-form-row { grid-template-columns: 1fr; } }
+
+.detail-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Tareas inline */
+.task-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 2px;
+  border-left: 2px solid var(--orange);
+}
+.task-item.done { opacity: 0.5; border-left-color: var(--success); }
+.task-item.done .task-text { text-decoration: line-through; }
+.task-checkbox {
+  width: 18px; height: 18px;
+  border: 1px solid rgba(255,79,0,0.4);
+  background: transparent;
+  color: var(--orange);
+  cursor: pointer;
+  border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.task-checkbox.done { background: var(--success); border-color: var(--success); color: var(--white); }
+.task-text { flex: 1; font-size: 13px; color: var(--white); }
+.task-delete { background: transparent; border: none; color: var(--gray); cursor: pointer; font-size: 14px; padding: 0 4px; }
+.task-delete:hover { color: var(--danger); }
+.task-add { display: flex; gap: 6px; margin-top: 8px; }
+.task-add input { flex: 1; padding: 8px 12px; background: var(--dark); border: 1px solid rgba(255,79,0,0.2); color: var(--white); font-size: 12px; border-radius: 2px; font-family: var(--body); }
+.task-add input:focus { outline: none; border-color: var(--orange); }
+.task-add button { padding: 8px 14px; background: var(--orange); color: var(--white); border: none; cursor: pointer; font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; border-radius: 2px; font-weight: 700; }
+
+/* AI search results · estilo unificado con chat */
+.ai-response { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,79,0,0.2); border-radius: 4px; padding: 14px 16px; margin-top: 12px; }
+.ai-response-text { color: var(--white); font-size: 14px; line-height: 1.65; word-wrap: break-word; }
+.ai-response-text strong { color: var(--orange); }
+.ai-response-text em { color: var(--orange-light); font-style: italic; }
+.ai-response-text a { color: var(--orange-light); border-bottom: 1px dashed rgba(255,79,0,0.3); text-decoration: none; word-break: break-all; }
+.ai-response-text a:hover { color: var(--white); border-bottom-color: var(--orange); }
+.ai-response-text p { margin-bottom: 10px; }
+.ai-response-text p:last-child { margin-bottom: 0; }
+.ai-response-text ul { margin: 8px 0 8px 20px; }
+
+.ai-tool-card { background: linear-gradient(135deg, rgba(255,79,0,0.08), var(--dark-2)); border: 1px solid var(--orange); border-radius: 4px; padding: 14px; margin-top: 12px; }
+.ai-tool-eyebrow { font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 8px; }
+.ai-tool-eyebrow::before { content:'⚠ '; }
+.ai-tool-title { font-family: var(--display); font-size: 15px; color: var(--white); margin-bottom: 8px; }
+.ai-tool-data { background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 2px; margin-bottom: 10px; }
+.ai-tool-data-row { display: flex; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--gray-light); margin-bottom: 4px; }
+.ai-tool-data-row .l { color: var(--orange); min-width: 70px; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; }
+.ai-tool-actions { display: flex; gap: 6px; }
+.ai-tool-btn { padding: 7px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; border: none; cursor: pointer; border-radius: 2px; font-weight: 700; }
+.ai-tool-approve { background: var(--success); color: var(--white); flex: 1; }
+.ai-tool-reject { background: transparent; color: var(--danger); border: 1px solid rgba(230,57,70,0.4); }
+
+/* YT cards mismo estilo que chat */
+.yt-results { background: linear-gradient(135deg, rgba(255,79,0,0.05), var(--dark-2)); border: 1px solid rgba(255,79,0,0.25); border-radius: 4px; padding: 14px; margin-top: 12px; }
+.yt-results-header { font-family: var(--mono); font-size: 10px; color: var(--orange); letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,79,0,0.15); }
+.yt-results-list { display: flex; flex-direction: column; gap: 10px; }
+.yt-result { display: grid; grid-template-columns: 110px 1fr; gap: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,79,0,0.1); border-radius: 3px; padding: 8px; }
+.yt-thumb { aspect-ratio: 16/9; border-radius: 2px; overflow: hidden; cursor: pointer; background: var(--dark); position: relative; }
+.yt-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.yt-thumb::after { content:'▶'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--white); font-size: 22px; background: rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.2s; }
+.yt-thumb:hover::after { opacity: 1; }
+.yt-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.yt-title-r { font-size: 12px; color: var(--white); line-height: 1.3; font-weight: 600; }
+.yt-channel { font-family: var(--mono); font-size: 9px; color: var(--orange-light); }
+.yt-actions { display: flex; gap: 5px; margin-top: 4px; flex-wrap: wrap; }
+.yt-btn { padding: 4px 8px; font-family: var(--mono); font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; border: 1px solid rgba(255,79,0,0.3); background: rgba(255,79,0,0.06); color: var(--orange-light); border-radius: 2px; cursor: pointer; text-decoration: none; }
+.yt-btn:hover { background: var(--orange); color: var(--white); border-color: var(--orange); }
+.yt-player { grid-column: 1/-1; margin-top: 8px; }
+.yt-player iframe { width: 100%; aspect-ratio: 16/9; border: 1px solid rgba(255,79,0,0.2); border-radius: 3px; }
+
+@media (max-width: 600px) {
+  .yt-result { grid-template-columns: 90px 1fr; padding: 6px; }
+  .module-title { font-size: 24px; }
+  .ai-hero { padding: 12px 14px; }
+}
+
+/* ENSAYO · simplificado */
+.ensayo-card {
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.15);
+  border-radius: 4px;
+  padding: 22px;
+}
+.ensayo-empty {
+  text-align: center;
+  padding: 40px 20px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--gray);
+  letter-spacing: 0.15em;
+}
+
+.ensayo-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.ensayo-field { background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 3px; border-left: 2px solid var(--orange); }
+.ensayo-field-label { font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 4px; }
+.ensayo-field-value { font-size: 14px; color: var(--white); }
+
+/* EVENTOS musicales · cards simples */
+.eventos-list { display: flex; flex-direction: column; gap: 10px; }
+.evento-row {
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.1);
+  border-left: 3px solid var(--orange);
+  border-radius: 3px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+.evento-row:hover { background: rgba(255,79,0,0.04); }
+.evento-row.completado { border-left-color: var(--success); opacity: 0.7; }
+.evento-row.cancelado { border-left-color: var(--danger); opacity: 0.5; }
+.evento-info { min-width: 0; }
+.evento-titulo { font-size: 14px; color: var(--white); font-weight: 600; margin-bottom: 4px; }
+.evento-meta { font-family: var(--mono); font-size: 10px; color: var(--gray); letter-spacing: 0.05em; }
+.evento-pago { font-family: var(--mono); font-size: 13px; color: var(--orange); font-weight: 700; }
+</style>
+</head>
+<body>
+<a href="index.html" id="floatBack" style="position:fixed;top:10px;left:10px;z-index:99999;display:inline-flex;align-items:center;gap:5px;padding:8px 12px;background:var(--orange);color:white;text-decoration:none;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;border-radius:3px;box-shadow:0 4px 12px rgba(255,79,0,0.4);">
+  <span style="font-size:14px;line-height:1;">‹</span>
+  <span>Mando</span>
+</a>
+
+<main class="container">
+  
+  <div class="module-header">
+    <div class="module-eyebrow">▸ Música & banda</div>
+    <h1 class="module-title">Repertorio</h1>
+    <p class="module-sub">Tu setlist completo, ensayos y eventos</p>
+  </div>
+
+  <!-- AI Hero -->
+  <div class="ai-hero">
+    <div class="ai-hero-row">
+      <span class="g2c-star md solid"><span class="g2c-star-glyph">★</span></span>
+      <input type="text" class="ai-hero-input" id="aiInput" placeholder="Busca, registra, pregunta... 'Wonderwall', 'agenda boda 15 may', 'cumbia para evento'..." onkeydown="if(event.key==='Enter') aiSearch()">
+      <button class="ai-hero-btn" id="aiBtn" onclick="aiSearch()">▸ Buscar IA</button>
+    </div>
+    <div class="quick-chips">
+      <span class="quick-chip" onclick="quickFill('¿Qué ensayos tengo pendientes?')">▸ Ensayos pendientes</span>
+      <span class="quick-chip" onclick="quickFill('Lista todas las tocadas que tengo este mes')">▸ Tocadas del mes</span>
+      <span class="quick-chip" onclick="quickFill('¿Cuánto tengo proyectado de ingreso por tocadas confirmadas?')">▸ Ingreso proyectado</span>
+    </div>
+    <div class="ai-results" id="aiResults"></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="repertorio" onclick="switchTab('repertorio')">▣ Repertorio</button>
+    <button class="tab-btn" data-tab="eventos" onclick="switchTab('eventos')">▦ Eventos</button>
+    <button class="tab-btn" data-tab="ensayo" onclick="switchTab('ensayo')">♪ Ensayo</button>
+  </div>
+
+  <!-- TAB · Repertorio -->
+  <div class="tab-pane active" id="tab-repertorio">
+    <div class="repertoire-toolbar">
+      <input type="text" class="repertoire-search" id="repSearch" placeholder="Filtrar canciones..." oninput="renderSongs()">
+      <select class="repertoire-filter" id="repStatus" onchange="renderSongs()">
+        <option value="">Todos los status</option>
+        <option value="aprender">Por aprender</option>
+        <option value="ensayando">En ensayo</option>
+        <option value="dominada">Dominadas</option>
+      </select>
+    </div>
+    <div class="song-list" id="songList"></div>
+  </div>
+
+  <!-- TAB · Eventos -->
+  <div class="tab-pane" id="tab-eventos">
+    <div class="add-row">
+      <button class="btn btn-primary" onclick="openEventoModal()">+ Agendar evento musical</button>
+    </div>
+    <div class="eventos-list" id="eventosList"></div>
+  </div>
+
+  <!-- TAB · Ensayo -->
+  <div class="tab-pane" id="tab-ensayo">
+    <div class="ensayo-card" id="ensayoCard"></div>
+  </div>
+</main>
+
+<!-- MODAL Detalle de canción -->
+<div class="modal-overlay" id="songModal">
+  <div class="modal" style="max-width: 540px;">
+    <div class="modal-header">
+      <div class="modal-title" id="songModalTitle">Detalle de canción</div>
+      <button class="modal-close" onclick="closeModal('songModal')">✕</button>
+    </div>
+    <div class="modal-body" id="songModalBody"></div>
+    <div class="modal-footer" id="songModalFooter"></div>
+  </div>
+</div>
+</div>
+
+<!-- MODAL Evento musical -->
+<div class="modal-overlay" id="eventoModal">
+  <div class="modal" style="max-width: 540px;">
+    <div class="modal-header">
+      <div class="modal-title" id="eventoModalTitle">Evento musical</div>
+      <button class="modal-close" onclick="closeModal('eventoModal')">✕</button>
+    </div>
+    <div class="modal-body" id="eventoModalBody"></div>
+    <div class="modal-footer" id="eventoModalFooter"></div>
+  </div>
+</div>
+
+<!-- MODAL Ensayo -->
+<div class="modal-overlay" id="ensayoModal">
+  <div class="modal" style="max-width: 540px;">
+    <div class="modal-header">
+      <div class="modal-title" id="ensayoModalTitle">Ensayo</div>
+      <button class="modal-close" onclick="closeModal('ensayoModal')">✕</button>
+    </div>
+    <div class="modal-body" id="ensayoModalBody"></div>
+    <div class="modal-footer" id="ensayoModalFooter"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+const GENEROS = { rock: 'Rock', pop: 'Pop', balada: 'Balada', cumbia: 'Cumbia', ranchera: 'Ranchera', bolero: 'Bolero', alternativo: 'Alternativo', folk: 'Folk', reggae: 'Reggae', jazz: 'Jazz', electronica: 'Electrónica', reggaeton: 'Reggaeton', otro: 'Otro' };
+const STATUS_NAMES = { aprender: 'Por aprender', ensayando: 'Ensayando', dominada: 'Dominada' };
+const TIPOS_EVENTO = { boda: 'Boda', cumpleanos: 'Cumpleaños', quinceanera: 'Quinceañera', aniversario: 'Aniversario', bar: 'Bar', restaurante: 'Restaurante', suplencia: 'Suplencia', 'evento-corporativo': 'Corporativo', 'evento-privado': 'Privado', festival: 'Festival', otro: 'Otro' };
+const BANDAS = { 'grupo-son': 'Grupo Son', 'concepto-natural': 'Concepto Natural', 'free-concept': 'Free Concept', 'otro': 'Otro' };
+
+let canciones = load(STORAGE.CANCIONES, []);
+let eventosMusica = load(STORAGE.EVENTOS_MUSICA, []);
+let ensayoData = load(STORAGE.ENSAYO, {});
+let editingSongId = null;
+let editingEventoId = null;
+let modalSongTasks = [];
+let modalEventoTasks = [];
+
+(async () => {
+  const ok = await authGuard();
+  if (!ok) return;
+  renderSongs();
+  renderEventos();
+  renderEnsayo();
+  processDeepLinks();
+})();
+
+// =========================================
+// TABS
+// =========================================
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+}
+
+function processDeepLinks() {
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab');
+  const id = params.get('id');
+  const valid = ['repertorio', 'eventos', 'ensayo'];
+  if (tab && valid.includes(tab)) switchTab(tab);
+  if (id) {
+    setTimeout(() => {
+      if (canciones.find(c => c.id === id)) openSongModal(id);
+      else if (eventosMusica.find(e => e.id === id)) openEventoModal(id);
+      else if (id === 'ensayo') openEnsayoModal();
+    }, 200);
+  }
+  if (tab || id) window.history.replaceState({}, '', window.location.pathname);
+}
+
+// =========================================
+// REPERTORIO
+// =========================================
+function renderSongs() {
+  const search = (document.getElementById('repSearch').value || '').toLowerCase();
+  const status = document.getElementById('repStatus').value;
+  let filtered = canciones;
+  if (search) filtered = filtered.filter(c =>
+    (c.titulo||'').toLowerCase().includes(search) ||
+    (c.artista||'').toLowerCase().includes(search) ||
+    (c.genero||'').toLowerCase().includes(search)
+  );
+  if (status) filtered = filtered.filter(c => c.status === status);
+
+  const container = document.getElementById('songList');
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="song-empty">
+        <span class="star">★</span>
+        ${canciones.length === 0
+          ? 'Sin canciones aún · Usa el buscador IA arriba para agregar canciones a tu repertorio'
+          : 'Sin resultados con esos filtros'}
+      </div>
+    `;
+    return;
+  }
+
+  filtered.sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0));
+
+  container.innerHTML = `
+    <div class="song-list-header">
+      <div>Título</div>
+      <div>Artista</div>
+      <div>Género</div>
+      <div>Status</div>
+      <div></div>
+    </div>
+    ${filtered.map(c => `
+      <div class="song-row" onclick="openSongModal('${c.id}')">
+        <div class="song-title">${escapeHTML(c.titulo)}</div>
+        <div class="song-artist">${escapeHTML(c.artista || '—')}</div>
+        <div class="song-genre">${c.genero ? escapeHTML(GENEROS[c.genero] || c.genero) : '—'}</div>
+        <div><span class="song-status ${c.status||'aprender'}">${STATUS_NAMES[c.status]||'—'}</span></div>
+        <div class="song-arrow">›</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+let songModalMode = 'view'; // 'view' | 'edit'
+
+function openSongModal(id) {
+  editingSongId = id || null;
+  const song = id ? canciones.find(c => c.id === id) : null;
+  modalSongTasks = song ? (song.tareas || []).slice() : [];
+
+  // Si NO hay canción (id null) → modo edit directo (creación)
+  // Si hay canción → modo view por defecto
+  songModalMode = song ? 'view' : 'edit';
+
+  document.getElementById('songModal').classList.add('show');
+  renderSongModalContent();
+}
+
+function renderSongModalContent() {
+  const song = editingSongId ? canciones.find(c => c.id === editingSongId) : null;
+
+  document.getElementById('songModalTitle').textContent = song
+    ? (songModalMode === 'view' ? song.titulo : 'Editar canción')
+    : 'Nueva canción';
+
+  if (songModalMode === 'view' && song) {
+    renderSongView(song);
+  } else {
+    renderSongEdit(song);
+  }
+}
+
+function renderSongView(song) {
+  const ytSearch = song.youtubeUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent((song.titulo||'') + ' ' + (song.artista||''))}`;
+  const letraSearch = song.letraUrl || `https://genius.com/search?q=${encodeURIComponent((song.titulo||'') + ' ' + (song.artista||''))}`;
+  const statusColor = song.status === 'dominada' ? 'var(--success)' : song.status === 'ensayando' ? 'var(--orange)' : 'var(--gray-light)';
+  const statusLabel = STATUS_NAMES[song.status] || 'Por aprender';
+  const generoLabel = song.genero ? (GENEROS[song.genero] || song.genero) : '—';
+
+  document.getElementById('songModalBody').innerHTML = `
+    <!-- Cartilla principal -->
+    <div style="text-align: center; padding: 18px 14px; margin-bottom: 14px; background: linear-gradient(135deg, rgba(255,79,0,0.08), rgba(139,133,255,0.05)); border: 1px solid rgba(255,79,0,0.2); border-radius: 4px;">
+      <div style="font-size: 36px; color: var(--orange); margin-bottom: 6px; line-height: 1;">★</div>
+      <div style="font-family: var(--display); font-size: 22px; color: var(--white); line-height: 1.2; margin-bottom: 4px;">${escapeHTML(song.titulo)}</div>
+      <div style="font-family: var(--mono); font-size: 11px; color: var(--orange); letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700;">${escapeHTML(song.artista || 'Artista no especificado')}</div>
+    </div>
+
+    <!-- Atributos -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+      <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-left: 2px solid var(--info); border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--gray); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 3px;">Género</div>
+        <div style="font-size: 13px; color: var(--white); font-weight: 600;">${escapeHTML(generoLabel)}</div>
+      </div>
+      <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-left: 2px solid ${statusColor}; border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--gray); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 3px;">Status</div>
+        <div style="font-size: 13px; color: ${statusColor}; font-weight: 600;">${escapeHTML(statusLabel)}</div>
+      </div>
+    </div>
+
+    <!-- Botones video y letra · grandes y vistosos -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+      <a href="${escapeHTML(ytSearch)}" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px; background: var(--orange); color: var(--white); text-decoration: none; font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; border-radius: 3px; border: none; cursor: pointer;">
+        <span style="font-size: 16px; line-height: 1;">▶</span>
+        <span>Video</span>
+      </a>
+      <a href="${escapeHTML(letraSearch)}" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px; background: rgba(139,133,255,0.15); color: #8B85FF; text-decoration: none; font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; border: 1px solid #8B85FF; border-radius: 3px; cursor: pointer;">
+        <span style="font-size: 14px; line-height: 1;">♪</span>
+        <span>Letra</span>
+      </a>
+    </div>
+
+    ${song.anotaciones ? `
+      <div style="background: rgba(0,0,0,0.25); padding: 12px; border-left: 2px solid var(--gold); border-radius: 2px; margin-bottom: 14px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--gold); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 5px;">Anotaciones</div>
+        <div style="font-size: 12px; color: var(--white); line-height: 1.5; white-space: pre-wrap;">${escapeHTML(song.anotaciones)}</div>
+      </div>
+    ` : ''}
+
+    <!-- Tareas checklist · agregar/quitar al momento -->
+    <div style="background: rgba(0,0,0,0.25); padding: 12px; border: 1px solid rgba(255,79,0,0.15); border-radius: 3px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;">▸ Checklist</div>
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--gray);">${modalSongTasks.filter(t=>t.done).length}/${modalSongTasks.length}</div>
+      </div>
+      <div id="songViewTaskList" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;"></div>
+      <div style="display: flex; gap: 6px;">
+        <input type="text" id="newSongTaskView" placeholder="Agregar tarea..." onkeydown="if(event.key==='Enter') addSongTaskView()" style="flex: 1; padding: 8px 10px; background: var(--dark); border: 1px solid rgba(255,79,0,0.2); color: var(--white); font-size: 16px; border-radius: 2px; font-family: var(--body);">
+        <button onclick="addSongTaskView()" style="padding: 8px 12px; background: var(--orange); color: var(--white); border: none; font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; cursor: pointer; border-radius: 2px;">+ Add</button>
+      </div>
+    </div>
+  `;
+
+  renderSongTasksView();
+
+  // Footer · solo Editar y Cerrar
+  document.getElementById('songModalFooter').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal('songModal')">Cerrar</button>
+    <button class="btn btn-primary" onclick="switchToEditMode()">▸ Editar</button>
+  `;
+}
+
+function renderSongTasksView() {
+  const list = document.getElementById('songViewTaskList');
+  if (!list) return;
+  if (modalSongTasks.length === 0) {
+    list.innerHTML = '<div style="font-family: var(--mono); font-size: 10px; color: var(--gray); letter-spacing: 0.1em; padding: 6px 0; text-align: center;">Sin tareas aún</div>';
+    return;
+  }
+  list.innerHTML = modalSongTasks.map((t, i) => `
+    <div style="display: grid; grid-template-columns: 22px 1fr 24px; gap: 8px; align-items: center; padding: 6px 8px; background: ${t.done ? 'rgba(0,217,126,0.06)' : 'rgba(0,0,0,0.3)'}; border-left: 2px solid ${t.done ? 'var(--success)' : 'rgba(255,79,0,0.3)'}; border-radius: 2px;">
+      <button onclick="toggleSongTaskView(${i})" style="width: 18px; height: 18px; border: 1px solid ${t.done ? 'var(--success)' : 'rgba(255,79,0,0.4)'}; background: ${t.done ? 'var(--success)' : 'transparent'}; color: var(--white); font-size: 11px; line-height: 1; cursor: pointer; border-radius: 2px; padding: 0; display: flex; align-items: center; justify-content: center;">${t.done ? '✓' : ''}</button>
+      <span style="font-size: 12px; color: ${t.done ? 'var(--gray-light)' : 'var(--white)'}; ${t.done ? 'text-decoration: line-through;' : ''}">${escapeHTML(t.text)}</span>
+      <button onclick="deleteSongTaskView(${i})" style="width: 22px; height: 22px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--gray); font-size: 12px; cursor: pointer; border-radius: 2px; padding: 0;">✕</button>
+    </div>
+  `).join('');
+}
+
+function addSongTaskView() {
+  const input = document.getElementById('newSongTaskView');
+  const text = input.value.trim();
+  if (!text) return;
+  modalSongTasks.push({ text, done: false });
+  input.value = '';
+  // Persistir inmediato
+  persistSongTasks();
+  renderSongTasksView();
+}
+
+function toggleSongTaskView(i) {
+  modalSongTasks[i].done = !modalSongTasks[i].done;
+  persistSongTasks();
+  renderSongTasksView();
+}
+
+function deleteSongTaskView(i) {
+  modalSongTasks.splice(i, 1);
+  persistSongTasks();
+  renderSongTasksView();
+}
+
+function persistSongTasks() {
+  if (!editingSongId) return;
+  const idx = canciones.findIndex(c => c.id === editingSongId);
+  if (idx >= 0) {
+    canciones[idx].tareas = modalSongTasks.slice();
+    canciones[idx].updatedAt = Date.now();
+    save(STORAGE.CANCIONES, canciones);
+    // Refrescar contador en el header del checklist
+    const header = document.querySelector('#songModalBody [style*="0/0"], #songModalBody');
+    renderSongs();
+  }
+}
+
+function switchToEditMode() {
+  songModalMode = 'edit';
+  renderSongModalContent();
+}
+
+function switchToViewMode() {
+  songModalMode = 'view';
+  renderSongModalContent();
+}
+
+function renderSongEdit(song) {
+  // Helper · extraer ID de YouTube de cualquier URL
+  const getYTId = (url) => {
+    if (!url) return null;
+    const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : null;
+  };
+
+  const ytId = getYTId(song?.youtubeUrl);
+  const titulo = song?.titulo || '';
+  const artista = song?.artista || '';
+  const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(titulo + ' ' + artista)}`;
+  const letraUrl = song?.letraUrl || `https://genius.com/search?q=${encodeURIComponent(titulo + ' ' + artista)}`;
+
+  document.getElementById('songModalBody').innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+
+      <!-- Fila 1 · Título + Artista compactos -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>
+          <label style="display:block; font-family:var(--mono); font-size:9px; color:var(--orange); letter-spacing:0.18em; text-transform:uppercase; font-weight:700; margin-bottom:4px;">Título</label>
+          <input type="text" class="input" id="songTitulo" value="${escapeHTML(titulo)}" style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:14px;">
+        </div>
+        <div>
+          <label style="display:block; font-family:var(--mono); font-size:9px; color:var(--orange); letter-spacing:0.18em; text-transform:uppercase; font-weight:700; margin-bottom:4px;">Artista</label>
+          <input type="text" class="input" id="songArtista" value="${escapeHTML(artista)}" style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:14px;">
+        </div>
+      </div>
+
+      <!-- Fila 2 · Género + Status compactos -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>
+          <label style="display:block; font-family:var(--mono); font-size:9px; color:var(--orange); letter-spacing:0.18em; text-transform:uppercase; font-weight:700; margin-bottom:4px;">Género</label>
+          <select class="select" id="songGenero" style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:14px;">
+            <option value="">— Selecciona —</option>
+            ${Object.entries(GENEROS).map(([k,v]) => `<option value="${k}" ${song?.genero === k ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="display:block; font-family:var(--mono); font-size:9px; color:var(--orange); letter-spacing:0.18em; text-transform:uppercase; font-weight:700; margin-bottom:4px;">Status</label>
+          <select class="select" id="songStatus" style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:14px;">
+            <option value="aprender" ${(song?.status||'aprender') === 'aprender' ? 'selected' : ''}>Por aprender</option>
+            <option value="ensayando" ${song?.status === 'ensayando' ? 'selected' : ''}>En ensayo</option>
+            <option value="dominada" ${song?.status === 'dominada' ? 'selected' : ''}>Dominada</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 2 botones grandes · Reproducir + Letra -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+        <button onclick="toggleSongVideo()" id="songVideoToggleBtn" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:14px; background:var(--orange); color:var(--white); border:none; font-family:var(--mono); font-size:11px; letter-spacing:0.18em; text-transform:uppercase; font-weight:700; border-radius:3px; cursor:pointer;">
+          <span style="font-size:16px; line-height:1;">▶</span>
+          <span>Reproducir aquí</span>
+        </button>
+        <a href="${escapeHTML(letraUrl)}" target="_blank" rel="noopener" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:14px; background:rgba(139,133,255,0.15); color:#8B85FF; text-decoration:none; border:1px solid #8B85FF; font-family:var(--mono); font-size:11px; letter-spacing:0.18em; text-transform:uppercase; font-weight:700; border-radius:3px;">
+          <span style="font-size:14px; line-height:1;">♪</span>
+          <span>Letra</span>
+        </a>
+      </div>
+
+      <!-- YouTube embed (oculto por default · se muestra al tap "Reproducir aquí") -->
+      <div id="songVideoEmbed" style="display:none; margin-top:4px;">
+        <div style="position:relative; width:100%; padding-bottom:56.25%; background:#000; border-radius:3px; overflow:hidden; border:1px solid var(--orange);">
+          <div id="songVideoIframeContainer" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:6px;">
+          <button onclick="closeSongVideo()" style="flex:1; padding:8px; background:rgba(255,255,255,0.05); color:var(--gray-light); border:1px solid rgba(255,255,255,0.1); font-family:var(--mono); font-size:9px; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; border-radius:2px;">✕ Cerrar video</button>
+          <a href="${escapeHTML(song?.youtubeUrl || ytSearchUrl)}" target="_blank" rel="noopener" style="flex:1; padding:8px; background:rgba(255,79,0,0.1); color:var(--orange); border:1px solid rgba(255,79,0,0.3); font-family:var(--mono); font-size:9px; letter-spacing:0.15em; text-transform:uppercase; text-decoration:none; text-align:center; border-radius:2px;">▸ Abrir en YouTube</a>
+        </div>
+      </div>
+
+      <!-- URL YouTube · colapsable bajo botón "Cambiar URL video" -->
+      <details style="margin-top:0;">
+        <summary style="cursor:pointer; padding:6px 0; font-family:var(--mono); font-size:9px; color:var(--gray); letter-spacing:0.15em; text-transform:uppercase; user-select:none;">▸ URL personalizada YouTube / Genius</summary>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+          <input type="url" class="input" id="songYoutube" value="${escapeHTML(song?.youtubeUrl || '')}" placeholder="https://www.youtube.com/watch?v=..." style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:13px;">
+          <input type="url" class="input" id="songLetra" value="${escapeHTML(song?.letraUrl || '')}" placeholder="https://genius.com/..." style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:13px;">
+        </div>
+      </details>
+
+      <!-- Anotaciones compactas -->
+      <div>
+        <label style="display:block; font-family:var(--mono); font-size:9px; color:var(--orange); letter-spacing:0.18em; text-transform:uppercase; font-weight:700; margin-bottom:4px;">Anotaciones</label>
+        <textarea class="textarea" id="songAnotaciones" placeholder="Acordes, tonalidad, tips..." style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:13px; min-height:60px; resize:vertical;">${escapeHTML(song?.anotaciones || '')}</textarea>
+      </div>
+
+    </div>
+  `;
+
+  // Footer · solo Eliminar (si existe) + Guardar · Cancelar = X arriba
+  document.getElementById('songModalFooter').innerHTML = song
+    ? `
+      <button class="btn btn-danger" onclick="deleteSong()" style="flex:1;">Eliminar</button>
+      <button class="btn btn-primary" onclick="saveSong()" style="flex:2;">✓ Guardar</button>
+    `
+    : `
+      <button class="btn btn-primary" onclick="saveSong()" style="flex:1;">✓ Crear canción</button>
+    `;
+
+  // Auto-load embed si ya hay video registrado · solo en mobile no para no consumir data
+  // Lo dejamos manual (tap "Reproducir aquí") para que el usuario decida
+}
+
+// Toggle YouTube embed dentro del modal
+function toggleSongVideo() {
+  const embed = document.getElementById('songVideoEmbed');
+  const btn = document.getElementById('songVideoToggleBtn');
+  if (!embed) return;
+
+  // Si ya está abierto · cerrar
+  if (embed.style.display !== 'none') {
+    closeSongVideo();
+    return;
+  }
+
+  // Obtener URL YouTube actual del input
+  const ytUrlInput = document.getElementById('songYoutube');
+  const ytUrl = ytUrlInput ? ytUrlInput.value.trim() : '';
+
+  const getYTId = (url) => {
+    if (!url) return null;
+    const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : null;
+  };
+
+  const ytId = getYTId(ytUrl);
+
+  if (!ytId) {
+    // No hay URL válida · buscar en YouTube con título + artista
+    const titulo = document.getElementById('songTitulo')?.value || '';
+    const artista = document.getElementById('songArtista')?.value || '';
+    if (!titulo) {
+      showToast('Captura el título primero o pega URL de YouTube', true);
+      return;
+    }
+    // Abrir búsqueda de YouTube en pestaña nueva (no se puede embed sin ID)
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(titulo + ' ' + artista)}`;
+    window.open(searchUrl, '_blank');
+    showToast('Pega URL del video en "URL personalizada" para reproducir aquí', true);
+    return;
+  }
+
+  // Inyectar iframe del embed
+  const container = document.getElementById('songVideoIframeContainer');
+  container.innerHTML = `
+    <iframe
+      src="https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1"
+      style="width:100%; height:100%; border:0;"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen
+    ></iframe>
+  `;
+  embed.style.display = 'block';
+  btn.innerHTML = '<span style="font-size:16px; line-height:1;">⏸</span><span>Pausar / Cerrar</span>';
+
+  // Scroll al video
+  setTimeout(() => embed.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+}
+
+function closeSongVideo() {
+  const embed = document.getElementById('songVideoEmbed');
+  const btn = document.getElementById('songVideoToggleBtn');
+  if (embed) {
+    embed.style.display = 'none';
+    document.getElementById('songVideoIframeContainer').innerHTML = ''; // detener video
+  }
+  if (btn) {
+    btn.innerHTML = '<span style="font-size:16px; line-height:1;">▶</span><span>Reproducir aquí</span>';
+  }
+}
+
+function renderSongTasks() {
+  const list = document.getElementById('songTaskList');
+  if (!list) return;
+  if (modalSongTasks.length === 0) {
+    list.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--gray);letter-spacing:0.1em;padding:8px 0;">Sin tareas</div>';
+    return;
+  }
+  list.innerHTML = modalSongTasks.map((t, i) => `
+    <div class="task-item ${t.done ? 'done' : ''}">
+      <button class="task-checkbox ${t.done ? 'done' : ''}" onclick="toggleSongTask(${i})">${t.done ? '✓' : ''}</button>
+      <span class="task-text">${escapeHTML(t.text)}</span>
+      <button class="task-delete" onclick="deleteSongTask(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function addSongTask() {
+  const input = document.getElementById('newSongTask');
+  const text = input.value.trim();
+  if (!text) return;
+  modalSongTasks.push({ text, done: false });
+  input.value = '';
+  renderSongTasks();
+}
+function toggleSongTask(i) { modalSongTasks[i].done = !modalSongTasks[i].done; renderSongTasks(); }
+function deleteSongTask(i) { modalSongTasks.splice(i, 1); renderSongTasks(); }
+
+function saveSong() {
+  const titulo = document.getElementById('songTitulo').value.trim();
+  if (!titulo) { showToast('Captura el título', true); return; }
+
+  const data = {
+    titulo,
+    artista: document.getElementById('songArtista').value.trim(),
+    genero: document.getElementById('songGenero').value,
+    status: document.getElementById('songStatus').value,
+    letraUrl: document.getElementById('songLetra').value.trim(),
+    youtubeUrl: document.getElementById('songYoutube').value.trim(),
+    anotaciones: document.getElementById('songAnotaciones').value.trim(),
+    tareas: modalSongTasks.slice()
+  };
+
+  if (editingSongId) {
+    const idx = canciones.findIndex(c => c.id === editingSongId);
+    if (idx >= 0) canciones[idx] = { ...canciones[idx], ...data, updatedAt: Date.now() };
+    save(STORAGE.CANCIONES, canciones);
+    renderSongs();
+    // Después de editar, volver a modo view
+    songModalMode = 'view';
+    renderSongModalContent();
+    showToast('✓ Canción actualizada');
+  } else {
+    const newSong = { id: uid('song'), ...data, createdAt: Date.now(), updatedAt: Date.now() };
+    canciones.push(newSong);
+    save(STORAGE.CANCIONES, canciones);
+    renderSongs();
+    // Después de crear, mostrar la cartilla
+    editingSongId = newSong.id;
+    songModalMode = 'view';
+    renderSongModalContent();
+    showToast('✓ Canción agregada al repertorio');
+  }
+}
+
+function deleteSong() {
+  if (!editingSongId) return;
+  if (!confirm('¿Eliminar esta canción?')) return;
+  canciones = canciones.filter(c => c.id !== editingSongId);
+  save(STORAGE.CANCIONES, canciones);
+  closeModal('songModal');
+  renderSongs();
+  showToast('Canción eliminada');
+}
+
+// =========================================
+// EVENTOS MUSICALES
+// =========================================
+function renderEventos() {
+  const container = document.getElementById('eventosList');
+  if (eventosMusica.length === 0) {
+    container.innerHTML = `<div class="song-empty"><span class="star">★</span>Sin eventos agendados</div>`;
+    return;
+  }
+
+  const sorted = eventosMusica.slice().sort((a,b) => (a.fecha || '').localeCompare(b.fecha || ''));
+  container.innerHTML = sorted.map(e => `
+    <div class="evento-row ${e.status||''}" onclick="openEventoModal('${e.id}')">
+      <div class="evento-info">
+        <div class="evento-titulo">${escapeHTML(e.titulo)}</div>
+        <div class="evento-meta">
+          ${e.fecha || 'sin fecha'}${e.hora ? ' · '+e.hora : ''}
+          ${e.tipo ? ' · '+escapeHTML(TIPOS_EVENTO[e.tipo]||e.tipo) : ''}
+          ${e.grupo ? ' · '+escapeHTML(BANDAS[e.grupo]||e.grupo) : ''}
+          ${e.ubicacion ? ' · 📍 '+escapeHTML(e.ubicacion) : ''}
+        </div>
+      </div>
+      ${e.pago ? `<div class="evento-pago">$${formatMoney(e.pago)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+let eventoModalMode = 'view'; // 'view' | 'edit'
+
+function openEventoModal(id) {
+  editingEventoId = id || null;
+  const ev = id ? eventosMusica.find(e => e.id === id) : null;
+  modalEventoTasks = ev ? (ev.tareas || []).slice() : [];
+
+  // Si NO hay evento → modo edit (creación)
+  // Si hay → modo view por defecto
+  eventoModalMode = ev ? 'view' : 'edit';
+
+  document.getElementById('eventoModal').classList.add('show');
+  renderEventoModalContent();
+}
+
+function renderEventoModalContent() {
+  const ev = editingEventoId ? eventosMusica.find(e => e.id === editingEventoId) : null;
+
+  document.getElementById('eventoModalTitle').textContent = ev
+    ? (eventoModalMode === 'view' ? (ev.titulo || 'Evento') : 'Editar evento')
+    : 'Nuevo evento musical';
+
+  if (eventoModalMode === 'view' && ev) {
+    renderEventoView(ev);
+  } else {
+    renderEventoEdit(ev);
+  }
+}
+
+function renderEventoView(ev) {
+  const tipoLabel = ev.tipo ? (TIPOS_EVENTO[ev.tipo] || ev.tipo) : '—';
+  const grupoLabel = ev.grupo ? (BANDAS[ev.grupo] || ev.grupo) : '—';
+  const statusColors = { tentativo: 'var(--gray-light)', confirmado: 'var(--orange)', completado: 'var(--success)', cancelado: 'var(--danger)' };
+  const statusLabels = { tentativo: 'Tentativo', confirmado: 'Confirmado', completado: 'Completado', cancelado: 'Cancelado' };
+  const statusColor = statusColors[ev.status] || 'var(--gray-light)';
+  const statusLabel = statusLabels[ev.status] || 'Tentativo';
+
+  // Formato fecha
+  let fechaFmt = ev.fecha;
+  let horaFmt = ev.hora || '';
+  if (ev.fecha) {
+    const d = new Date(ev.fecha + 'T12:00:00');
+    fechaFmt = d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  document.getElementById('eventoModalBody').innerHTML = `
+    <!-- Cartilla principal -->
+    <div style="text-align: center; padding: 18px 14px; margin-bottom: 14px; background: linear-gradient(135deg, rgba(255,79,0,0.08), rgba(139,133,255,0.05)); border: 1px solid rgba(255,79,0,0.2); border-radius: 4px;">
+      <div style="font-size: 36px; color: var(--orange); margin-bottom: 6px; line-height: 1;">★</div>
+      <div style="font-family: var(--display); font-size: 22px; color: var(--white); line-height: 1.2; margin-bottom: 4px;">${escapeHTML(ev.titulo)}</div>
+      <div style="font-family: var(--mono); font-size: 11px; color: var(--orange); letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700;">${escapeHTML(tipoLabel)}${grupoLabel !== '—' ? ' · ' + escapeHTML(grupoLabel) : ''}</div>
+    </div>
+
+    <!-- Atributos en grid 2x2 -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+      <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-left: 2px solid var(--info); border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--gray); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 3px;">Fecha</div>
+        <div style="font-size: 12px; color: var(--white); font-weight: 600; line-height: 1.3;">${escapeHTML(fechaFmt)}</div>
+        ${horaFmt ? `<div style="font-family: var(--mono); font-size: 10px; color: var(--orange); margin-top: 2px;">${escapeHTML(horaFmt)} hrs</div>` : ''}
+      </div>
+      <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-left: 2px solid ${statusColor}; border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--gray); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 3px;">Status</div>
+        <div style="font-size: 13px; color: ${statusColor}; font-weight: 700;">${escapeHTML(statusLabel)}</div>
+        ${ev.pago > 0 ? `<div style="font-family: var(--mono); font-size: 10px; color: var(--success); margin-top: 2px;">$${Number(ev.pago).toLocaleString('es-MX')}</div>` : ''}
+      </div>
+    </div>
+
+    ${(ev.ubicacion || ev.contacto) ? `
+      <div style="background: rgba(0,0,0,0.25); padding: 10px 12px; border-left: 2px solid var(--gold); border-radius: 2px; margin-bottom: 14px;">
+        ${ev.ubicacion ? `
+          <div style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: ${ev.contacto ? '6px' : '0'};">
+            <span style="font-family: var(--mono); font-size: 9px; color: var(--gold); letter-spacing: 0.15em; text-transform: uppercase; min-width: 70px;">Ubicación</span>
+            <span style="font-size: 12px; color: var(--white); flex: 1;">${escapeHTML(ev.ubicacion)}</span>
+          </div>
+        ` : ''}
+        ${ev.contacto ? `
+          <div style="display: flex; gap: 8px; align-items: flex-start;">
+            <span style="font-family: var(--mono); font-size: 9px; color: var(--gold); letter-spacing: 0.15em; text-transform: uppercase; min-width: 70px;">Contacto</span>
+            <span style="font-size: 12px; color: var(--white); flex: 1;">${escapeHTML(ev.contacto)}</span>
+          </div>
+        ` : ''}
+      </div>
+    ` : '<div style="height: 6px;"></div>'}
+
+    <!-- Tareas checklist · agregar/quitar al momento -->
+    <div style="background: rgba(0,0,0,0.25); padding: 12px; border: 1px solid rgba(255,79,0,0.15); border-radius: 3px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;">▸ Checklist del evento</div>
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--gray);">${modalEventoTasks.filter(t=>t.done).length}/${modalEventoTasks.length}</div>
+      </div>
+      <div id="evtViewTaskList" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;"></div>
+      <div style="display: flex; gap: 6px;">
+        <input type="text" id="newEvtTaskView" placeholder="Agregar tarea..." onkeydown="if(event.key==='Enter') addEvtTaskView()" style="flex: 1; padding: 8px 10px; background: var(--dark); border: 1px solid rgba(255,79,0,0.2); color: var(--white); font-size: 16px; border-radius: 2px; font-family: var(--body);">
+        <button onclick="addEvtTaskView()" style="padding: 8px 12px; background: var(--orange); color: var(--white); border: none; font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; cursor: pointer; border-radius: 2px;">+ Add</button>
+      </div>
+    </div>
+  `;
+
+  renderEvtTasksView();
+
+  // Footer · Cerrar y Editar
+  document.getElementById('eventoModalFooter').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal('eventoModal')">Cerrar</button>
+    <button class="btn btn-primary" onclick="switchEventoToEdit()">▸ Editar</button>
+  `;
+}
+
+function renderEvtTasksView() {
+  const list = document.getElementById('evtViewTaskList');
+  if (!list) return;
+  if (modalEventoTasks.length === 0) {
+    list.innerHTML = '<div style="font-family: var(--mono); font-size: 10px; color: var(--gray); padding: 6px 0; text-align: center;">Sin tareas aún</div>';
+    return;
+  }
+  list.innerHTML = modalEventoTasks.map((t, i) => `
+    <div style="display: grid; grid-template-columns: 22px 1fr 24px; gap: 8px; align-items: center; padding: 6px 8px; background: ${t.done ? 'rgba(0,217,126,0.06)' : 'rgba(0,0,0,0.3)'}; border-left: 2px solid ${t.done ? 'var(--success)' : 'rgba(255,79,0,0.3)'}; border-radius: 2px;">
+      <button onclick="toggleEvtTaskView(${i})" style="width: 18px; height: 18px; border: 1px solid ${t.done ? 'var(--success)' : 'rgba(255,79,0,0.4)'}; background: ${t.done ? 'var(--success)' : 'transparent'}; color: var(--white); font-size: 11px; line-height: 1; cursor: pointer; border-radius: 2px; padding: 0; display: flex; align-items: center; justify-content: center;">${t.done ? '✓' : ''}</button>
+      <span style="font-size: 12px; color: ${t.done ? 'var(--gray-light)' : 'var(--white)'}; ${t.done ? 'text-decoration: line-through;' : ''}">${escapeHTML(t.text)}</span>
+      <button onclick="deleteEvtTaskView(${i})" style="width: 22px; height: 22px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--gray); font-size: 12px; cursor: pointer; border-radius: 2px; padding: 0;">✕</button>
+    </div>
+  `).join('');
+}
+
+function addEvtTaskView() {
+  const input = document.getElementById('newEvtTaskView');
+  const text = input.value.trim();
+  if (!text) return;
+  modalEventoTasks.push({ text, done: false });
+  input.value = '';
+  persistEvtTasks();
+  renderEvtTasksView();
+}
+
+function toggleEvtTaskView(i) {
+  modalEventoTasks[i].done = !modalEventoTasks[i].done;
+  persistEvtTasks();
+  renderEvtTasksView();
+}
+
+function deleteEvtTaskView(i) {
+  modalEventoTasks.splice(i, 1);
+  persistEvtTasks();
+  renderEvtTasksView();
+}
+
+function persistEvtTasks() {
+  if (!editingEventoId) return;
+  const idx = eventosMusica.findIndex(e => e.id === editingEventoId);
+  if (idx >= 0) {
+    eventosMusica[idx].tareas = modalEventoTasks.slice();
+    eventosMusica[idx].updatedAt = Date.now();
+    save(STORAGE.EVENTOS_MUSICA, eventosMusica);
+    renderEventos();
+  }
+}
+
+function switchEventoToEdit() {
+  eventoModalMode = 'edit';
+  renderEventoModalContent();
+}
+
+function switchEventoToView() {
+  eventoModalMode = 'view';
+  renderEventoModalContent();
+}
+
+function renderEventoEdit(ev) {
+  document.getElementById('eventoModalBody').innerHTML = `
+    <div class="detail-form">
+      <div>
+        <label class="label">Título / Nombre del evento</label>
+        <input type="text" class="input" id="evtTitulo" value="${escapeHTML(ev?.titulo || '')}" placeholder="Boda Carlos & Ana">
+      </div>
+      <div class="detail-form-row">
+        <div>
+          <label class="label">Fecha</label>
+          <input type="date" class="input" id="evtFecha" value="${ev?.fecha || ''}">
+        </div>
+        <div>
+          <label class="label">Hora</label>
+          <input type="time" class="input" id="evtHora" value="${ev?.hora || ''}">
+        </div>
+      </div>
+      <div class="detail-form-row">
+        <div>
+          <label class="label">Tipo</label>
+          <select class="select" id="evtTipo">
+            <option value="">—</option>
+            ${Object.entries(TIPOS_EVENTO).map(([k,v]) => `<option value="${k}" ${ev?.tipo === k ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="label">Grupo / Banda</label>
+          <select class="select" id="evtGrupo">
+            <option value="">—</option>
+            ${Object.entries(BANDAS).map(([k,v]) => `<option value="${k}" ${ev?.grupo === k ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="detail-form-row">
+        <div>
+          <label class="label">Pago ($)</label>
+          <input type="number" class="input" id="evtPago" value="${ev?.pago || ''}" placeholder="5000">
+        </div>
+        <div>
+          <label class="label">Status</label>
+          <select class="select" id="evtStatus">
+            <option value="tentativo" ${(ev?.status||'tentativo') === 'tentativo' ? 'selected' : ''}>Tentativo</option>
+            <option value="confirmado" ${ev?.status === 'confirmado' ? 'selected' : ''}>Confirmado</option>
+            <option value="completado" ${ev?.status === 'completado' ? 'selected' : ''}>Completado</option>
+            <option value="cancelado" ${ev?.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="label">Ubicación</label>
+        <input type="text" class="input" id="evtUbicacion" value="${escapeHTML(ev?.ubicacion || '')}" placeholder="Salón Real, Tijuana">
+      </div>
+      <div>
+        <label class="label">Contacto</label>
+        <input type="text" class="input" id="evtContacto" value="${escapeHTML(ev?.contacto || '')}" placeholder="Carlos · 664...">
+      </div>
+    </div>
+  `;
+
+  // Footer dinámico
+  document.getElementById('eventoModalFooter').innerHTML = `
+    ${ev ? `<button class="btn btn-danger" onclick="deleteEvento()">Eliminar</button>` : ''}
+    <button class="btn btn-secondary" onclick="${ev ? 'switchEventoToView()' : "closeModal('eventoModal')"}">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveEvento()">${ev ? '✓ Guardar' : '✓ Crear'}</button>
+  `;
+}
+
+function renderEvtTasks() {
+  // Función legacy · ya no se usa en vista, pero mantenida por compatibilidad
+  renderEvtTasksView();
+}
+
+function addEvtTask() { addEvtTaskView(); }
+function toggleEvtTask(i) { toggleEvtTaskView(i); }
+function deleteEvtTask(i) { deleteEvtTaskView(i); }
+
+function saveEvento() {
+  const titulo = document.getElementById('evtTitulo').value.trim();
+  const fecha = document.getElementById('evtFecha').value;
+  if (!titulo) { showToast('Captura el nombre del evento', true); return; }
+  if (!fecha) { showToast('Selecciona una fecha', true); return; }
+
+  const data = {
+    titulo, fecha,
+    hora: document.getElementById('evtHora').value,
+    tipo: document.getElementById('evtTipo').value,
+    grupo: document.getElementById('evtGrupo').value,
+    pago: Number(document.getElementById('evtPago').value) || 0,
+    status: document.getElementById('evtStatus').value,
+    ubicacion: document.getElementById('evtUbicacion').value.trim(),
+    contacto: document.getElementById('evtContacto').value.trim(),
+    tareas: modalEventoTasks.slice()
+  };
+
+  let savedId;
+  if (editingEventoId) {
+    const idx = eventosMusica.findIndex(e => e.id === editingEventoId);
+    if (idx >= 0) eventosMusica[idx] = { ...eventosMusica[idx], ...data, updatedAt: Date.now() };
+    savedId = editingEventoId;
+  } else {
+    savedId = uid('evt');
+    eventosMusica.push({ id: savedId, ...data, createdAt: Date.now(), updatedAt: Date.now() });
+  }
+  save(STORAGE.EVENTOS_MUSICA, eventosMusica);
+  syncEventoToCalendario(savedId, data);
+  renderEventos();
+
+  // Después de guardar, volver a modo view
+  editingEventoId = savedId;
+  eventoModalMode = 'view';
+  renderEventoModalContent();
+  showToast(editingEventoId ? '✓ Evento actualizado y sincronizado' : '✓ Evento agendado y sincronizado al calendario');
+}
+
+function syncEventoToCalendario(eventoId, data) {
+  const cal = load(STORAGE.CALENDARIO, []);
+  const idx = cal.findIndex(c => c.sourceModule === 'musica' && c.sourceId === eventoId);
+
+  if (data.status === 'cancelado') {
+    if (idx >= 0) { cal.splice(idx, 1); save(STORAGE.CALENDARIO, cal); }
+    return;
+  }
+
+  const tipoName = data.tipo ? (TIPOS_EVENTO[data.tipo] || data.tipo) : 'Evento';
+  const grupoName = data.grupo ? (BANDAS[data.grupo] || data.grupo) : '';
+  const ce = {
+    title: `🎵 ${tipoName}: ${data.titulo}${grupoName ? ' · ' + grupoName : ''}`,
+    date: data.fecha,
+    time: data.hora || '',
+    category: data.status === 'completado' ? 'cobro' : 'musica',
+    amount: data.pago || '',
+    notes: `${data.ubicacion ? 'Ubicación: '+data.ubicacion+'\n' : ''}${data.contacto ? 'Contacto: '+data.contacto+'\n' : ''}Status: ${data.status}`,
+    sourceModule: 'musica', sourceId: eventoId, sourceTab: 'eventos',
+    createdAt: idx >= 0 ? cal[idx].createdAt : Date.now()
+  };
+  if (idx >= 0) { ce.id = cal[idx].id; cal[idx] = ce; }
+  else { ce.id = uid('cal_musica_evt'); cal.push(ce); }
+  save(STORAGE.CALENDARIO, cal);
+}
+
+function deleteEvento() {
+  if (!editingEventoId) return;
+  if (!confirm('¿Eliminar este evento? También se eliminará del calendario.')) return;
+  let cal = load(STORAGE.CALENDARIO, []);
+  cal = cal.filter(c => !(c.sourceModule === 'musica' && c.sourceId === editingEventoId));
+  save(STORAGE.CALENDARIO, cal);
+  eventosMusica = eventosMusica.filter(e => e.id !== editingEventoId);
+  save(STORAGE.EVENTOS_MUSICA, eventosMusica);
+  closeModal('eventoModal');
+  renderEventos();
+  showToast('Evento eliminado');
+}
+
+// =========================================
+// ENSAYO
+// =========================================
+function renderEnsayo() {
+  const card = document.getElementById('ensayoCard');
+  if (!ensayoData.fecha) {
+    card.innerHTML = `
+      <div class="ensayo-empty">
+        <div style="font-size:32px;color:var(--orange);margin-bottom:14px;">★</div>
+        <div style="margin-bottom:18px;">Sin ensayo agendado</div>
+        <button class="btn btn-primary" onclick="openEnsayoModal()">+ Configurar ensayo</button>
+      </div>
+    `;
+    return;
+  }
+
+  const banda = ensayoData.banda === 'otro' ? (ensayoData.bandaOtro || 'Otro') : (BANDAS[ensayoData.banda] || 'Banda');
+  card.innerHTML = `
+    <div class="ensayo-info">
+      <div class="ensayo-field">
+        <div class="ensayo-field-label">Fecha</div>
+        <div class="ensayo-field-value">${ensayoData.fecha}</div>
+      </div>
+      <div class="ensayo-field">
+        <div class="ensayo-field-label">Hora</div>
+        <div class="ensayo-field-value">${ensayoData.hora || '—'}</div>
+      </div>
+      <div class="ensayo-field">
+        <div class="ensayo-field-label">Banda</div>
+        <div class="ensayo-field-value">${escapeHTML(banda)}</div>
+      </div>
+      <div class="ensayo-field">
+        <div class="ensayo-field-label">Ubicación</div>
+        <div class="ensayo-field-value">${escapeHTML(ensayoData.ubicacion || '—')}</div>
+      </div>
+    </div>
+    ${ensayoData.notas ? `
+    <div style="margin-bottom:18px;">
+      <div class="ensayo-field-label">Notas</div>
+      <div style="font-size:13px;color:var(--white);background:rgba(0,0,0,0.3);padding:12px;border-radius:3px;white-space:pre-wrap;">${escapeHTML(ensayoData.notas)}</div>
+    </div>
+    ` : ''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="openEnsayoModal()">▸ Editar</button>
+    </div>
+  `;
+}
+
+let ensayoModalMode = 'view'; // 'view' | 'edit'
+
+function openEnsayoModal() {
+  // Si no hay ensayo agendado, abrir directo en modo edit
+  ensayoModalMode = ensayoData.fecha ? 'view' : 'edit';
+  document.getElementById('ensayoModal').classList.add('show');
+  renderEnsayoModalContent();
+}
+
+function renderEnsayoModalContent() {
+  const hasEnsayo = !!ensayoData.fecha;
+
+  document.getElementById('ensayoModalTitle').textContent = hasEnsayo
+    ? (ensayoModalMode === 'view' ? 'Ensayo agendado' : 'Editar ensayo')
+    : 'Configurar ensayo';
+
+  if (ensayoModalMode === 'view' && hasEnsayo) {
+    renderEnsayoView();
+  } else {
+    renderEnsayoEdit();
+  }
+}
+
+function renderEnsayoView() {
+  const banda = ensayoData.banda === 'otro' ? (ensayoData.bandaOtro || 'Otro') : (BANDAS[ensayoData.banda] || 'Banda no especificada');
+
+  // Formato fecha
+  let fechaFmt = ensayoData.fecha;
+  if (ensayoData.fecha) {
+    const d = new Date(ensayoData.fecha + 'T12:00:00');
+    fechaFmt = d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  // Asegurar tareas
+  if (!ensayoData.tareas) ensayoData.tareas = [];
+  const tareas = ensayoData.tareas;
+
+  document.getElementById('ensayoModalBody').innerHTML = `
+    <!-- Cartilla principal -->
+    <div style="text-align: center; padding: 18px 14px; margin-bottom: 14px; background: linear-gradient(135deg, rgba(255,79,0,0.08), rgba(139,133,255,0.05)); border: 1px solid rgba(255,79,0,0.2); border-radius: 4px;">
+      <div style="font-size: 36px; color: var(--orange); margin-bottom: 6px; line-height: 1;">★</div>
+      <div style="font-family: var(--display); font-size: 22px; color: var(--white); line-height: 1.2; margin-bottom: 4px;">Ensayo</div>
+      <div style="font-family: var(--mono); font-size: 11px; color: var(--orange); letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700;">${escapeHTML(banda)}</div>
+    </div>
+
+    <!-- Atributos en grid 2x2 -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+      <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-left: 2px solid var(--info); border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--gray); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 3px;">Fecha</div>
+        <div style="font-size: 12px; color: var(--white); font-weight: 600; line-height: 1.3;">${escapeHTML(fechaFmt)}</div>
+        ${ensayoData.hora ? `<div style="font-family: var(--mono); font-size: 10px; color: var(--orange); margin-top: 2px;">${escapeHTML(ensayoData.hora)} hrs</div>` : ''}
+      </div>
+      <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-left: 2px solid var(--gold); border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--gray); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 3px;">Ubicación</div>
+        <div style="font-size: 12px; color: var(--white); font-weight: 600; line-height: 1.3;">${escapeHTML(ensayoData.ubicacion || 'Sin definir')}</div>
+      </div>
+    </div>
+
+    ${ensayoData.notas ? `
+      <div style="background: rgba(0,0,0,0.25); padding: 10px 12px; border-left: 2px solid var(--gold); border-radius: 2px; margin-bottom: 14px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--gold); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 5px;">Notas</div>
+        <div style="font-size: 12px; color: var(--white); line-height: 1.5; white-space: pre-wrap;">${escapeHTML(ensayoData.notas)}</div>
+      </div>
+    ` : '<div style="height: 6px;"></div>'}
+
+    <!-- Tareas checklist · agregar/quitar al momento -->
+    <div style="background: rgba(0,0,0,0.25); padding: 12px; border: 1px solid rgba(255,79,0,0.15); border-radius: 3px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;">▸ Checklist del ensayo</div>
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--gray);">${tareas.filter(t=>t.done).length}/${tareas.length}</div>
+      </div>
+      <div id="ensViewTaskList" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;"></div>
+      <div style="display: flex; gap: 6px;">
+        <input type="text" id="newEnsTaskView" placeholder="Agregar tarea..." onkeydown="if(event.key==='Enter') addEnsTaskView()" style="flex: 1; padding: 8px 10px; background: var(--dark); border: 1px solid rgba(255,79,0,0.2); color: var(--white); font-size: 16px; border-radius: 2px; font-family: var(--body);">
+        <button onclick="addEnsTaskView()" style="padding: 8px 12px; background: var(--orange); color: var(--white); border: none; font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; cursor: pointer; border-radius: 2px;">+ Add</button>
+      </div>
+    </div>
+  `;
+
+  renderEnsTasksView();
+
+  // Footer · Cerrar y Editar
+  document.getElementById('ensayoModalFooter').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal('ensayoModal')">Cerrar</button>
+    <button class="btn btn-primary" onclick="switchEnsayoToEdit()">▸ Editar</button>
+  `;
+}
+
+function renderEnsTasksView() {
+  const list = document.getElementById('ensViewTaskList');
+  if (!list) return;
+  if (!ensayoData.tareas) ensayoData.tareas = [];
+  const tareas = ensayoData.tareas;
+  if (tareas.length === 0) {
+    list.innerHTML = '<div style="font-family: var(--mono); font-size: 10px; color: var(--gray); padding: 6px 0; text-align: center;">Sin tareas aún</div>';
+    return;
+  }
+  list.innerHTML = tareas.map((t, i) => `
+    <div style="display: grid; grid-template-columns: 22px 1fr 24px; gap: 8px; align-items: center; padding: 6px 8px; background: ${t.done ? 'rgba(0,217,126,0.06)' : 'rgba(0,0,0,0.3)'}; border-left: 2px solid ${t.done ? 'var(--success)' : 'rgba(255,79,0,0.3)'}; border-radius: 2px;">
+      <button onclick="toggleEnsTaskView(${i})" style="width: 18px; height: 18px; border: 1px solid ${t.done ? 'var(--success)' : 'rgba(255,79,0,0.4)'}; background: ${t.done ? 'var(--success)' : 'transparent'}; color: var(--white); font-size: 11px; line-height: 1; cursor: pointer; border-radius: 2px; padding: 0; display: flex; align-items: center; justify-content: center;">${t.done ? '✓' : ''}</button>
+      <span style="font-size: 12px; color: ${t.done ? 'var(--gray-light)' : 'var(--white)'}; ${t.done ? 'text-decoration: line-through;' : ''}">${escapeHTML(t.text)}</span>
+      <button onclick="deleteEnsTaskView(${i})" style="width: 22px; height: 22px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: var(--gray); font-size: 12px; cursor: pointer; border-radius: 2px; padding: 0;">✕</button>
+    </div>
+  `).join('');
+}
+
+function addEnsTaskView() {
+  const input = document.getElementById('newEnsTaskView');
+  const text = input.value.trim();
+  if (!text) return;
+  if (!ensayoData.tareas) ensayoData.tareas = [];
+  ensayoData.tareas.push({ text, done: false });
+  input.value = '';
+  persistEnsTasks();
+  renderEnsTasksView();
+  // Refrescar contador
+  renderEnsayoModalContent();
+}
+
+function toggleEnsTaskView(i) {
+  if (!ensayoData.tareas || !ensayoData.tareas[i]) return;
+  ensayoData.tareas[i].done = !ensayoData.tareas[i].done;
+  persistEnsTasks();
+  renderEnsTasksView();
+}
+
+function deleteEnsTaskView(i) {
+  if (!ensayoData.tareas) return;
+  ensayoData.tareas.splice(i, 1);
+  persistEnsTasks();
+  renderEnsTasksView();
+}
+
+function persistEnsTasks() {
+  save(STORAGE.ENSAYO, ensayoData);
+}
+
+function switchEnsayoToEdit() {
+  ensayoModalMode = 'edit';
+  renderEnsayoModalContent();
+}
+
+function switchEnsayoToView() {
+  ensayoModalMode = 'view';
+  renderEnsayoModalContent();
+}
+
+function renderEnsayoEdit() {
+  document.getElementById('ensayoModalBody').innerHTML = `
+    <div class="detail-form">
+      <div class="detail-form-row">
+        <div>
+          <label class="label">Fecha</label>
+          <input type="date" class="input" id="ensFecha" value="${ensayoData.fecha || ''}">
+        </div>
+        <div>
+          <label class="label">Hora</label>
+          <input type="time" class="input" id="ensHora" value="${ensayoData.hora || ''}">
+        </div>
+      </div>
+      <div>
+        <label class="label">Banda</label>
+        <select class="select" id="ensBanda">
+          <option value="">—</option>
+          ${Object.entries(BANDAS).map(([k,v]) => `<option value="${k}" ${ensayoData.banda === k ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="label">Ubicación</label>
+        <input type="text" class="input" id="ensUbicacion" value="${escapeHTML(ensayoData.ubicacion || '')}" placeholder="Mi casa, estudio, etc.">
+      </div>
+      <div>
+        <label class="label">Notas</label>
+        <textarea class="textarea detail-textarea" id="ensNotas" placeholder="Setlist, observaciones...">${escapeHTML(ensayoData.notas || '')}</textarea>
+      </div>
+    </div>
+  `;
+
+  // Footer dinámico
+  const hasEnsayo = !!ensayoData.fecha;
+  document.getElementById('ensayoModalFooter').innerHTML = `
+    <button class="btn btn-secondary" onclick="${hasEnsayo ? 'switchEnsayoToView()' : "closeModal('ensayoModal')"}">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveEnsayo()">${hasEnsayo ? '✓ Guardar' : '✓ Crear'}</button>
+  `;
+}
+
+function saveEnsayo() {
+  const fecha = document.getElementById('ensFecha').value;
+  if (!fecha) { showToast('Selecciona la fecha', true); return; }
+  ensayoData = {
+    ...ensayoData,
+    fecha,
+    hora: document.getElementById('ensHora').value,
+    banda: document.getElementById('ensBanda').value,
+    ubicacion: document.getElementById('ensUbicacion').value.trim(),
+    notas: document.getElementById('ensNotas').value.trim()
+  };
+  if (!ensayoData.tareas) ensayoData.tareas = [];
+  save(STORAGE.ENSAYO, ensayoData);
+  syncEnsayoToCal();
+  renderEnsayo();
+
+  // Después de guardar, vista
+  ensayoModalMode = 'view';
+  renderEnsayoModalContent();
+  showToast('✓ Ensayo guardado y sincronizado al calendario');
+}
+
+function syncEnsayoToCal() {
+  const banda = ensayoData.banda === 'otro' ? (ensayoData.bandaOtro || 'Otro') : (BANDAS[ensayoData.banda] || 'Banda');
+  let cal = load(STORAGE.CALENDARIO, []);
+  let idx = -1;
+  if (ensayoData.calendarioEventId) idx = cal.findIndex(e => e.id === ensayoData.calendarioEventId);
+  const ev = {
+    title: `🎵 Ensayo · ${banda}`,
+    date: ensayoData.fecha,
+    time: ensayoData.hora || '',
+    category: 'musica',
+    amount: '',
+    notes: `Ubicación: ${ensayoData.ubicacion || 'Sin definir'}\n\n${ensayoData.notas || ''}`,
+    sourceModule: 'musica', sourceId: 'ensayo', sourceTab: 'ensayo',
+    createdAt: idx >= 0 ? cal[idx].createdAt : Date.now()
+  };
+  if (idx >= 0) { ev.id = ensayoData.calendarioEventId; cal[idx] = ev; }
+  else { ev.id = uid('cal_musica_ensayo'); cal.push(ev); ensayoData.calendarioEventId = ev.id; save(STORAGE.ENSAYO, ensayoData); }
+  save(STORAGE.CALENDARIO, cal);
+}
+
+// =========================================
+// AI SEARCH (cerebro común)
+// =========================================
+let aiToolPending = null;
+
+function quickFill(text) {
+  document.getElementById('aiInput').value = text;
+  aiSearch();
+}
+
+async function aiSearch() {
+  const input = document.getElementById('aiInput');
+  const query = input.value.trim();
+  if (!query) { showToast('Escribe tu búsqueda', true); return; }
+
+  const config = getConfig();
+  if (!config.apiKey) {
+    showToast('Configura tu API key Anthropic en Configuración', true);
+    return;
+  }
+
+  const btn = document.getElementById('aiBtn');
+  btn.disabled = true;
+  const resultsEl = document.getElementById('aiResults');
+  resultsEl.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--orange);letter-spacing:0.2em;text-transform:uppercase;padding:14px;text-align:center;">●●● Consultando IA...</div>`;
+
+  try {
+    const result = await callClaude([{ role: 'user', content: query }], 'Música');
+
+    let html = `<div class="ai-response"><div class="ai-response-text">${formatAiText(result.cleanText)}</div></div>`;
+
+    if (result.toolCall) {
+      aiToolPending = result.toolCall;
+      html += renderToolCardMusic(result.toolCall);
+    }
+
+    resultsEl.innerHTML = html;
+    input.value = '';
+  } catch (e) {
+    resultsEl.innerHTML = `<div class="ai-response" style="border-color:var(--danger);"><div style="color:var(--danger);font-family:var(--mono);font-size:11px;">▸ Error: ${escapeHTML(e.message)}</div></div>`;
+  }
+  btn.disabled = false;
+}
+
+function renderToolCardMusic(tc) {
+  const dataRows = Object.entries(tc.data || {}).map(([k,v]) =>
+    `<div class="ai-tool-data-row"><span class="l">${escapeHTML(k)}</span><span>${escapeHTML(String(v))}</span></div>`
+  ).join('');
+  return `
+    <div class="ai-tool-card" id="aiToolCard">
+      <div class="ai-tool-eyebrow">Acción · ${escapeHTML(tc.module)}</div>
+      <div class="ai-tool-title">${escapeHTML(tc.summary || tc.action)}</div>
+      <div class="ai-tool-data">${dataRows}</div>
+      <div class="ai-tool-actions">
+        <button class="ai-tool-btn ai-tool-approve" onclick="approveAiTool()">✓ Aprobar</button>
+        <button class="ai-tool-btn ai-tool-reject" onclick="rejectAiTool()">✗ Rechazar</button>
+      </div>
+    </div>
+  `;
+}
+
+async function approveAiTool() {
+  if (!aiToolPending) return;
+  const tc = aiToolPending;
+  const card = document.getElementById('aiToolCard');
+
+  try {
+    if (tc.action === 'search_youtube') {
+      card.outerHTML = `<div class="yt-results" id="ytLoading"><div class="yt-results-header">Buscando en YouTube...</div></div>`;
+      const results = await executeYouTubeSearch(tc.data.query, tc.data.maxResults);
+      logAction(tc);
+      const loading = document.getElementById('ytLoading');
+      if (loading) loading.outerHTML = renderYTResults(tc.data.query, results);
+      showToast(`✓ ${results.length} videos encontrados`);
+    } else {
+      executeTool(tc);
+      // Refrescar listas locales
+      canciones = load(STORAGE.CANCIONES, []);
+      eventosMusica = load(STORAGE.EVENTOS_MUSICA, []);
+      ensayoData = load(STORAGE.ENSAYO, {});
+      renderSongs();
+      renderEventos();
+      renderEnsayo();
+      if (card) card.style.borderColor = 'var(--success)';
+      showToast(`✓ ${tc.summary}`);
+    }
+    aiToolPending = null;
+  } catch (e) {
+    showToast('Error: ' + e.message, true);
+  }
+}
+
+function rejectAiTool() {
+  aiToolPending = null;
+  const card = document.getElementById('aiToolCard');
+  if (card) {
+    card.style.opacity = '0.5';
+    card.style.borderColor = 'var(--gray)';
+    card.querySelector('.ai-tool-actions').innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--gray);letter-spacing:0.15em;">✗ RECHAZADO</div>';
+  }
+}
+
+function renderYTResults(query, results) {
+  if (!results.length) return `<div class="yt-results"><div class="yt-results-header">Sin resultados</div></div>`;
+  return `
+    <div class="yt-results">
+      <div class="yt-results-header">▶ ${results.length} videos · "${escapeHTML(query)}"</div>
+      <div class="yt-results-list">
+        ${results.map((r,i) => {
+          const playerId = `ytp-${Date.now()}-${i}`;
+          const dataStr = JSON.stringify({ videoId: r.videoId, title: r.title, channel: r.channel }).replace(/'/g,'&apos;');
+          return `
+            <div class="yt-result">
+              <div class="yt-thumb" onclick="playYTMusic('${playerId}','${r.videoId}')">
+                <img src="${escapeHTML(r.thumbnail)}" alt="" loading="lazy">
+              </div>
+              <div class="yt-info">
+                <div class="yt-title-r">${escapeHTML(r.title)}</div>
+                <div class="yt-channel">${escapeHTML(r.channel)}</div>
+                <div class="yt-actions">
+                  <button class="yt-btn" onclick="playYTMusic('${playerId}','${r.videoId}')">▶ Reproducir</button>
+                  <a class="yt-btn" href="https://www.youtube.com/watch?v=${r.videoId}" target="_blank" rel="noopener">▸ YouTube</a>
+                  <button class="yt-btn" onclick='saveYTToRep(${dataStr})'>▸ Repertorio</button>
+                </div>
+              </div>
+              <div class="yt-player" id="${playerId}"></div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function playYTMusic(playerId, videoId) {
+  const div = document.getElementById(playerId);
+  if (!div) return;
+  if (div.innerHTML) { div.innerHTML = ''; return; }
+  div.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+}
+
+function saveYTToRep(yt) {
+  canciones.push({
+    id: uid('song_yt'),
+    titulo: yt.title, artista: yt.channel || '', genero: '', status: 'aprender',
+    letraUrl: '', youtubeUrl: `https://www.youtube.com/watch?v=${yt.videoId}`,
+    anotaciones: '', tareas: [], createdAt: Date.now(), updatedAt: Date.now()
+  });
+  save(STORAGE.CANCIONES, canciones);
+  renderSongs();
+  showToast(`✓ Canción guardada al repertorio`);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (typeof mountBottomnav === 'function') mountBottomnav('musica');
+  }, 150);
+});
+if (document.readyState !== 'loading' && typeof mountBottomnav === 'function') {
+  setTimeout(function() { mountBottomnav('musica'); }, 150);
+}
+</script>
+</body>
+</html>

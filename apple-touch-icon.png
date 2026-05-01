@@ -1,0 +1,468 @@
+/**
+ * G2C Mando · Push Notifications Server
+ * Cloudflare Worker · web-push compatible
+ *
+ * Setup:
+ * 1. wrangler login
+ * 2. wrangler kv:namespace create "PUSH_KV"  (copiar el ID al wrangler.toml)
+ * 3. Generar VAPID keys: npx web-push generate-vapid-keys
+ * 4. wrangler secret put VAPID_PRIVATE_KEY
+ * 5. wrangler secret put VAPID_PUBLIC_KEY
+ * 6. wrangler secret put VAPID_SUBJECT  (ej. "mailto:hola@g2c.com.mx")
+ * 7. wrangler deploy
+ * 8. Configurar dominio custom en Cloudflare (push.g2c.com.mx)
+ *
+ * Endpoints:
+ * POST /subscribe      · Registra una suscripción de un dispositivo
+ * POST /unsubscribe    · Elimina suscripción
+ * POST /schedule       · Programa una notificación futura
+ * POST /sync-reminders · Sincroniza todos los recordatorios de un usuario
+ * GET  /test           · Health check
+ *
+ * El cron trigger ejecuta cada minuto y dispara las notificaciones programadas
+ */
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type'
+};
+
+export default {
+  async fetch(request, env, ctx) {
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: CORS_HEADERS });
+    }
+
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    try {
+      if (path === '/test' && request.method === 'GET') {
+        return json({ ok: true, time: new Date().toISOString(), version: 'g2c-push-1.0' });
+      }
+
+      if (path === '/subscribe' && request.method === 'POST') {
+        return handleSubscribe(request, env);
+      }
+
+      if (path === '/unsubscribe' && request.method === 'POST') {
+        return handleUnsubscribe(request, env);
+      }
+
+      if (path === '/schedule' && request.method === 'POST') {
+        return handleSchedule(request, env);
+      }
+
+      if (path === '/sync-reminders' && request.method === 'POST') {
+        return handleSyncReminders(request, env);
+      }
+
+      if (path === '/send-now' && request.method === 'POST') {
+        // Endpoint admin · enviar notif inmediata · útil para pruebas con secret
+        return handleSendNow(request, env);
+      }
+
+      return json({ error: 'Not found' }, 404);
+    } catch (err) {
+      return json({ error: err.message, stack: err.stack }, 500);
+    }
+  },
+
+  async scheduled(event, env, ctx) {
+    // Ejecutado por cron trigger cada minuto
+    ctx.waitUntil(processScheduledNotifications(env));
+  }
+};
+
+// ============ HANDLERS ============
+
+async function handleSubscribe(request, env) {
+  const { userId, subscription, deviceInfo } = await request.json();
+  if (!userId || !subscription || !subscription.endpoint) {
+    return json({ error: 'Missing userId or subscription' }, 400);
+  }
+
+  const key = `sub:${userId}:${hashEndpoint(subscription.endpoint)}`;
+  const data = {
+    userId,
+    subscription,
+    deviceInfo: deviceInfo || {},
+    createdAt: Date.now(),
+    lastSeen: Date.now()
+  };
+
+  await env.PUSH_KV.put(key, JSON.stringify(data));
+
+  // Indexar también para listar todas las del user
+  const indexKey = `user:${userId}:subs`;
+  const existing = await env.PUSH_KV.get(indexKey, 'json') || [];
+  if (!existing.includes(key)) {
+    existing.push(key);
+    await env.PUSH_KV.put(indexKey, JSON.stringify(existing));
+  }
+
+  return json({ ok: true, key });
+}
+
+async function handleUnsubscribe(request, env) {
+  const { userId, endpoint } = await request.json();
+  if (!userId || !endpoint) return json({ error: 'Missing data' }, 400);
+
+  const key = `sub:${userId}:${hashEndpoint(endpoint)}`;
+  await env.PUSH_KV.delete(key);
+
+  // Quitar del índice
+  const indexKey = `user:${userId}:subs`;
+  const existing = await env.PUSH_KV.get(indexKey, 'json') || [];
+  const filtered = existing.filter(k => k !== key);
+  await env.PUSH_KV.put(indexKey, JSON.stringify(filtered));
+
+  return json({ ok: true });
+}
+
+async function handleSchedule(request, env) {
+  const data = await request.json();
+  const { userId, type, title, body, sendAt, url, data: payload } = data;
+  if (!userId || !title || !sendAt) return json({ error: 'Missing fields' }, 400);
+
+  const id = crypto.randomUUID();
+  const minute = Math.floor(sendAt / 60000); // minute bucket
+  const key = `schedule:${minute}:${id}`;
+
+  const notif = {
+    id,
+    userId,
+    type: type || 'general',
+    title,
+    body: body || '',
+    url: url || '/',
+    data: payload || {},
+    sendAt,
+    createdAt: Date.now()
+  };
+
+  await env.PUSH_KV.put(key, JSON.stringify(notif), {
+    expirationTtl: Math.max(60, Math.ceil((sendAt - Date.now()) / 1000) + 86400) // expira 1 día después de enviado
+  });
+
+  return json({ ok: true, id, sendAt });
+}
+
+async function handleSyncReminders(request, env) {
+  const { userId, reminders } = await request.json();
+  if (!userId || !Array.isArray(reminders)) return json({ error: 'Invalid data' }, 400);
+
+  // Limpiar recordatorios previos del usuario
+  const indexKey = `user:${userId}:schedules`;
+  const previous = await env.PUSH_KV.get(indexKey, 'json') || [];
+  for (const k of previous) {
+    await env.PUSH_KV.delete(k);
+  }
+
+  // Crear nuevos
+  const newKeys = [];
+  for (const r of reminders) {
+    if (r.sendAt < Date.now()) continue; // omitir vencidos
+    const id = crypto.randomUUID();
+    const minute = Math.floor(r.sendAt / 60000);
+    const key = `schedule:${minute}:${id}`;
+    const notif = {
+      id,
+      userId,
+      type: r.type,
+      title: r.title,
+      body: r.body || '',
+      url: r.url || '/',
+      data: r.data || {},
+      sendAt: r.sendAt,
+      createdAt: Date.now()
+    };
+    await env.PUSH_KV.put(key, JSON.stringify(notif), {
+      expirationTtl: Math.max(60, Math.ceil((r.sendAt - Date.now()) / 1000) + 86400)
+    });
+    newKeys.push(key);
+  }
+
+  await env.PUSH_KV.put(indexKey, JSON.stringify(newKeys));
+  return json({ ok: true, count: newKeys.length });
+}
+
+async function handleSendNow(request, env) {
+  // Auth simple con secret
+  const auth = request.headers.get('X-Admin-Secret');
+  if (auth !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+
+  const { userId, title, body, url } = await request.json();
+  await sendPushToUser(env, userId, { title, body, url, data: {}, type: 'manual' });
+  return json({ ok: true });
+}
+
+// ============ SCHEDULED PROCESSING ============
+
+async function processScheduledNotifications(env) {
+  const now = Date.now();
+  const currentMinute = Math.floor(now / 60000);
+
+  // Buscar notificaciones de los últimos 2 minutos por si el cron tarda
+  for (let m = currentMinute - 2; m <= currentMinute; m++) {
+    const list = await env.PUSH_KV.list({ prefix: `schedule:${m}:` });
+    for (const k of list.keys) {
+      const notif = await env.PUSH_KV.get(k.name, 'json');
+      if (!notif || notif.sendAt > now + 60000) continue; // aún no es hora
+
+      // Enviar
+      try {
+        await sendPushToUser(env, notif.userId, notif);
+      } catch (err) {
+        console.error('Send failed', notif.id, err);
+      }
+      // Borrar después de enviada
+      await env.PUSH_KV.delete(k.name);
+    }
+  }
+}
+
+async function sendPushToUser(env, userId, payload) {
+  const indexKey = `user:${userId}:subs`;
+  const subKeys = await env.PUSH_KV.get(indexKey, 'json') || [];
+
+  for (const k of subKeys) {
+    const sub = await env.PUSH_KV.get(k, 'json');
+    if (!sub) continue;
+    try {
+      await sendWebPush(sub.subscription, JSON.stringify(payload), env);
+    } catch (err) {
+      // Si la suscripción está expirada o inválida, eliminarla
+      if (err.message && (err.message.includes('410') || err.message.includes('404'))) {
+        await env.PUSH_KV.delete(k);
+        const filtered = subKeys.filter(x => x !== k);
+        await env.PUSH_KV.put(indexKey, JSON.stringify(filtered));
+      }
+      console.error('Push error to', k, err.message);
+    }
+  }
+}
+
+// ============ WEB PUSH PROTOCOL ============
+// Implementación nativa de Web Push para Cloudflare Workers (sin node libs)
+
+async function sendWebPush(subscription, payload, env) {
+  const { endpoint, keys } = subscription;
+  const audience = new URL(endpoint).origin;
+
+  // Generar JWT VAPID
+  const jwt = await generateVapidJWT(audience, env);
+  const vapidPublicKey = env.VAPID_PUBLIC_KEY;
+
+  // Encriptar payload con ECDH (RFC 8291)
+  const { encryptedPayload, salt, serverPublicKey } = await encryptPayload(payload, keys);
+
+  const headers = {
+    'Authorization': `vapid t=${jwt}, k=${vapidPublicKey}`,
+    'Content-Type': 'application/octet-stream',
+    'Content-Encoding': 'aes128gcm',
+    'TTL': '86400',
+    'Urgency': 'normal'
+  };
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: encryptedPayload
+  });
+
+  if (!res.ok) {
+    throw new Error(`Push failed: ${res.status} ${await res.text()}`);
+  }
+  return res;
+}
+
+async function generateVapidJWT(audience, env) {
+  const header = { typ: 'JWT', alg: 'ES256' };
+  const payload = {
+    aud: audience,
+    exp: Math.floor(Date.now() / 1000) + 12 * 3600, // 12 horas
+    sub: env.VAPID_SUBJECT || 'mailto:admin@example.com'
+  };
+
+  const headerB64 = b64UrlEncode(JSON.stringify(header));
+  const payloadB64 = b64UrlEncode(JSON.stringify(payload));
+  const data = `${headerB64}.${payloadB64}`;
+
+  // Importar VAPID private key
+  const privateKeyRaw = b64UrlDecode(env.VAPID_PRIVATE_KEY);
+  const privateKey = await crypto.subtle.importKey(
+    'pkcs8',
+    pkcs8FromRaw(privateKeyRaw, env.VAPID_PUBLIC_KEY),
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    privateKey,
+    new TextEncoder().encode(data)
+  );
+
+  return `${data}.${b64UrlEncodeBytes(new Uint8Array(signature))}`;
+}
+
+async function encryptPayload(payload, keys) {
+  const userPublicKey = b64UrlDecode(keys.p256dh);
+  const userAuth = b64UrlDecode(keys.auth);
+
+  // Generar par de claves ECDH
+  const serverKeyPair = await crypto.subtle.generateKey(
+    { name: 'ECDH', namedCurve: 'P-256' },
+    true,
+    ['deriveBits']
+  );
+  const serverPublicKey = new Uint8Array(await crypto.subtle.exportKey('raw', serverKeyPair.publicKey));
+
+  // Importar la clave pública del cliente
+  const clientPublicKey = await crypto.subtle.importKey(
+    'raw',
+    userPublicKey,
+    { name: 'ECDH', namedCurve: 'P-256' },
+    false,
+    []
+  );
+
+  // Derivar shared secret
+  const sharedSecret = new Uint8Array(await crypto.subtle.deriveBits(
+    { name: 'ECDH', public: clientPublicKey },
+    serverKeyPair.privateKey,
+    256
+  ));
+
+  // Generar salt aleatorio
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+
+  // HKDF según RFC 8291
+  const prkKey = await hkdfExtract(userAuth, sharedSecret);
+  const keyInfo = concat(
+    new TextEncoder().encode('WebPush: info\0'),
+    userPublicKey,
+    serverPublicKey
+  );
+  const ikm = await hkdfExpand(prkKey, keyInfo, 32);
+
+  const prkBase = await hkdfExtract(salt, ikm);
+  const cekInfo = new TextEncoder().encode('Content-Encoding: aes128gcm\0');
+  const cek = await hkdfExpand(prkBase, cekInfo, 16);
+  const nonceInfo = new TextEncoder().encode('Content-Encoding: nonce\0');
+  const nonce = await hkdfExpand(prkBase, nonceInfo, 12);
+
+  // Encriptar
+  const cekKey = await crypto.subtle.importKey('raw', cek, 'AES-GCM', false, ['encrypt']);
+  const payloadBytes = new TextEncoder().encode(payload);
+  const padded = concat(payloadBytes, new Uint8Array([0x02])); // delimiter
+
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: nonce },
+    cekKey,
+    padded
+  ));
+
+  // Construir payload final con header aes128gcm
+  // Header: salt(16) + rs(4) + idlen(1) + keyid(idlen)
+  const rs = 4096;
+  const header = new Uint8Array(16 + 4 + 1 + serverPublicKey.length);
+  header.set(salt, 0);
+  // record size (big endian)
+  header[16] = (rs >> 24) & 0xff;
+  header[17] = (rs >> 16) & 0xff;
+  header[18] = (rs >> 8) & 0xff;
+  header[19] = rs & 0xff;
+  header[20] = serverPublicKey.length;
+  header.set(serverPublicKey, 21);
+
+  return {
+    encryptedPayload: concat(header, ciphertext),
+    salt: b64UrlEncodeBytes(salt),
+    serverPublicKey: b64UrlEncodeBytes(serverPublicKey)
+  };
+}
+
+async function hkdfExtract(salt, ikm) {
+  const key = await crypto.subtle.importKey('raw', salt, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const prk = await crypto.subtle.sign('HMAC', key, ikm);
+  return new Uint8Array(prk);
+}
+
+async function hkdfExpand(prk, info, length) {
+  const key = await crypto.subtle.importKey('raw', prk, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const data = concat(info, new Uint8Array([1]));
+  const result = await crypto.subtle.sign('HMAC', key, data);
+  return new Uint8Array(result).slice(0, length);
+}
+
+// ============ UTILS ============
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+  });
+}
+
+function hashEndpoint(endpoint) {
+  let hash = 0;
+  for (let i = 0; i < endpoint.length; i++) {
+    hash = ((hash << 5) - hash) + endpoint.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+function b64UrlEncode(str) {
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function b64UrlEncodeBytes(bytes) {
+  let str = '';
+  for (let i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function b64UrlDecode(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  const raw = atob(str);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+function concat(...arrays) {
+  let total = 0;
+  for (const a of arrays) total += a.length;
+  const result = new Uint8Array(total);
+  let offset = 0;
+  for (const a of arrays) {
+    result.set(a, offset);
+    offset += a.length;
+  }
+  return result;
+}
+
+// Crear PKCS8 desde raw private key + public key (necesario para crypto.subtle.importKey con ECDSA)
+function pkcs8FromRaw(privateKeyRaw, publicKeyB64Url) {
+  const publicKey = b64UrlDecode(publicKeyB64Url);
+
+  // ASN.1 DER PKCS8 prefix para EC P-256
+  const prefix = new Uint8Array([
+    0x30, 0x81, 0x87, 0x02, 0x01, 0x00, 0x30, 0x13,
+    0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02,
+    0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d,
+    0x03, 0x01, 0x07, 0x04, 0x6d, 0x30, 0x6b, 0x02,
+    0x01, 0x01, 0x04, 0x20
+  ]);
+  const middle = new Uint8Array([
+    0xa1, 0x44, 0x03, 0x42, 0x00
+  ]);
+
+  return concat(prefix, privateKeyRaw, middle, publicKey);
+}

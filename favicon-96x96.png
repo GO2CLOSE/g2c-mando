@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>★ Configuración · G2C Mando</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#FF4F00">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito+Sans:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared.css">
+<style>
+.module-eyebrow { font-family: var(--mono); font-size: 10px; color: var(--orange); letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 6px; }
+.module-title { font-family: var(--display); font-size: 30px; line-height: 1; color: var(--white); margin-bottom: 6px; }
+.module-sub { color: var(--gray-light); font-size: 13px; margin-bottom: 22px; }
+
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+@media (max-width: 880px) { .config-grid { grid-template-columns: 1fr; } }
+
+.config-section {
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.15);
+  border-radius: 4px;
+  padding: 22px;
+}
+.config-section-header {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--orange);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,79,0,0.15);
+}
+.config-section-header::before { content:'★ '; }
+.config-row { margin-bottom: 14px; }
+.config-row:last-child { margin-bottom: 0; }
+.config-help {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--gray);
+  letter-spacing: 0.05em;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.config-help a { color: var(--orange-light); text-decoration: none; border-bottom: 1px dashed; }
+
+.config-status {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray); }
+.status-dot.ok { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.status-dot.err { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.danger-zone {
+  background: rgba(230,57,70,0.05);
+  border: 1px solid rgba(230,57,70,0.2);
+  border-radius: 4px;
+  padding: 16px;
+  margin-top: 18px;
+}
+.danger-zone-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--danger);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.danger-zone-title::before { content:'⚠ '; }
+.danger-zone-desc {
+  font-size: 12px;
+  color: var(--gray-light);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+</style>
+</head>
+<body>
+<a href="index.html" id="floatBack" style="position:fixed;top:10px;left:10px;z-index:99999;display:inline-flex;align-items:center;gap:5px;padding:8px 12px;background:var(--orange);color:white;text-decoration:none;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;border-radius:3px;box-shadow:0 4px 12px rgba(255,79,0,0.4);">
+  <span style="font-size:14px;line-height:1;">‹</span>
+  <span>Mando</span>
+</a>
+
+<main class="container">
+  
+  <div class="module-eyebrow">▸ Configuración del sistema</div>
+  <h1 class="module-title">Configuración</h1>
+  <p class="module-sub">API keys, seguridad, datos y preferencias</p>
+
+  <div class="config-grid">
+    <!-- Perfil -->
+    <div class="config-section">
+      <div class="config-section-header">Perfil</div>
+      <div class="config-row">
+        <label class="label">Nombre (cómo te llama la IA)</label>
+        <input type="text" class="input" id="cfgName" placeholder="Alan">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveName()">Guardar nombre</button>
+      </div>
+    </div>
+
+    <!-- Anthropic API -->
+    <div class="config-section">
+      <div class="config-section-header">Anthropic API · Claude</div>
+      <div class="config-status" id="antStatus">
+        <span class="status-dot"></span>
+        <span>Sin configurar</span>
+      </div>
+      <div class="config-row">
+        <label class="label">API Key</label>
+        <input type="password" class="input" id="cfgApiKey" placeholder="sk-ant-api03-...">
+        <div class="config-help">
+          Crea una key en <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> · Modelo: Claude Haiku 4.5
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveApiKey()">Guardar</button>
+        <button class="btn btn-secondary" onclick="testApiKey()">▸ Probar key</button>
+      </div>
+    </div>
+
+    <!-- YouTube API -->
+    <div class="config-section">
+      <div class="config-section-header">Google YouTube Data API v3</div>
+      <div class="config-status" id="ytStatus">
+        <span class="status-dot"></span>
+        <span>Sin configurar</span>
+      </div>
+      <div class="config-row">
+        <label class="label">API Key</label>
+        <input type="password" class="input" id="cfgYTKey" placeholder="AIza...">
+        <div class="config-help">
+          Crea una key en <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">console.cloud.google.com</a> · Restringe a tu dominio. Sin esto la búsqueda de YouTube en chat queda deshabilitada.
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveYoutubeKey()">Guardar</button>
+        <button class="btn btn-secondary" onclick="testYoutubeKey()">▸ Probar key</button>
+      </div>
+    </div>
+
+    <!-- Seguridad -->
+    <div class="config-section">
+      <div class="config-section-header">Seguridad · Password</div>
+      <div class="config-row">
+        <label class="label">Password actual</label>
+        <input type="password" class="input" id="cfgCurPass" placeholder="Password actual">
+      </div>
+      <div class="config-row">
+        <label class="label">Nuevo password</label>
+        <input type="password" class="input" id="cfgNewPass" placeholder="Mínimo 6 caracteres">
+      </div>
+      <div class="config-row">
+        <label class="label">Confirmar nuevo password</label>
+        <input type="password" class="input" id="cfgConfirmPass" placeholder="Repite el nuevo">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="changePassword()">Cambiar password</button>
+      </div>
+      <div class="config-help" style="margin-top:14px;">Default: <code>g2c2026</code> · Cambialo cuanto antes.</div>
+    </div>
+
+    <!-- Backup -->
+    <div class="config-section">
+      <div class="config-section-header">Backup · Datos</div>
+      <p style="font-size:13px;color:var(--gray-light);line-height:1.5;margin-bottom:14px;">
+        Exporta o restaura todos tus datos (canciones, eventos, calendario, conversaciones, skills).
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="exportData()">▸ Exportar JSON</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">▸ Importar JSON</button>
+        <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+      </div>
+    </div>
+
+    <!-- Sesión -->
+    <div class="config-section">
+      <div class="config-section-header">Sesión</div>
+      <p style="font-size:13px;color:var(--gray-light);line-height:1.5;margin-bottom:14px;">
+        La sesión dura 12 horas. Después necesitas volver a entrar con tu password.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="logout()">▸ Cerrar sesión</button>
+      </div>
+
+      <div class="danger-zone">
+        <div class="danger-zone-title">Zona de peligro</div>
+        <div class="danger-zone-desc">Borra TODOS los datos del sistema (canciones, eventos, calendario, conversaciones, configuración, skills). Esto no se puede deshacer.</div>
+        <button class="btn btn-danger" onclick="resetAll()">▸ Borrar todo</button>
+      </div>
+    </div>
+
+    <!-- Push Notifications -->
+    <div class="config-section" style="grid-column: 1 / -1;">
+      <div class="config-section-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Notificaciones push · recordatorios</span>
+        <span id="pushStatusBadge" style="font-family: var(--mono); font-size: 9px; padding: 4px 8px; border-radius: 2px; background: rgba(255,255,255,0.05); color: var(--gray);">VERIFICANDO...</span>
+      </div>
+      <p style="font-size: 12px; color: var(--gray-light); line-height: 1.5; margin-bottom: 14px;">
+        Recibe alertas en tu celular incluso con la app cerrada · servicios fijos próximos a vencer, cobros pendientes, eventos musicales, tareas con fecha.
+      </p>
+      <div id="pushStatusInfo"></div>
+      <div id="pushActions" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;"></div>
+    </div>
+
+    <!-- Documentos IA · adjuntos -->
+    <div class="config-section" style="grid-column: 1 / -1;">
+      <div class="config-section-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Documentos IA · cédula fiscal · declaraciones · contratos</span>
+        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 9px;" onclick="openAttachmentModal()">+ Subir documento</button>
+      </div>
+      <p style="font-size: 12px; color: var(--gray-light); line-height: 1.5; margin-bottom: 14px;">
+        La IA puede consultar estos documentos cuando le hables de SAT, fiscal, contratos, identidad, etc. Los archivos se guardan localmente en tu dispositivo (cifrados en localStorage). No se suben a ningún servidor.
+      </p>
+      <div id="attachmentsList"></div>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL Adjuntos -->
+<div class="modal-overlay" id="attachmentModal">
+  <div class="modal" style="max-width: 540px;">
+    <div class="modal-header">
+      <div class="modal-title" id="attachmentModalTitle">Subir documento</div>
+      <button class="modal-close" onclick="closeModal('attachmentModal')">✕</button>
+    </div>
+    <div class="modal-body" id="attachmentModalBody"></div>
+    <div class="modal-footer" id="attachmentModalFooter"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+(async () => {
+  const ok = await authGuard();
+  if (!ok) return;
+  loadConfig();
+  if (typeof loadAttachments === 'function') loadAttachments();
+  if (typeof loadPushStatus === 'function') loadPushStatus();
+})();
+
+function loadConfig() {
+  const config = getConfig();
+  document.getElementById('cfgName').value = config.name || '';
+  document.getElementById('cfgApiKey').value = config.apiKey || '';
+  document.getElementById('cfgYTKey').value = config.youtubeApiKey || '';
+
+  // Status indicators
+  const antEl = document.getElementById('antStatus');
+  if (config.apiKey) {
+    antEl.innerHTML = `<span class="status-dot ok"></span><span style="color:var(--success);">Configurada</span>`;
+  } else {
+    antEl.innerHTML = `<span class="status-dot"></span><span>Sin configurar</span>`;
+  }
+  const ytEl = document.getElementById('ytStatus');
+  if (config.youtubeApiKey) {
+    ytEl.innerHTML = `<span class="status-dot ok"></span><span style="color:var(--success);">Configurada</span>`;
+  } else {
+    ytEl.innerHTML = `<span class="status-dot"></span><span>Sin configurar</span>`;
+  }
+}
+
+function saveName() {
+  const name = document.getElementById('cfgName').value.trim();
+  setConfig({ name });
+  showToast('✓ Nombre guardado');
+}
+
+function saveApiKey() {
+  const key = document.getElementById('cfgApiKey').value.trim();
+  if (!key) { showToast('Captura tu API key', true); return; }
+  setConfig({ apiKey: key });
+  loadConfig();
+  showToast('✓ API key guardada');
+}
+
+async function testApiKey() {
+  const config = getConfig();
+  if (!config.apiKey) { showToast('Primero captura y guarda tu key', true); return; }
+  showToast('Probando...');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': config.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        max_tokens: 10,
+        messages: [{ role: 'user', content: 'ping' }]
+      })
+    });
+    if (res.ok) {
+      showToast('✓ API key válida');
+      document.getElementById('antStatus').innerHTML = `<span class="status-dot ok"></span><span style="color:var(--success);">Validada · funcionando</span>`;
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast('Error: ' + (err.error?.message || res.status), true);
+      document.getElementById('antStatus').innerHTML = `<span class="status-dot err"></span><span style="color:var(--danger);">Error · revisa la key</span>`;
+    }
+  } catch (e) {
+    showToast('Error: ' + e.message, true);
+  }
+}
+
+function saveYoutubeKey() {
+  const key = document.getElementById('cfgYTKey').value.trim();
+  if (!key) { showToast('Captura la key', true); return; }
+  setConfig({ youtubeApiKey: key });
+  loadConfig();
+  showToast('✓ YouTube key guardada');
+}
+
+async function testYoutubeKey() {
+  const config = getConfig();
+  if (!config.youtubeApiKey) { showToast('Primero guarda la key', true); return; }
+  showToast('Probando...');
+  try {
+    const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=test&maxResults=1&type=video&key=${encodeURIComponent(config.youtubeApiKey)}`);
+    const data = await res.json();
+    if (res.ok && data.items) {
+      showToast('✓ YouTube API funcionando');
+      document.getElementById('ytStatus').innerHTML = `<span class="status-dot ok"></span><span style="color:var(--success);">Validada · funcionando</span>`;
+    } else {
+      showToast('Error: ' + (data.error?.message || 'inválida'), true);
+      document.getElementById('ytStatus').innerHTML = `<span class="status-dot err"></span><span style="color:var(--danger);">Error · revisa la key y restricciones</span>`;
+    }
+  } catch (e) {
+    showToast('Error: ' + e.message, true);
+  }
+}
+
+async function changePassword() {
+  const cur = document.getElementById('cfgCurPass').value;
+  const newPass = document.getElementById('cfgNewPass').value;
+  const conf = document.getElementById('cfgConfirmPass').value;
+
+  if (!cur || !newPass || !conf) { showToast('Llena todos los campos', true); return; }
+  if (newPass.length < 6) { showToast('Mínimo 6 caracteres', true); return; }
+  if (newPass !== conf) { showToast('Los passwords nuevos no coinciden', true); return; }
+
+  const curHash = await sha256(cur);
+  const config = getConfig();
+  const expected = config.passwordHash || '0db087d6b415b97c7641ef7862e88c9aa88323f3c488150ed09d6d1c45c6efc0';
+  if (curHash !== expected) { showToast('Password actual incorrecto', true); return; }
+
+  const newHash = await sha256(newPass);
+  setConfig({ passwordHash: newHash });
+  document.getElementById('cfgCurPass').value = '';
+  document.getElementById('cfgNewPass').value = '';
+  document.getElementById('cfgConfirmPass').value = '';
+  showToast('✓ Password actualizado');
+}
+
+function exportData() {
+  const data = {
+    version: '0.3.0',
+    exportedAt: new Date().toISOString(),
+    data: {}
+  };
+  Object.values(STORAGE).forEach(key => {
+    const v = localStorage.getItem(key);
+    if (v) data.data[key] = JSON.parse(v);
+  });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `g2c-mando-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✓ Backup descargado');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!confirm('¿Reemplazar todos tus datos actuales con este backup? No se puede deshacer.')) {
+    event.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const json = JSON.parse(e.target.result);
+      if (!json.data) throw new Error('Formato inválido');
+      Object.entries(json.data).forEach(([key, value]) => {
+        localStorage.setItem(key, JSON.stringify(value));
+      });
+      showToast('✓ Datos importados');
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast('Error: archivo inválido', true);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ============================================
+// ADJUNTOS IA · gestión de documentos
+// ============================================
+function loadAttachments() {
+  const atts = listAttachments();
+  const container = document.getElementById('attachmentsList');
+  if (!container) return;
+
+  if (atts.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 24px; text-align: center; background: rgba(0,0,0,0.25); border: 1px dashed rgba(255,79,0,0.2); border-radius: 4px;">
+        <div style="font-size: 28px; color: var(--orange); margin-bottom: 6px;">▣</div>
+        <div style="font-family: var(--mono); font-size: 10px; color: var(--gray); letter-spacing: 0.18em; text-transform: uppercase;">Sin documentos cargados</div>
+        <div style="font-size: 12px; color: var(--gray-light); margin-top: 6px;">Sube tu cédula fiscal, declaraciones, contratos para que la IA los consulte</div>
+      </div>
+    `;
+    return;
+  }
+
+  // Agrupar por tipo
+  const grouped = {};
+  atts.forEach(a => {
+    if (!grouped[a.type]) grouped[a.type] = [];
+    grouped[a.type].push(a);
+  });
+
+  let html = '<div style="display: flex; flex-direction: column; gap: 10px;">';
+  Object.entries(grouped).forEach(([type, items]) => {
+    const meta = ATTACHMENT_TYPES[type] || { label: type, icon: '·', color: 'var(--gray)' };
+    html += `
+      <div>
+        <div style="font-family: var(--mono); font-size: 9px; color: ${meta.color}; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 13px;">${meta.icon}</span>
+          <span>${meta.label} · ${items.length}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          ${items.map(a => `
+            <div style="display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; background: rgba(0,0,0,0.3); border-left: 2px solid ${meta.color}; border-radius: 2px;">
+              <span style="font-size: 14px; color: ${meta.color}; line-height: 1;">${meta.icon}</span>
+              <div style="min-width: 0;">
+                <div style="font-size: 12px; color: var(--white); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(a.title || a.fileName)}</div>
+                <div style="font-family: var(--mono); font-size: 9px; color: var(--gray); margin-top: 2px;">${escapeHTML(a.fileName)} · ${formatFileSize(a.size)}</div>
+              </div>
+              <div style="display: flex; gap: 4px;">
+                <button onclick="viewAttachment('${a.id}')" style="padding: 6px 10px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--gray-light); font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; border-radius: 2px;">Ver</button>
+                <button onclick="confirmDeleteAttachment('${a.id}')" style="padding: 6px 10px; background: transparent; border: 1px solid rgba(230,57,70,0.3); color: var(--danger); font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; border-radius: 2px;">✕</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return '0 B';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+let pendingFile = null;
+
+function openAttachmentModal() {
+  pendingFile = null;
+  document.getElementById('attachmentModalBody').innerHTML = `
+    <div style="margin-bottom: 14px;">
+      <label class="label">Tipo de documento</label>
+      <select class="input" id="attType" onchange="updateAcceptType()">
+        ${Object.entries(ATTACHMENT_TYPES).map(([k,v]) => `<option value="${k}">${v.icon} ${v.label}</option>`).join('')}
+      </select>
+    </div>
+
+    <div style="margin-bottom: 14px;">
+      <label class="label">Título (opcional)</label>
+      <input type="text" class="input" id="attTitle" placeholder="Ej. Cédula fiscal RFC 2024">
+    </div>
+
+    <div style="margin-bottom: 14px;">
+      <label class="label">Notas (qué debe saber la IA)</label>
+      <textarea class="input" id="attNotes" rows="2" placeholder="Ej. RFC del SAT al corriente, sin RESICO" style="resize: vertical; min-height: 60px;"></textarea>
+    </div>
+
+    <div style="margin-bottom: 14px;">
+      <label class="label">Archivo</label>
+      <div style="padding: 20px; border: 2px dashed rgba(255,79,0,0.3); border-radius: 4px; text-align: center; background: rgba(0,0,0,0.2); cursor: pointer;" onclick="document.getElementById('attFile').click()">
+        <div style="font-size: 28px; color: var(--orange); margin-bottom: 4px;">▲</div>
+        <div id="attFileLabel" style="font-family: var(--mono); font-size: 10px; color: var(--gray-light); letter-spacing: 0.15em; text-transform: uppercase;">Tap para seleccionar archivo</div>
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--gray); margin-top: 4px;">PDF · imágenes · XML · max 5MB</div>
+      </div>
+      <input type="file" id="attFile" style="display: none;" onchange="handleAttFileSelect(event)">
+    </div>
+
+    <div id="attPreview"></div>
+  `;
+  document.getElementById('attachmentModalFooter').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal('attachmentModal')">Cancelar</button>
+    <button class="btn btn-primary" onclick="confirmSaveAttachment()">✓ Guardar</button>
+  `;
+  document.getElementById('attachmentModal').classList.add('show');
+  updateAcceptType();
+}
+
+function updateAcceptType() {
+  const type = document.getElementById('attType').value;
+  const meta = ATTACHMENT_TYPES[type];
+  if (meta) {
+    document.getElementById('attFile').setAttribute('accept', meta.accept);
+  }
+}
+
+async function handleAttFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Archivo demasiado grande · max 5MB', true);
+    event.target.value = '';
+    return;
+  }
+  pendingFile = file;
+  document.getElementById('attFileLabel').textContent = file.name + ' · ' + formatFileSize(file.size);
+  document.getElementById('attFileLabel').style.color = 'var(--success)';
+
+  // Auto-rellenar título si está vacío
+  const titleInput = document.getElementById('attTitle');
+  if (!titleInput.value.trim()) {
+    titleInput.value = file.name.replace(/\.[^/.]+$/, '');
+  }
+}
+
+async function confirmSaveAttachment() {
+  if (!pendingFile) {
+    showToast('Selecciona un archivo primero', true);
+    return;
+  }
+
+  const type = document.getElementById('attType').value;
+  const title = document.getElementById('attTitle').value.trim();
+  const notes = document.getElementById('attNotes').value.trim();
+
+  showToast('Procesando archivo...');
+
+  try {
+    const dataUrl = await fileToBase64(pendingFile);
+    let extractedText = '';
+
+    // Si es texto plano o XML, extraer
+    if (pendingFile.type.includes('xml') || pendingFile.type.includes('text')) {
+      extractedText = await pendingFile.text();
+    }
+
+    saveAttachment({
+      type,
+      title: title || pendingFile.name,
+      fileName: pendingFile.name,
+      mimeType: pendingFile.type,
+      size: pendingFile.size,
+      dataUrl,
+      extractedText: extractedText.slice(0, 50000), // limitar texto extraído
+      notes
+    });
+
+    closeModal('attachmentModal');
+    loadAttachments();
+    showToast('✓ Documento guardado · la IA ya puede consultarlo');
+  } catch (err) {
+    showToast('Error al procesar archivo', true);
+    console.error(err);
+  }
+}
+
+function viewAttachment(id) {
+  const att = listAttachments().find(a => a.id === id);
+  if (!att) return;
+
+  const meta = ATTACHMENT_TYPES[att.type] || { label: att.type, icon: '·', color: 'var(--gray)' };
+  const isPdf = att.mimeType === 'application/pdf';
+  const isImage = att.mimeType.startsWith('image/');
+
+  document.getElementById('attachmentModalTitle').textContent = att.title;
+  document.getElementById('attachmentModalBody').innerHTML = `
+    <div style="text-align: center; padding: 14px; margin-bottom: 14px; background: linear-gradient(135deg, ${meta.color === 'var(--orange)' ? 'rgba(255,79,0,0.08)' : 'rgba(255,255,255,0.04)'}, transparent); border: 1px solid ${meta.color === 'var(--orange)' ? 'rgba(255,79,0,0.2)' : 'rgba(255,255,255,0.08)'}; border-radius: 4px;">
+      <div style="font-size: 32px; color: ${meta.color}; margin-bottom: 4px;">${meta.icon}</div>
+      <div style="font-family: var(--display); font-size: 18px; color: var(--white);">${escapeHTML(att.title)}</div>
+      <div style="font-family: var(--mono); font-size: 9px; color: var(--gray); margin-top: 4px; letter-spacing: 0.15em; text-transform: uppercase;">${escapeHTML(meta.label)}</div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+      <div style="background: rgba(0,0,0,0.3); padding: 10px; border-left: 2px solid var(--info); border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--gray); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 3px;">Archivo</div>
+        <div style="font-size: 11px; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(att.fileName)}</div>
+      </div>
+      <div style="background: rgba(0,0,0,0.3); padding: 10px; border-left: 2px solid var(--gold); border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--gray); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 3px;">Tamaño</div>
+        <div style="font-size: 11px; color: var(--white);">${formatFileSize(att.size)}</div>
+      </div>
+    </div>
+
+    ${att.notes ? `
+      <div style="background: rgba(0,0,0,0.25); padding: 10px 12px; border-left: 2px solid var(--gold); border-radius: 2px; margin-bottom: 14px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--gold); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 5px;">Notas para la IA</div>
+        <div style="font-size: 12px; color: var(--white); line-height: 1.5; white-space: pre-wrap;">${escapeHTML(att.notes)}</div>
+      </div>
+    ` : ''}
+
+    ${isImage ? `
+      <div style="margin-bottom: 14px;">
+        <img src="${att.dataUrl}" style="max-width: 100%; border-radius: 4px; border: 1px solid rgba(255,79,0,0.2);">
+      </div>
+    ` : ''}
+
+    ${isPdf ? `
+      <div style="margin-bottom: 14px;">
+        <a href="${att.dataUrl}" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px; background: var(--orange); color: var(--white); text-decoration: none; font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; border-radius: 3px;">
+          <span style="font-size: 16px;">▣</span>
+          <span>Abrir PDF</span>
+        </a>
+      </div>
+    ` : ''}
+
+    ${att.extractedText ? `
+      <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-left: 2px solid var(--info); border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 8px; color: var(--info); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 5px;">Texto extraído (que ve la IA)</div>
+        <div style="font-family: var(--mono); font-size: 10px; color: var(--gray-light); line-height: 1.5; max-height: 200px; overflow-y: auto; white-space: pre-wrap;">${escapeHTML(att.extractedText.slice(0, 2000))}${att.extractedText.length > 2000 ? '\n\n[truncado · ver original]' : ''}</div>
+      </div>
+    ` : ''}
+  `;
+  document.getElementById('attachmentModalFooter').innerHTML = `
+    <button class="btn btn-danger" onclick="confirmDeleteAttachment('${id}')">Eliminar</button>
+    <button class="btn btn-secondary" onclick="closeModal('attachmentModal')">Cerrar</button>
+  `;
+  document.getElementById('attachmentModal').classList.add('show');
+}
+
+function confirmDeleteAttachment(id) {
+  if (!confirm('¿Eliminar este documento? La IA dejará de tener acceso a él.')) return;
+  deleteAttachment(id);
+  closeModal('attachmentModal');
+  loadAttachments();
+  showToast('Documento eliminado');
+}
+
+// ============================================
+// PUSH NOTIFICATIONS · gestión UI
+// ============================================
+async function loadPushStatus() {
+  const status = await getPushStatus();
+  const badge = document.getElementById('pushStatusBadge');
+  const info = document.getElementById('pushStatusInfo');
+  const actions = document.getElementById('pushActions');
+
+  if (!badge || !info || !actions) return;
+
+  // Caso 1 · no soportado
+  if (!status.supported) {
+    badge.textContent = 'NO SOPORTADO';
+    badge.style.background = 'rgba(230,57,70,0.15)';
+    badge.style.color = 'var(--danger)';
+    info.innerHTML = `
+      <div style="padding: 14px; background: rgba(230,57,70,0.06); border-left: 2px solid var(--danger); border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--danger); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px;">▸ Navegador no compatible</div>
+        <div style="font-size: 12px; color: var(--white); line-height: 1.5;">Este navegador no soporta notificaciones push. Recomendados: Chrome, Edge, Firefox, Safari 16.4+.</div>
+      </div>
+    `;
+    actions.innerHTML = '';
+    return;
+  }
+
+  // Caso 2 · iOS sin instalar PWA
+  if (status.requiresPWAInstall) {
+    badge.textContent = 'INSTALAR PWA';
+    badge.style.background = 'rgba(255,79,0,0.15)';
+    badge.style.color = 'var(--orange)';
+    info.innerHTML = `
+      <div style="padding: 14px; background: rgba(255,79,0,0.06); border-left: 2px solid var(--orange); border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px;">▸ Pasos para iOS</div>
+        <ol style="font-size: 12px; color: var(--white); line-height: 1.6; margin: 0; padding-left: 18px;">
+          <li>Abre el sitio en <strong>Safari</strong> (no Chrome ni otro navegador)</li>
+          <li>Toca el botón <strong>Compartir</strong> ⤴︎ en la barra inferior</li>
+          <li>Selecciona <strong>Agregar a pantalla de inicio</strong></li>
+          <li>Abre la app desde el ícono · vuelve aquí · activa notificaciones</li>
+        </ol>
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--gray); margin-top: 10px;">iOS requiere PWA instalada para push · es limitación de Apple.</div>
+      </div>
+    `;
+    actions.innerHTML = '';
+    return;
+  }
+
+  // Caso 3 · permiso denegado
+  if (status.permission === 'denied') {
+    badge.textContent = 'BLOQUEADO';
+    badge.style.background = 'rgba(230,57,70,0.15)';
+    badge.style.color = 'var(--danger)';
+    info.innerHTML = `
+      <div style="padding: 14px; background: rgba(230,57,70,0.06); border-left: 2px solid var(--danger); border-radius: 2px;">
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--danger); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px;">▸ Permiso bloqueado</div>
+        <div style="font-size: 12px; color: var(--white); line-height: 1.5;">Diste permiso "denegar" antes. Para reactivar: ajustes del navegador → permisos del sitio → notificaciones → permitir.</div>
+      </div>
+    `;
+    actions.innerHTML = '';
+    return;
+  }
+
+  // Caso 4 · suscrito y activo
+  if (status.subscribed) {
+    badge.textContent = 'ACTIVAS';
+    badge.style.background = 'rgba(0,217,126,0.15)';
+    badge.style.color = 'var(--success)';
+    const prefs = load(STORAGE.PUSH_PREFS, {
+      servicios: true,
+      cobros: true,
+      pendientes: true,
+      eventos: true,
+      coach: true
+    });
+    info.innerHTML = `
+      <div style="padding: 14px; background: rgba(0,217,126,0.06); border-left: 2px solid var(--success); border-radius: 3px; margin-bottom: 12px;">
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--success); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px;">▸ Notificaciones activas</div>
+        <div style="font-size: 12px; color: var(--white); line-height: 1.5;">Recibirás alertas según las preferencias seleccionadas abajo.</div>
+      </div>
+      <div style="font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px;">▸ Tipos de notificación</div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        ${[
+          { key: 'servicios', label: 'Servicios fijos próximos a vencer (7d, 3d, 1d)' },
+          { key: 'cobros', label: 'Cobros de clientes recurrentes (1 día antes)' },
+          { key: 'pendientes', label: 'Tareas pendientes con fecha del día' },
+          { key: 'eventos', label: 'Eventos musicales y ensayos (1 día antes)' },
+          { key: 'coach', label: 'KPIs del coach próximos a vencer' }
+        ].map(item => `
+          <label style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(0,0,0,0.25); border-radius: 2px; cursor: pointer;">
+            <input type="checkbox" id="pref_${item.key}" ${prefs[item.key] ? 'checked' : ''} onchange="savePushPrefs()" style="width: 16px; height: 16px; accent-color: var(--orange);">
+            <span style="font-size: 12px; color: var(--white); flex: 1;">${item.label}</span>
+          </label>
+        `).join('')}
+      </div>
+    `;
+    actions.innerHTML = `
+      <button class="btn btn-primary" onclick="syncRemindersNow()" style="padding: 9px 14px; font-size: 10px;">▸ Sincronizar recordatorios</button>
+      <button class="btn btn-secondary" onclick="testPushNotif()" style="padding: 9px 14px; font-size: 10px;">▸ Notificación de prueba</button>
+      <button class="btn btn-danger" onclick="disablePushHandler()" style="padding: 9px 14px; font-size: 10px;">✕ Desactivar</button>
+    `;
+    return;
+  }
+
+  // Caso 5 · soportado pero no suscrito
+  badge.textContent = 'INACTIVAS';
+  badge.style.background = 'rgba(255,79,0,0.15)';
+  badge.style.color = 'var(--orange)';
+  info.innerHTML = `
+    <div style="padding: 14px; background: rgba(255,79,0,0.06); border-left: 2px solid var(--orange); border-radius: 3px;">
+      <div style="font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px;">▸ Activar notificaciones</div>
+      <div style="font-size: 12px; color: var(--white); line-height: 1.5; margin-bottom: 4px;">Tu navegador soporta push. Activa para recibir recordatorios de pagos, cobros y eventos.</div>
+      <div style="font-family: var(--mono); font-size: 9px; color: var(--gray); margin-top: 10px;">Permiso actual · ${status.permission} · Standalone · ${status.isStandalone ? 'sí' : 'no'}</div>
+    </div>
+  `;
+  actions.innerHTML = `
+    <button class="btn btn-primary" onclick="enablePushHandler()" style="padding: 11px 18px; font-size: 11px;">▸ Activar notificaciones</button>
+    <button class="btn btn-secondary" onclick="testPushNotif()" style="padding: 11px 14px; font-size: 10px;">▸ Test local</button>
+  `;
+}
+
+async function enablePushHandler() {
+  showToast('Solicitando permiso...');
+  const result = await subscribeToPush();
+  if (result.success) {
+    showToast('✓ Notificaciones activadas');
+    if (result.warning) {
+      setTimeout(() => showToast(result.warning, true), 2000);
+    }
+    // Sync reminders en background
+    setTimeout(() => syncRemindersNow(true), 1500);
+  } else {
+    showToast('Error: ' + (result.error || 'desconocido'), true);
+  }
+  loadPushStatus();
+}
+
+async function disablePushHandler() {
+  if (!confirm('¿Desactivar notificaciones? No recibirás más recordatorios automáticos.')) return;
+  await unsubscribeFromPush();
+  showToast('Notificaciones desactivadas');
+  loadPushStatus();
+}
+
+async function testPushNotif() {
+  const result = await testLocalNotification();
+  if (result.success) {
+    showToast('✓ Notificación enviada · revisa tu celular');
+  } else {
+    showToast('Error: ' + (result.error || 'desconocido'), true);
+  }
+}
+
+async function syncRemindersNow(silent) {
+  if (!silent) showToast('Sincronizando recordatorios...');
+  const result = await syncRemindersToServer();
+  if (result.success) {
+    showToast('✓ ' + result.count + ' recordatorios sincronizados');
+  } else if (!silent) {
+    if (result.error && result.error.includes('Failed to fetch')) {
+      showToast('Servidor push aún no configurado · solo local activo', true);
+    } else {
+      showToast('Error: ' + (result.error || 'desconocido'), true);
+    }
+  }
+}
+
+function savePushPrefs() {
+  const prefs = {
+    servicios: document.getElementById('pref_servicios').checked,
+    cobros: document.getElementById('pref_cobros').checked,
+    pendientes: document.getElementById('pref_pendientes').checked,
+    eventos: document.getElementById('pref_eventos').checked,
+    coach: document.getElementById('pref_coach').checked
+  };
+  save(STORAGE.PUSH_PREFS, prefs);
+  showToast('✓ Preferencias guardadas');
+}
+
+
+function resetAll() {
+  if (!confirm('⚠ Esto borra TODO: canciones, eventos, calendario, conversaciones, configuración, skills.\n\n¿Estás 100% seguro?')) return;
+  if (!confirm('Última confirmación · NO hay vuelta atrás.\n\n¿Continuar?')) return;
+  Object.values(STORAGE).forEach(key => localStorage.removeItem(key));
+  showToast('Todo borrado · redirigiendo...');
+  setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (typeof mountBottomnav === 'function') mountBottomnav('config');
+  }, 150);
+});
+if (document.readyState !== 'loading' && typeof mountBottomnav === 'function') {
+  setTimeout(function() { mountBottomnav('config'); }, 150);
+}
+</script>
+</body>
+</html>

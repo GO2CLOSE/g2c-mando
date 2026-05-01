@@ -1,0 +1,238 @@
+# G2C Mando · Push Server
+
+Cloudflare Worker que envía notificaciones push reales al celular.
+
+## Setup · 15 minutos
+
+### 1. Instalar wrangler
+
+```bash
+npm install -g wrangler
+```
+
+### 2. Login a Cloudflare
+
+```bash
+wrangler login
+```
+
+Si no tienes cuenta · cuenta gratis en https://dash.cloudflare.com (los Workers tienen 100K requests/día free).
+
+### 3. Generar VAPID keys
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Output ejemplo:
+
+```
+Public Key:  BNJxw7MK9V3...
+Private Key: U8a7dMK2...
+```
+
+**GUARDA ESTAS DOS KEYS** · las necesitas en los siguientes pasos.
+
+### 4. Crear KV namespace
+
+```bash
+cd push-server
+wrangler kv:namespace create "PUSH_KV"
+```
+
+Output:
+
+```
+✨ Success!
+[[kv_namespaces]]
+binding = "PUSH_KV"
+id = "abc123def456..."
+```
+
+Copia el `id` y reemplázalo en `wrangler.toml` (línea `id = "REPLACE_WITH_KV_ID"`).
+
+### 5. Setear secrets
+
+```bash
+wrangler secret put VAPID_PUBLIC_KEY
+# pega la public key
+
+wrangler secret put VAPID_PRIVATE_KEY
+# pega la private key
+
+wrangler secret put VAPID_SUBJECT
+# escribe: mailto:hola@g2c.com.mx
+
+wrangler secret put ADMIN_SECRET
+# escribe un string random largo (ej. usa: openssl rand -hex 32)
+```
+
+### 6. Deploy
+
+```bash
+wrangler deploy
+```
+
+Output:
+
+```
+✨ Deployed g2c-mando-push
+   https://g2c-mando-push.<tu-subdominio>.workers.dev
+```
+
+### 7. Probar el deploy
+
+```bash
+curl https://g2c-mando-push.<tu-subdominio>.workers.dev/test
+```
+
+Debe responder:
+
+```json
+{ "ok": true, "time": "...", "version": "g2c-push-1.0" }
+```
+
+### 8. Custom domain (opcional pero recomendado)
+
+En Cloudflare Dashboard:
+1. Workers & Pages → tu worker → Triggers
+2. Custom Domains → Add Custom Domain
+3. Domain: `push.g2c.com.mx`
+4. CF se encarga del DNS automáticamente
+
+Si lo haces, reemplaza el dominio en `shared.js`:
+```js
+const PUSH_SERVER_URL = 'https://push.g2c.com.mx';
+```
+
+Si NO lo haces, usa el subdominio workers.dev:
+```js
+const PUSH_SERVER_URL = 'https://g2c-mando-push.tu-subdominio.workers.dev';
+```
+
+### 9. Configurar VAPID public key en el frontend
+
+Edita `shared.js` · busca:
+
+```js
+const VAPID_PUBLIC_KEY = 'REPLACE_WITH_VAPID_PUBLIC_KEY';
+```
+
+Reemplaza con la **public key** del paso 3:
+
+```js
+const VAPID_PUBLIC_KEY = 'BNJxw7MK9V3...';
+```
+
+### 10. Push del frontend a Netlify
+
+```bash
+git add shared.js sw.js config.html index.html
+git commit -m "v0.6.0 · Push notifications · web push real con servidor"
+git push origin main
+```
+
+### 11. Activar en el celular
+
+1. Abre alan.g2c.com.mx en el celular
+2. Si es iOS · agrégala a pantalla de inicio (Compartir → Agregar a pantalla de inicio)
+3. Abre la app desde el ícono
+4. Config → Notificaciones push → ▸ Activar notificaciones
+5. Acepta el permiso del navegador
+6. ▸ Notificación de prueba (debe llegar en 1-2 segundos)
+
+---
+
+## Endpoints disponibles
+
+### POST /subscribe
+Registra dispositivo
+
+```json
+{
+  "userId": "alan-default",
+  "subscription": {
+    "endpoint": "https://...",
+    "keys": { "p256dh": "...", "auth": "..." }
+  }
+}
+```
+
+### POST /unsubscribe
+Elimina dispositivo
+
+```json
+{
+  "userId": "alan-default",
+  "endpoint": "https://..."
+}
+```
+
+### POST /schedule
+Programa notificación futura
+
+```json
+{
+  "userId": "alan-default",
+  "title": "★ Servicio próximo a vencer",
+  "body": "Internet Telnor $698 · vence en 1 día",
+  "sendAt": 1746086400000,
+  "url": "/finanzas.html?tab=servicios"
+}
+```
+
+### POST /sync-reminders
+Sincroniza todos los recordatorios de un usuario (limpia anteriores y crea nuevos)
+
+```json
+{
+  "userId": "alan-default",
+  "reminders": [
+    { "type": "servicio_vence", "title": "...", "body": "...", "sendAt": 1746086400000, "url": "..." }
+  ]
+}
+```
+
+### POST /send-now (admin)
+Enviar notificación inmediata · requiere header `X-Admin-Secret`
+
+```bash
+curl -X POST https://push.g2c.com.mx/send-now \
+  -H "X-Admin-Secret: tu-admin-secret" \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"alan-default","title":"Test","body":"Hola"}'
+```
+
+### GET /test
+Health check
+
+---
+
+## Costos
+
+| Recurso | Free tier | Costo si excedes |
+|---|---|---|
+| Workers requests | 100K/día | $5/mes por 10M extra |
+| KV reads | 100K/día | $0.50 por millón |
+| KV writes | 1K/día | $5 por millón |
+| Cron triggers | Incluido | $0 |
+
+**Para uso personal de un solo usuario** · jamás vas a excederte. Te queda gratis.
+
+## Cron de procesamiento
+
+El Worker tiene un cron trigger que se ejecuta **cada minuto** y procesa las notificaciones programadas que ya cumplieron su `sendAt`. Esto significa:
+
+- Latencia de notificación: 0-60 segundos (promedio 30s)
+- Si la notificación se programó para las 9:00 AM, llega entre 9:00:00 y 9:01:00
+- Suficiente para todos los casos de uso (recordatorios, alertas, vencimientos)
+
+## Troubleshooting
+
+| Error | Solución |
+|---|---|
+| "VAPID key no configurada" en frontend | Reemplazar `REPLACE_WITH_VAPID_PUBLIC_KEY` en shared.js con la public key real |
+| "iOS requiere PWA instalada" | Agregar la app a pantalla de inicio (Safari → compartir → agregar a inicio) |
+| "Failed to fetch" en /subscribe | Servidor no deployado o URL incorrecta · verificar `PUSH_SERVER_URL` en shared.js |
+| Notificación de prueba no llega | Verificar permiso del navegador · verificar que el SW esté registrado en DevTools |
+| Push del servidor no llega | Verificar VAPID secrets en Cloudflare · verificar logs del Worker en dashboard |

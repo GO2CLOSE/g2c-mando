@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>★ G2C Mando · Alan Davis</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#FF4F00">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito+Sans:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared.css">
+<style>
+html, body { height: 100%; overflow: hidden; }
+body { display: flex; flex-direction: column; }
+
+#topnavMount { flex-shrink: 0; }
+
+.chat-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 5;
+  background: var(--dark);
+}
+.chat-shell::before {
+  content:'';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 70% 20%, rgba(255,79,0,0.06) 0%, transparent 50%), radial-gradient(ellipse at 20% 80%, rgba(139,133,255,0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.chat-header {
+  padding: 12px 22px;
+  border-bottom: 1px solid rgba(255,79,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(15,23,41,0.5);
+  backdrop-filter: blur(10px);
+  z-index: 5;
+  flex-shrink: 0;
+  gap: 12px;
+}
+.chat-header-info { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; }
+.chat-header-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.chat-header-title {
+  font-family: var(--display); font-size: 16px; line-height: 1.2; color: var(--white);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+.chat-header-meta { font-family: var(--mono); font-size: 10px; color: var(--orange); letter-spacing: 0.15em; text-transform: uppercase; }
+.chat-header-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.chat-action-btn {
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--gray-light);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast);
+  text-decoration: none;
+}
+.chat-action-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 28px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,79,0,0.3) transparent;
+  position: relative;
+  z-index: 5;
+  -webkit-overflow-scrolling: touch;
+}
+.chat-messages::-webkit-scrollbar { width: 6px; }
+.chat-messages::-webkit-scrollbar-thumb { background: rgba(255,79,0,0.3); border-radius: 3px; }
+
+/* Welcome · estilo dinámico */
+.welcome {
+  text-align: center;
+  padding: 24px 12px 40px;
+  max-width: 720px;
+  margin: 0 auto;
+  animation: fadeIn 0.5s var(--t-slow);
+}
+.welcome-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--orange);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.welcome-eyebrow::before, .welcome-eyebrow::after {
+  content: '';
+  width: 18px;
+  height: 1px;
+  background: var(--orange);
+}
+.welcome-title {
+  font-family: var(--display);
+  font-size: 36px;
+  line-height: 1.05;
+  margin-bottom: 14px;
+  color: var(--white);
+}
+.welcome-title .accent {
+  color: var(--orange);
+  font-style: italic;
+}
+.welcome-subtitle {
+  color: var(--gray-light);
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 520px;
+  margin: 0 auto 28px;
+}
+.welcome-suggestions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.suggestion-card {
+  padding: 14px 16px;
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.15);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color var(--t-fast), transform var(--t-med), box-shadow var(--t-med);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+.suggestion-card::before {
+  content:'';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 2px;
+  background: var(--orange);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform var(--t-med);
+}
+.suggestion-card:hover {
+  border-color: rgba(255,79,0,0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255,79,0,0.1);
+}
+.suggestion-card:hover::before { transform: scaleY(1); }
+.suggestion-icon {
+  font-size: 18px;
+  color: var(--orange);
+  margin-bottom: 8px;
+  line-height: 1;
+}
+.suggestion-title {
+  font-family: var(--display);
+  font-size: 14px;
+  color: var(--white);
+  margin-bottom: 4px;
+  line-height: 1.25;
+}
+.suggestion-text {
+  font-size: 11px;
+  color: var(--gray-light);
+  line-height: 1.4;
+}
+
+/* Mensajes */
+.message {
+  margin-bottom: 18px;
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  max-width: 100%;
+  animation: messageIn 0.3s var(--t-slow);
+}
+@keyframes messageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.message.user { flex-direction: row-reverse; }
+.message-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+}
+.message-avatar.ai {
+  background: rgba(255,79,0,0.12);
+  color: var(--orange);
+  border: 1px solid var(--orange);
+  text-shadow: 0 0 6px rgba(255,79,0,0.5);
+}
+.message-avatar.user {
+  background: var(--dark-3);
+  color: var(--orange);
+  border: 1px solid rgba(255,79,0,0.3);
+}
+.message-bubble {
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.1);
+  border-radius: 6px;
+  padding: 13px 16px;
+  max-width: 720px;
+  min-width: 0;
+}
+.message.user .message-bubble {
+  background: rgba(255,79,0,0.08);
+  border-color: rgba(255,79,0,0.2);
+}
+.message-content { color: var(--white); font-size: 14px; line-height: 1.65; word-wrap: break-word; }
+.message-content p { margin-bottom: 10px; }
+.message-content p:last-child { margin-bottom: 0; }
+.message-content strong { color: var(--orange); font-weight: 700; }
+.message-content em { color: var(--orange-light); font-style: italic; }
+.message-content code { background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 2px; font-family: var(--mono); font-size: 12px; color: var(--orange-light); }
+.message-content pre { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,79,0,0.15); border-left: 3px solid var(--orange); padding: 12px 14px; border-radius: 3px; overflow-x: auto; margin: 10px 0; }
+.message-content pre code { background: transparent; padding: 0; color: var(--gray-light); font-size: 12px; }
+.message-content a { color: var(--orange-light); text-decoration: none; border-bottom: 1px dashed rgba(255,79,0,0.3); transition: color var(--t-fast), border-color var(--t-fast); word-break: break-all; }
+.message-content a:hover { color: var(--white); border-bottom-color: var(--orange); }
+.message-content ul, .message-content ol { margin: 8px 0 8px 20px; }
+.message-content li { margin-bottom: 4px; }
+.message-content h1, .message-content h2, .message-content h3 { font-family: var(--display); margin: 12px 0 6px; line-height: 1.2; }
+.message-content h1 { font-size: 20px; }
+.message-content h2 { font-size: 18px; color: var(--orange); }
+.message-content h3 { font-size: 16px; }
+.message-cursor {
+  display: inline-block;
+  width: 2px; height: 14px;
+  background: var(--orange);
+  margin-left: 2px;
+  animation: cursorBlink 1s step-start infinite;
+  vertical-align: middle;
+}
+@keyframes cursorBlink { 50% { opacity: 0; } }
+.message-meta { font-family: var(--mono); font-size: 9px; color: var(--gray); letter-spacing: 0.1em; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.04); }
+
+/* Tool card */
+.tool-card {
+  background: linear-gradient(135deg, rgba(255,79,0,0.08), var(--dark-2));
+  border: 1px solid var(--orange);
+  border-radius: 4px;
+  padding: 14px 16px;
+  margin-top: 12px;
+  animation: messageIn 0.3s var(--t-slow);
+}
+.tool-eyebrow { font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 8px; }
+.tool-eyebrow::before { content:'⚠ '; }
+.tool-title { font-family: var(--display); font-size: 16px; color: var(--white); margin-bottom: 8px; }
+.tool-data { background: rgba(0,0,0,0.3); padding: 10px 12px; border-radius: 3px; margin-bottom: 12px; }
+.tool-data-row { display: flex; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--gray-light); margin-bottom: 4px; }
+.tool-data-row .label { color: var(--orange); letter-spacing: 0.1em; min-width: 80px; text-transform: uppercase; font-size: 9px; }
+.tool-data-row .value { color: var(--white); flex: 1; word-break: break-word; }
+.tool-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.tool-btn { padding: 8px 14px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; border: none; cursor: pointer; border-radius: 2px; font-weight: 700; transition: background var(--t-fast); }
+.tool-btn-approve { background: var(--success); color: var(--white); flex: 1; }
+.tool-btn-approve:hover { background: #00c270; }
+.tool-btn-reject { background: transparent; color: var(--danger); border: 1px solid rgba(230,57,70,0.4); }
+.tool-btn-reject:hover { background: rgba(230,57,70,0.08); }
+.tool-card.executed { border-color: var(--success); background: rgba(0,217,126,0.05); }
+.tool-card.executed .tool-eyebrow { color: var(--success); }
+.tool-card.executed .tool-eyebrow::before { content:'✓ '; }
+.tool-card.rejected { border-color: var(--gray); opacity: 0.6; }
+.tool-card.rejected .tool-eyebrow::before { content:'✗ '; }
+
+/* YouTube embeds */
+.yt-results { background: linear-gradient(135deg, rgba(255,79,0,0.05), var(--dark-2)); border: 1px solid rgba(255,79,0,0.25); border-radius: 4px; padding: 14px; margin-top: 12px; }
+.yt-results-header { font-family: var(--mono); font-size: 10px; color: var(--orange); letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,79,0,0.15); }
+.yt-results-list { display: flex; flex-direction: column; gap: 10px; }
+.yt-result { display: grid; grid-template-columns: 120px 1fr; gap: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,79,0,0.1); border-radius: 3px; padding: 10px; }
+.yt-thumb { aspect-ratio: 16/9; border-radius: 2px; overflow: hidden; cursor: pointer; background: var(--dark); position: relative; }
+.yt-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.yt-thumb::after { content:'▶'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--white); font-size: 24px; background: rgba(0,0,0,0.4); opacity: 0; transition: opacity var(--t-fast); }
+.yt-thumb:hover::after { opacity: 1; }
+.yt-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.yt-title { font-size: 13px; color: var(--white); line-height: 1.3; font-weight: 600; }
+.yt-channel { font-family: var(--mono); font-size: 10px; color: var(--orange-light); }
+.yt-meta { font-family: var(--mono); font-size: 9px; color: var(--gray); }
+.yt-actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.yt-btn { padding: 5px 10px; font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; border: 1px solid rgba(255,79,0,0.3); background: rgba(255,79,0,0.06); color: var(--orange-light); border-radius: 2px; cursor: pointer; text-decoration: none; transition: background var(--t-fast), color var(--t-fast); }
+.yt-btn:hover { background: var(--orange); color: var(--white); border-color: var(--orange); }
+.yt-player { grid-column: 1/-1; margin-top: 10px; }
+.yt-player iframe { width: 100%; aspect-ratio: 16/9; border: 1px solid rgba(255,79,0,0.2); border-radius: 3px; }
+
+/* Input area */
+.chat-input-area {
+  padding: 16px 22px;
+  border-top: 1px solid rgba(255,79,0,0.15);
+  background: rgba(8,13,26,0.7);
+  backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.chat-input-wrap { position: relative; max-width: 920px; margin: 0 auto; }
+.chat-input {
+  width: 100%;
+  padding: 13px 96px 13px 16px;
+  background: var(--dark-2);
+  border: 1px solid rgba(255,79,0,0.2);
+  color: var(--white);
+  font-family: var(--body);
+  font-size: 14px;
+  border-radius: 4px;
+  resize: none;
+  min-height: 50px;
+  max-height: 200px;
+  line-height: 1.5;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.chat-input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255,79,0,0.08); }
+.chat-input::placeholder { color: var(--gray); font-style: italic; }
+.chat-send-btn {
+  position: absolute; right: 8px; bottom: 8px;
+  padding: 8px 14px;
+  background: var(--orange); color: var(--white);
+  border: none; cursor: pointer;
+  font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  border-radius: 2px; font-weight: 700;
+  transition: background var(--t-fast);
+}
+.chat-send-btn:hover:not(:disabled) { background: var(--orange-light); }
+.chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.chat-input-hint { font-family: var(--mono); font-size: 9px; color: var(--gray); letter-spacing: 0.1em; margin-top: 6px; text-align: center; }
+.chat-input-hint kbd { padding: 1px 6px; background: var(--dark-3); border: 1px solid rgba(255,255,255,0.1); border-radius: 2px; color: var(--orange); font-size: 9px; }
+
+@media (max-width: 880px) {
+  .chat-header {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .chat-header-meta { display: none; }
+  .chat-header-title {
+    font-size: 13px;
+    -webkit-line-clamp: 1;
+  }
+  .chat-header-info { gap: 8px; }
+  .chat-header .g2c-star { display: none; }
+  .chat-header-actions { gap: 4px; }
+  .chat-action-btn {
+    padding: 5px 8px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+  }
+  .chat-messages { padding: 22px 14px 16px; }
+  .chat-input-area { padding: 12px 14px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .welcome { padding: 18px 4px 30px; }
+  .welcome-suggestions { grid-template-columns: 1fr; }
+  .welcome-title { font-size: 26px; }
+  .welcome-eyebrow { font-size: 9px; letter-spacing: 0.25em; }
+  .welcome-eyebrow::before, .welcome-eyebrow::after { width: 12px; }
+  .yt-result { grid-template-columns: 90px 1fr; padding: 8px; }
+  .chat-input-hint { display: none; }
+  .chat-input { padding: 12px 80px 12px 14px; font-size: 16px; }
+  .chat-send-btn { padding: 7px 11px; font-size: 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen" style="display:none;">
+  <div class="login-card">
+    <span class="g2c-star lg solid"><span class="g2c-star-glyph">★</span></span>
+    <div class="login-eyebrow">G2C Mando · Acceso privado</div>
+    <div class="login-title">Bienvenido</div>
+    <form class="login-form" onsubmit="event.preventDefault(); doLogin();">
+      <div>
+        <label class="label">Password</label>
+        <input type="password" class="input" id="loginPass" autocomplete="current-password" autofocus>
+      </div>
+      <button type="submit" class="btn btn-primary" style="justify-content: center; width: 100%;">▸ Entrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none; height:100%; flex-direction:column;">
+  <div id="topnavMount"></div>
+  <a href="config.html" id="floatConfig" title="Configuración" aria-label="Configuración">
+    <span style="font-size: 16px; line-height: 1;">⚙</span>
+  </a>
+  <main class="chat-shell">
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-area">
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="chatInput" placeholder="¿En qué te ayudo? · Enter para enviar" rows="1" onkeydown="handleInputKey(event)" oninput="autoGrow(this)"></textarea>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="shared.js"></script>
+<script>
+const DEFAULT_PASS_HASH = '0db087d6b415b97c7641ef7862e88c9aa88323f3c488150ed09d6d1c45c6efc0';
+
+let conversations = load(STORAGE.CHAT_CONVERSATIONS, []);
+let currentConvId = null;
+let currentMessages = [];
+let isSending = false;
+
+async function init() {
+  const ok = await checkAuth();
+  if (ok) {
+    showApp();
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+  }
+  // Registrar Service Worker en background
+  if (typeof registerServiceWorker === 'function') {
+    registerServiceWorker().catch(err => console.warn('[SW] register failed', err));
+  }
+}
+
+async function doLogin() {
+  const pass = document.getElementById('loginPass').value;
+  if (!pass) { showToast('Captura tu password', true); return; }
+  const hash = await sha256(pass);
+  const config = getConfig();
+  const expectedHash = config.passwordHash || DEFAULT_PASS_HASH;
+  if (hash !== expectedHash) { showToast('Password incorrecto', true); return; }
+  save(STORAGE.AUTH, { expires: Date.now() + 12*3600*1000 });
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  const app = document.getElementById('app');
+  app.style.display = 'flex';
+  document.getElementById('topnavMount').innerHTML = renderTopnav('mando');
+
+  // Cargar conversación de URL si existe, o más reciente, o nueva
+  const params = new URLSearchParams(window.location.search);
+  const convFromUrl = params.get('conv');
+  if (convFromUrl && conversations.find(c => c.id === convFromUrl)) {
+    loadConv(convFromUrl);
+  } else if (conversations.length > 0) {
+    loadConv(conversations[0].id);
+  } else {
+    newChat();
+  }
+
+  // Si viene un prompt desde otro módulo (sessionStorage), inyectarlo y enviar
+  const pending = sessionStorage.getItem('alan_mando_pending_prompt');
+  if (pending) {
+    sessionStorage.removeItem('alan_mando_pending_prompt');
+    newChat();
+    setTimeout(() => {
+      const input = document.getElementById('chatInput');
+      if (input) {
+        input.value = pending;
+        autoGrow(input);
+        sendMessage();
+      }
+    }, 100);
+    return;
+  }
+
+  if (window.innerWidth > 880) document.getElementById('chatInput').focus();
+}
+
+function newChat() {
+  currentConvId = null;
+  currentMessages = [];
+  const header = document.getElementById('chatHeader');
+  if (header) header.style.display = 'none';
+  renderMessages();
+  if (window.innerWidth > 880) document.getElementById('chatInput').focus();
+}
+
+function loadConv(id) {
+  const conv = conversations.find(c => c.id === id);
+  if (!conv) return;
+  currentConvId = id;
+  currentMessages = JSON.parse(JSON.stringify(conv.messages));
+  const header = document.getElementById('chatHeader');
+  if (header) header.style.display = 'flex';
+  const title = document.getElementById('chatTitle');
+  if (title) title.textContent = conv.title;
+  renderMessages();
+}
+
+function renderMessages() {
+  const container = document.getElementById('chatMessages');
+  if (currentMessages.length === 0) {
+    container.innerHTML = renderWelcome();
+    return;
+  }
+  container.innerHTML = currentMessages.map((m, idx) => renderMessage(m, idx)).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+function renderWelcome() {
+  const config = getConfig();
+  const name = config.name || 'Alan';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
+  const hasYT = !!config.youtubeApiKey;
+
+  const sugerencias = [
+    { icon: '▣', title: '¿Qué tengo esta semana?' },
+    { icon: '▦', title: 'Resumen financiero del mes' },
+    { icon: '♪', title: 'Tocadas pendientes' },
+    { icon: '▸', title: 'Tareas urgentes hoy' },
+    { icon: '$', title: '¿Cuánto facturé este mes?' },
+    { icon: '◈', title: 'Revisa mis documentos fiscales' }
+  ];
+
+  return `
+    <div class="welcome">
+      <span class="g2c-star xl solid"><span class="g2c-star-glyph">★</span></span>
+      <div class="welcome-eyebrow">Copiloto · Claude Haiku 4.5${hasYT ? ' · YT ✓' : ''}</div>
+      <h1 class="welcome-title">${greeting}, <span class="accent">${escapeHTML(name)}</span></h1>
+      <p class="welcome-subtitle">Veo todo: G2C, banda, finanzas, calendario, tareas. Pídeme análisis, registros, asesoría contable. Todo pasa por tu aprobación.</p>
+      <div class="welcome-suggestions">
+        ${sugerencias.map(s => `
+          <div class="suggestion-card" onclick="useSuggestion('${escapeHTML(s.title).replace(/'/g, '&#39;')}')">
+            <div class="suggestion-icon">${s.icon}</div>
+            <div class="suggestion-title">${escapeHTML(s.title)}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top: 14px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+        <button onclick="openCFDIUploaderManual()" style="padding: 9px 16px; background: rgba(255,79,0,0.06); border: 1px solid rgba(255,79,0,0.3); color: var(--orange); font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; cursor: pointer; border-radius: 2px; transition: all var(--t-fast);">▲ Subir CFDI</button>
+        <a href="config.html" style="padding: 9px 16px; background: rgba(74,158,255,0.06); border: 1px solid rgba(74,158,255,0.3); color: var(--info); font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; text-decoration: none; border-radius: 2px;">▣ Documentos IA</a>
+        <button onclick="openProviderApps()" style="padding: 9px 16px; background: rgba(255,79,0,0.06); border: 1px solid rgba(255,79,0,0.3); color: var(--orange); font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; cursor: pointer; border-radius: 2px;">▸ Apps proveedores</button>
+      </div>
+
+      <!-- Acceso rápido a apps de proveedores -->
+      <div style="margin-top: 22px; padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,79,0,0.1); border-radius: 4px; max-width: 720px; margin-left: auto; margin-right: auto;">
+        <div style="font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; margin-bottom: 12px; text-align: center;">▸ Accesos rápidos</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px;">
+          ${Object.entries(PROVIDER_APPS).map(([key, app]) => `
+            <a href="${app.appUrl}" target="_blank" rel="noopener"
+               style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; background: rgba(0,0,0,0.3); border: 1px solid ${app.color}33; border-left: 2px solid ${app.color}; border-radius: 2px; text-decoration: none; transition: transform var(--t-fast);"
+               onmouseover="this.style.transform='translateY(-2px)'"
+               onmouseout="this.style.transform='translateY(0)'">
+              <span style="font-size: 18px; line-height: 1;">${app.icon}</span>
+              <span style="font-family: var(--mono); font-size: 9px; color: var(--white); letter-spacing: 0.05em; text-align: center; line-height: 1.2;">${app.label}</span>
+            </a>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function openProviderApps() {
+  // Scroll a la sección de apps en el welcome
+  const apps = document.querySelector('.welcome');
+  if (apps) apps.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function openCFDIUploaderManual() {
+  openCFDIUploader(-1, 'cfdi', 'Análisis manual del CFDI por parte del usuario');
+}
+
+function useSuggestion(text) {
+  document.getElementById('chatInput').value = text;
+  autoGrow(document.getElementById('chatInput'));
+  sendMessage();
+}
+
+function renderMessage(m, idx) {
+  const config = getConfig();
+  const initial = (config.name || 'A').charAt(0).toUpperCase();
+
+  if (m.role === 'user') {
+    return `
+      <div class="message user">
+        <div class="message-avatar user">${initial}</div>
+        <div class="message-bubble">
+          <div class="message-content">${formatAiText(m.content)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  const cleanText = m.content
+    .replace(/<<<TOOL_CALL>>>[\s\S]*?<<<END_TOOL_CALL>>>/, '')
+    .replace(/<<<CLARIFY>>>[\s\S]*?<<<END_CLARIFY>>>/, '')
+    .trim();
+  let html = `
+    <div class="message ai">
+      <div class="message-avatar ai">★</div>
+      <div class="message-bubble">
+        <div class="message-content">${cleanText ? formatAiText(cleanText) : ''}${m.streaming ? '<span class="message-cursor"></span>' : ''}</div>
+  `;
+
+  if (m.clarify) html += renderClarification(m.clarify, idx);
+  if (m.toolCall) html += renderToolCard(m.toolCall, idx);
+  if (m.ytResults) html += renderYTResults(m.ytResults, idx);
+  if (m.ytLoading) html += `<div class="yt-results"><div class="yt-results-header">Buscando en YouTube...</div></div>`;
+  if (m.ytError) html += `<div class="yt-results"><div class="yt-results-header" style="color:var(--danger);">Error: ${escapeHTML(m.ytError)}</div></div>`;
+
+  if (m.usage) {
+    const cost = ((m.usage.input_tokens||0)/1000*AI_COST_INPUT) + ((m.usage.output_tokens||0)/1000*AI_COST_OUTPUT);
+    html += `<div class="message-meta">▸ ${m.usage.input_tokens||0} in · ${m.usage.output_tokens||0} out · $${cost.toFixed(4)}</div>`;
+  }
+
+  html += `</div></div>`;
+  return html;
+}
+
+function renderClarification(clar, msgIdx) {
+  if (!clar || !clar.questions) return '';
+  let html = `<div class="clarification">`;
+  if (clar.intro) {
+    html += `<div style="color: var(--white); font-size: 13px; margin-bottom: 14px; line-height: 1.55;">${escapeHTML(clar.intro)}</div>`;
+  }
+  clar.questions.forEach((q, qIdx) => {
+    html += `<div class="clarification-question">${escapeHTML(q.label)}</div>`;
+    html += `<div class="clarification-options">`;
+    (q.options || []).forEach(opt => {
+      const val = (opt.text || opt.value || '').replace(/'/g, '&#39;');
+      html += `<button class="clarification-btn" onclick="answerClarification(${msgIdx}, ${qIdx}, '${val}')">${escapeHTML(opt.text || opt.value)}</button>`;
+    });
+    html += `</div>`;
+  });
+  // Siempre incluir botón "Otra respuesta" que enfoca el input
+  html += `
+    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
+      <button class="clarification-btn" style="width: 100%; background: transparent; border: 1px dashed rgba(255,79,0,0.4); color: var(--orange); padding: 11px 14px;" onclick="focusInputForCustomAnswer()">
+        <span style="font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;">▸ Escribir mi propia respuesta</span>
+      </button>
+      ${clar.freeText ? `<div class="clarification-hint" style="margin-top: 8px;">${escapeHTML(clar.freeText)}</div>` : `<div class="clarification-hint" style="margin-top: 8px;">O escribe libremente en el input de abajo</div>`}
+    </div>
+  `;
+  html += `</div>`;
+  return html;
+}
+
+function focusInputForCustomAnswer() {
+  const input = document.getElementById('chatInput');
+  if (input) {
+    input.focus();
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast('▸ Escribe tu respuesta abajo');
+  }
+}
+
+function answerClarification(msgIdx, qIdx, value) {
+  const input = document.getElementById('chatInput');
+  const current = input.value.trim();
+  input.value = current ? current + ' · ' + value : value;
+  autoGrow(input);
+  input.focus();
+}
+
+function renderToolCard(tc, idx) {
+  const status = tc.status || 'pending';
+  const statusClass = status === 'executed' ? 'executed' : status === 'rejected' ? 'rejected' : '';
+  const dataRows = Object.entries(tc.data || {}).map(([k,v]) =>
+    `<div class="tool-data-row"><span class="label">${escapeHTML(k)}</span><span class="value">${escapeHTML(String(v))}</span></div>`
+  ).join('');
+  const actionsHTML = status === 'pending' ? `
+    <div class="tool-actions">
+      <button class="tool-btn tool-btn-approve" onclick="approveTool(${idx})">✓ Aprobar y ejecutar</button>
+      <button class="tool-btn tool-btn-reject" onclick="rejectTool(${idx})">✗ Rechazar</button>
+    </div>
+  ` : status === 'executed' ? `
+    <div style="font-family:var(--mono);font-size:10px;color:var(--success);letter-spacing:0.15em;">✓ EJECUTADO</div>
+  ` : `
+    <div style="font-family:var(--mono);font-size:10px;color:var(--gray);letter-spacing:0.15em;">✗ RECHAZADO</div>
+  `;
+  return `
+    <div class="tool-card ${statusClass}">
+      <div class="tool-eyebrow">Acción · ${escapeHTML(tc.module)}</div>
+      <div class="tool-title">${escapeHTML(tc.summary || tc.action)}</div>
+      <div class="tool-data">${dataRows}</div>
+      ${actionsHTML}
+    </div>
+  `;
+}
+
+function renderYTResults(yt, msgIdx) {
+  const { query, results } = yt;
+  if (!results || results.length === 0) return `<div class="yt-results"><div class="yt-results-header">Sin resultados para "${escapeHTML(query)}"</div></div>`;
+  return `
+    <div class="yt-results">
+      <div class="yt-results-header">▶ ${results.length} videos · "${escapeHTML(query)}"</div>
+      <div class="yt-results-list">
+        ${results.map((r,i) => renderYTResult(r, msgIdx, i)).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderYTResult(r, msgIdx, i) {
+  const playerId = `ytPlayer-${msgIdx}-${i}`;
+  const dataStr = JSON.stringify({ videoId: r.videoId, title: r.title, channel: r.channel }).replace(/'/g,'&apos;');
+  return `
+    <div class="yt-result">
+      <div class="yt-thumb" onclick="playYT('${playerId}', '${r.videoId}')">
+        <img src="${escapeHTML(r.thumbnail)}" alt="${escapeHTML(r.title)}" loading="lazy">
+      </div>
+      <div class="yt-info">
+        <div class="yt-title">${escapeHTML(r.title)}</div>
+        <div class="yt-channel">${escapeHTML(r.channel)}</div>
+        <div class="yt-meta">${new Date(r.publishedAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'short' })}</div>
+        <div class="yt-actions">
+          <button class="yt-btn" onclick="playYT('${playerId}', '${r.videoId}')">▶ Reproducir</button>
+          <a class="yt-btn" href="https://www.youtube.com/watch?v=${r.videoId}" target="_blank" rel="noopener">▸ YouTube</a>
+          <button class="yt-btn" onclick='saveYTSong(${dataStr})'>▸ Repertorio</button>
+        </div>
+      </div>
+      <div class="yt-player" id="${playerId}"></div>
+    </div>
+  `;
+}
+
+function playYT(playerId, videoId) {
+  const div = document.getElementById(playerId);
+  if (!div) return;
+  if (div.innerHTML) { div.innerHTML = ''; return; }
+  div.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+}
+
+function saveYTSong(yt) {
+  const songs = load(STORAGE.CANCIONES, []);
+  songs.push({
+    id: uid('song_yt'),
+    titulo: yt.title, artista: yt.channel || '', genero: '', status: 'aprender',
+    letraUrl: '', youtubeUrl: `https://www.youtube.com/watch?v=${yt.videoId}`,
+    anotaciones: '', tareas: [], createdAt: Date.now(), updatedAt: Date.now()
+  });
+  save(STORAGE.CANCIONES, songs);
+  logAction({ module: 'musica_canciones', action: 'add_song_from_yt', summary: `Guardada "${yt.title}" desde YouTube`, data: yt });
+  showToast(`✓ Canción guardada al repertorio`);
+}
+
+async function sendMessage() {
+  if (isSending) return;
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const config = getConfig();
+  if (!config.apiKey) {
+    showToast('Configura tu API key Anthropic en Configuración', true);
+    return;
+  }
+
+  trackWords(text);
+
+  if (!currentConvId) {
+    currentConvId = uid('conv');
+    currentMessages = [];
+  }
+
+  currentMessages.push({ role: 'user', content: text, ts: Date.now() });
+  input.value = '';
+  autoGrow(input);
+  saveCurrentConv();
+  renderMessages();
+
+  isSending = true;
+  document.getElementById('sendBtn').disabled = true;
+  input.disabled = true;
+
+  const aiMsgIdx = currentMessages.length;
+  currentMessages.push({ role: 'assistant', content: '', streaming: true, ts: Date.now() });
+  renderMessages();
+
+  try {
+    const messages = currentMessages.filter(m => !m.streaming).map(m => ({ role: m.role, content: m.content }));
+    const result = await callClaude(messages, 'Mando');
+
+    currentMessages[aiMsgIdx] = {
+      role: 'assistant',
+      content: result.text,
+      ts: Date.now(),
+      usage: result.usage,
+      toolCall: result.toolCall,
+      clarify: result.clarify
+    };
+
+    if (currentMessages.filter(m => m.role === 'user').length === 1) {
+      const conv = conversations.find(c => c.id === currentConvId);
+      if (conv && !conv.titleSet) {
+        conv.title = generateTitle(currentMessages[0].content);
+        conv.titleSet = true;
+      }
+    }
+
+    saveCurrentConv();
+    renderMessages();
+  } catch (e) {
+    currentMessages[aiMsgIdx] = {
+      role: 'assistant',
+      content: `**Error:** ${e.message}\n\nVerifica tu API key en /config.html`,
+      ts: Date.now(),
+      error: true
+    };
+    saveCurrentConv();
+    renderMessages();
+  }
+
+  isSending = false;
+  document.getElementById('sendBtn').disabled = false;
+  input.disabled = false;
+  if (window.innerWidth > 880) input.focus();
+}
+
+function trackWords(text) {
+  const STOP = new Set(['de','la','que','el','en','y','a','los','del','las','un','por','con','no','una','su','para','es','al','lo','como','mas','más','o','pero','sus','le','ya','este','si','porque','esta','entre','cuando','muy','sin','sobre','también','me','hasta','hay','donde','quien','desde','todo','nos','durante','todos','uno','les','ni','contra','otros','ese','eso','ante','ellos','e','esto','mí','antes','algunos','qué','unos','yo','otro','otras','otra','él','tanto','esa','estos','mucho','quienes','nada','muchos','cual','poco','ella','estar','estas','algunas','algo','nosotros','mi','mis','tú','te','ti','tu','tus','ellas']);
+  const stats = load(STORAGE.CHAT_STATS, { totalTokensIn: 0, totalTokensOut: 0, words: {} });
+  const words = text.toLowerCase().match(/\b[a-záéíóúñ]{3,}\b/g) || [];
+  words.forEach(w => {
+    if (STOP.has(w)) return;
+    stats.words[w] = (stats.words[w] || 0) + 1;
+  });
+  save(STORAGE.CHAT_STATS, stats);
+}
+
+function generateTitle(firstMessage) {
+  const words = firstMessage.split(/\s+/).slice(0, 8).join(' ');
+  return words.length > 50 ? words.substring(0, 50) + '...' : words;
+}
+
+function saveCurrentConv() {
+  if (!currentConvId) return;
+  const existing = conversations.findIndex(c => c.id === currentConvId);
+  const conv = {
+    id: currentConvId,
+    title: existing >= 0 ? conversations[existing].title : 'Nueva conversación',
+    titleSet: existing >= 0 ? conversations[existing].titleSet : false,
+    messages: currentMessages.filter(m => !m.streaming),
+    createdAt: existing >= 0 ? conversations[existing].createdAt : Date.now(),
+    updatedAt: Date.now()
+  };
+  if (existing >= 0) conversations[existing] = conv;
+  else conversations.unshift(conv);
+  save(STORAGE.CHAT_CONVERSATIONS, conversations);
+  const title = document.getElementById('chatTitle');
+  if (title) title.textContent = conv.title;
+}
+
+async function approveTool(msgIdx) {
+  const msg = currentMessages[msgIdx];
+  if (!msg || !msg.toolCall) return;
+  const tc = msg.toolCall;
+
+  try {
+    if (tc.action === 'search_youtube') {
+      msg.ytLoading = true;
+      msg.toolCall.status = 'executed';
+      saveCurrentConv();
+      renderMessages();
+      try {
+        const results = await executeYouTubeSearch(tc.data.query, tc.data.maxResults);
+        msg.ytLoading = false;
+        msg.ytResults = { query: tc.data.query, results };
+        logAction(tc);
+        saveCurrentConv();
+        renderMessages();
+        showToast(`✓ ${results.length} videos encontrados`);
+      } catch (e) {
+        msg.ytLoading = false;
+        msg.ytError = e.message;
+        saveCurrentConv();
+        renderMessages();
+        showToast(`Error YouTube: ${e.message}`, true);
+      }
+    } else if (tc.action === 'request_upload') {
+      tc.status = 'executed';
+      saveCurrentConv();
+      renderMessages();
+      openCFDIUploader(msgIdx, tc.data.tipoArchivo || 'cfdi', tc.data.motivo || '');
+    } else {
+      executeTool(tc);
+      tc.status = 'executed';
+      saveCurrentConv();
+      renderMessages();
+      showToast(`✓ ${tc.summary}`);
+    }
+  } catch (e) {
+    showToast('Error: ' + e.message, true);
+  }
+}
+
+function openCFDIUploader(msgIdx, tipoArchivo, motivo) {
+  const isCFDI = tipoArchivo === 'cfdi' || tipoArchivo === 'xml';
+  const accept = isCFDI ? '.xml' : '.xml,.pdf';
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="modal-overlay" id="modalUpload" onclick="if(event.target.id==='modalUpload')closeUploadModal()" style="position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:1000;display:flex;align-items:flex-start;padding:30px 16px;justify-content:center;">
+      <div style="background:var(--dark-2);border:1px solid rgba(255,79,0,0.4);border-radius:5px;max-width:520px;width:100%;display:flex;flex-direction:column;">
+        <div style="padding:14px 18px;border-bottom:1px solid rgba(255,79,0,0.2);display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-family:var(--display);font-size:17px;color:var(--white);">Subir ${isCFDI ? 'CFDI 4.0' : 'archivo'}</div>
+          <button onclick="closeUploadModal()" style="width:26px;height:26px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--gray);cursor:pointer;border-radius:2px;">✕</button>
+        </div>
+        <div style="padding:18px;">
+          ${motivo ? `<div style="background:rgba(74,158,255,0.06);border-left:2px solid var(--info);padding:10px 12px;margin-bottom:14px;border-radius:2px;font-size:12px;color:var(--white);line-height:1.5;"><strong style="color:var(--info);">Motivo IA:</strong> ${escapeHTML(motivo)}</div>` : ''}
+          <div class="file-upload" id="cfdiDropzone">
+            <div class="file-upload-icon">▲</div>
+            <div class="file-upload-text">Arrastra archivo o click para seleccionar</div>
+            <div class="file-upload-hint">${isCFDI ? 'Acepta .xml CFDI 4.0' : 'Acepta .xml o .pdf'}</div>
+          </div>
+          <input type="file" id="cfdiFileInput" accept="${accept}" style="display:none;">
+          <div id="cfdiPreview"></div>
+        </div>
+        <div style="padding:12px 18px;border-top:1px solid rgba(255,255,255,0.05);display:flex;gap:6px;justify-content:flex-end;">
+          <button onclick="closeUploadModal()" style="padding:8px 14px;background:transparent;color:var(--gray-light);border:1px solid rgba(255,255,255,0.1);font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;font-weight:700;cursor:pointer;border-radius:3px;">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `);
+
+  const dropzone = document.getElementById('cfdiDropzone');
+  const fileInput = document.getElementById('cfdiFileInput');
+
+  dropzone.onclick = () => fileInput.click();
+  dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('dragover'); };
+  dropzone.ondragleave = () => dropzone.classList.remove('dragover');
+  dropzone.ondrop = (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) processCFDIFile(e.dataTransfer.files[0], msgIdx);
+  };
+  fileInput.onchange = (e) => {
+    if (e.target.files.length > 0) processCFDIFile(e.target.files[0], msgIdx);
+  };
+}
+
+async function processCFDIFile(file, msgIdx) {
+  const preview = document.getElementById('cfdiPreview');
+  if (!file.name.endsWith('.xml')) {
+    preview.innerHTML = `<div class="file-attached" style="background:rgba(230,57,70,0.06);border-color:var(--danger);"><div class="file-attached-icon" style="background:rgba(230,57,70,0.15);color:var(--danger);">!</div><div class="file-attached-info"><div class="file-attached-name">Solo XML CFDI 4.0</div><div class="file-attached-meta">Para PDFs usa la integración futura · por ahora exporta el XML</div></div></div>`;
+    return;
+  }
+  const text = await file.text();
+  const parsed = parseCFDI(text);
+  if (parsed.error) {
+    preview.innerHTML = `<div class="file-attached" style="background:rgba(230,57,70,0.06);border-color:var(--danger);"><div class="file-attached-icon" style="background:rgba(230,57,70,0.15);color:var(--danger);">!</div><div class="file-attached-info"><div class="file-attached-name">Error: ${escapeHTML(parsed.error)}</div><div class="file-attached-meta">${escapeHTML(file.name)}</div></div></div>`;
+    return;
+  }
+  const cfdi = saveCFDI(parsed, file.name);
+  preview.innerHTML = `
+    <div class="file-attached">
+      <div class="file-attached-icon">✓</div>
+      <div class="file-attached-info">
+        <div class="file-attached-name">${escapeHTML(file.name)}</div>
+        <div class="file-attached-meta">${cfdi.tipo} · ${escapeHTML(cfdi.emisor.nombre)} → ${escapeHTML(cfdi.receptor.nombre)} · $${Number(cfdi.total).toLocaleString('es-MX')} ${cfdi.moneda}</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:12px 14px;background:rgba(0,217,126,0.06);border-left:2px solid var(--success);border-radius:2px;font-size:12px;color:var(--white);line-height:1.6;">
+      <strong style="color:var(--success);">CFDI parseado · ${cfdi.tipo.toUpperCase()}</strong><br>
+      Emisor: ${escapeHTML(cfdi.emisor.rfc)} (${escapeHTML(cfdi.emisor.nombre)})<br>
+      Receptor: ${escapeHTML(cfdi.receptor.rfc)} (${escapeHTML(cfdi.receptor.nombre)})<br>
+      Subtotal: $${cfdi.subtotal.toLocaleString('es-MX')} · IVA: $${cfdi.iva.toLocaleString('es-MX')} · <strong>Total: $${cfdi.total.toLocaleString('es-MX')}</strong><br>
+      UUID: ${escapeHTML(cfdi.uuid).slice(0,18)}...<br>
+      Conceptos: ${cfdi.conceptos.length}
+    </div>
+    <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">
+      <button onclick="sendCFDIToAI('${cfdi.id}', ${msgIdx})" style="padding:9px 14px;background:var(--orange);color:var(--white);font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;border:none;cursor:pointer;border-radius:2px;">▸ Analizar con IA</button>
+      <button onclick="closeUploadModal()" style="padding:9px 14px;background:transparent;color:var(--gray-light);border:1px solid rgba(255,255,255,0.1);font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;cursor:pointer;border-radius:2px;">Solo guardar</button>
+    </div>
+  `;
+}
+
+function sendCFDIToAI(cfdiId, msgIdx) {
+  const cfdis = load(STORAGE.CFDIS, []);
+  const cfdi = cfdis.find(c => c.id === cfdiId);
+  if (!cfdi) return;
+
+  closeUploadModal();
+  const summary = `Te cargué un CFDI ${cfdi.tipo} para análisis:
+- Emisor: ${cfdi.emisor.rfc} (${cfdi.emisor.nombre})
+- Receptor: ${cfdi.receptor.rfc} (${cfdi.receptor.nombre})
+- Fecha: ${cfdi.fecha?.slice(0,10)}
+- Subtotal: $${cfdi.subtotal.toLocaleString('es-MX')}
+- IVA: $${cfdi.iva.toLocaleString('es-MX')}
+- Total: $${cfdi.total.toLocaleString('es-MX')} ${cfdi.moneda}
+- UUID: ${cfdi.uuid}
+- Forma pago: ${cfdi.formaPago || 'no especificada'} · Método: ${cfdi.metodoPago || 'no especificado'}
+- Conceptos (${cfdi.conceptos.length}): ${cfdi.conceptos.slice(0,3).map(c => c.descripcion).join(' · ')}
+
+Por favor analiza este CFDI: ¿es deducible, qué implicaciones fiscales tiene, recomendaciones SAT?`;
+
+  document.getElementById('chatInput').value = summary;
+  autoGrow(document.getElementById('chatInput'));
+  sendMessage();
+  showToast(`✓ CFDI cargado · enviando a IA`);
+}
+
+function closeUploadModal() {
+  const m = document.getElementById('modalUpload');
+  if (m) m.remove();
+}
+
+function rejectTool(msgIdx) {
+  const msg = currentMessages[msgIdx];
+  if (!msg || !msg.toolCall) return;
+  msg.toolCall.status = 'rejected';
+  saveCurrentConv();
+  renderMessages();
+}
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+}
+function handleInputKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  else if (e.key === 'Escape') { e.preventDefault(); newChat(); }
+}
+
+init();
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (typeof mountBottomnav === 'function') mountBottomnav('mando');
+  }, 150);
+});
+if (document.readyState !== 'loading' && typeof mountBottomnav === 'function') {
+  setTimeout(function() { mountBottomnav('mando'); }, 150);
+}
+</script>
+</body>
+</html>
