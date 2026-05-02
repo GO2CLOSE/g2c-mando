@@ -360,13 +360,30 @@ const IA = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model, system, messages, max_tokens, tools, scope })
       });
-      if (!res.ok) throw new Error('Worker error ' + res.status);
-      const data = await res.json();
+
+      // Parse response como JSON SIEMPRE para extraer mensaje de error real
+      let data;
+      try { data = await res.json(); } catch (e) { data = null; }
+
+      if (!res.ok) {
+        const errMsg = data?.error || data?.hint || `Worker ${res.status}`;
+        throw new Error(errMsg);
+      }
+
+      // Anthropic responde con error en lugar de content si hay problema con la key
+      if (data && data.type === 'error') {
+        throw new Error(data.error?.message || 'Anthropic API error');
+      }
+
       this.trackUsage(model, data.usage);
       return data;
     } catch (e) {
-      console.error('IA call error:', e);
-      return { content: [{ type: 'text', text: 'Hubo un problema conectando. Reintenta en un momento.' }], error: true };
+      console.error('IA call error:', e.message);
+      return {
+        content: null,
+        error: true,
+        error_message: e.message
+      };
     }
   },
 
@@ -543,7 +560,10 @@ ${typeof Attach !== 'undefined' ? Attach.buildContext() : ''}
     });
 
     Store.set('alan_mando_last_briefing', Date.now());
-    return res.content?.[0]?.text || '';
+    if (res.error) {
+      return { error: true, error_message: res.error_message };
+    }
+    return { text: res.content?.[0]?.text || '' };
   },
 
   /**
@@ -974,7 +994,172 @@ const Auth = {
 };
 
 // ============================================================
-// 8 · ATTACHMENTS · documentos persistentes consultables por la IA
+// 8 · SAT · Calendario fiscal 2026 (Persona Física Act. Empresarial)
+// ============================================================
+
+const SAT = {
+  /**
+   * Obligaciones fiscales recurrentes para Persona Física con Actividad Empresarial.
+   * Base oficial: Calendario SAT 2026 publicado en sat.gob.mx
+   * Régimen: General (no RESICO)
+   */
+  REGIMEN: {
+    nombre: 'Persona Física · Actividad Empresarial · Régimen General',
+    iva: 0.16,
+    isr_provisional: 'mensual',
+    declaracion_anual: 'abril 2027 (ejercicio 2026)',
+    contabilidad_electronica: 'sí · catálogo cuentas + balanza mensual',
+    cfdi_obligado: true
+  },
+
+  /**
+   * Genera el calendario fiscal 2026 con todas las fechas obligatorias.
+   * Las fechas son las del SAT · día 17 del mes siguiente para declaración mensual,
+   * con extensiones según el sexto dígito del RFC.
+   */
+  buildCalendar2026(rfc = '') {
+    const eventos = [];
+
+    // Determinar día de extensión según sexto dígito del RFC
+    // Si RFC empieza con DAVA920607 → sexto dígito es '0' (índice 5)
+    // Pero el SAT usa el sexto dígito numérico del RFC (no caracter)
+    const sextoDigito = rfc.length >= 10 ? rfc.charAt(9) : '';
+    const extension = this.getExtension(sextoDigito);
+
+    // Declaraciones MENSUALES · día 17 + extensión por RFC
+    const meses = [
+      { num: 1, nombre: 'Enero', periodo: 'Diciembre 2025' },
+      { num: 2, nombre: 'Febrero', periodo: 'Enero 2026' },
+      { num: 3, nombre: 'Marzo', periodo: 'Febrero 2026' },
+      { num: 4, nombre: 'Abril', periodo: 'Marzo 2026' },
+      { num: 5, nombre: 'Mayo', periodo: 'Abril 2026' },
+      { num: 6, nombre: 'Junio', periodo: 'Mayo 2026' },
+      { num: 7, nombre: 'Julio', periodo: 'Junio 2026' },
+      { num: 8, nombre: 'Agosto', periodo: 'Julio 2026' },
+      { num: 9, nombre: 'Septiembre', periodo: 'Agosto 2026' },
+      { num: 10, nombre: 'Octubre', periodo: 'Septiembre 2026' },
+      { num: 11, nombre: 'Noviembre', periodo: 'Octubre 2026' },
+      { num: 12, nombre: 'Diciembre', periodo: 'Noviembre 2026' }
+    ];
+
+    meses.forEach(m => {
+      const day = 17 + extension;
+      const fecha = new Date(2026, m.num - 1, day);
+      // Si cae en sábado/domingo, mover al siguiente lunes
+      while (fecha.getDay() === 0 || fecha.getDay() === 6) {
+        fecha.setDate(fecha.getDate() + 1);
+      }
+      eventos.push({
+        id: `sat_decl_${m.num}_2026`,
+        tipo: 'declaracion_mensual',
+        titulo: `Declaración mensual ${m.nombre}`,
+        descripcion: `Declaración provisional ISR + IVA · periodo ${m.periodo}`,
+        fecha: fecha.getTime(),
+        impuestos: ['ISR', 'IVA'],
+        plataforma: 'Mi Portal SAT · sat.gob.mx',
+        prioridad: 'alta',
+        recurrente: true
+      });
+    });
+
+    // DECLARACIÓN ANUAL · 30 abril 2027 (ejercicio 2026, pero se paga en 2027)
+    // Pero como estamos en 2026, agendamos la del ejercicio 2025 que vence 30 abril 2026
+    const declaracionAnual2025 = new Date(2026, 3, 30); // 30 abril 2026
+    eventos.push({
+      id: 'sat_anual_2025',
+      tipo: 'declaracion_anual',
+      titulo: 'Declaración anual ejercicio 2025',
+      descripcion: 'Declaración anual de impuestos del ejercicio 2025 · vence 30 abril 2026',
+      fecha: declaracionAnual2025.getTime(),
+      impuestos: ['ISR anual'],
+      plataforma: 'DeclaraSAT · sat.gob.mx',
+      prioridad: 'critica',
+      recurrente: false
+    });
+
+    // PAGOS PROVISIONALES TRIMESTRALES (si aplica)
+    // Para Persona Física General, los pagos son MENSUALES · ya cubiertos arriba.
+
+    // CONTABILIDAD ELECTRÓNICA · día 3 del mes siguiente
+    meses.forEach(m => {
+      const fecha = new Date(2026, m.num - 1, 3);
+      while (fecha.getDay() === 0 || fecha.getDay() === 6) {
+        fecha.setDate(fecha.getDate() + 1);
+      }
+      eventos.push({
+        id: `sat_balanza_${m.num}_2026`,
+        tipo: 'contabilidad_electronica',
+        titulo: `Balanza ${m.nombre}`,
+        descripcion: `Envío balanza de comprobación · periodo ${m.periodo}`,
+        fecha: fecha.getTime(),
+        impuestos: [],
+        plataforma: 'Buzón Tributario',
+        prioridad: 'media',
+        recurrente: true
+      });
+    });
+
+    // DIOT (Declaración Informativa de Operaciones con Terceros) · mensual día último
+    meses.forEach(m => {
+      // Último día del mes siguiente
+      const fecha = new Date(2026, m.num, 0);
+      while (fecha.getDay() === 0 || fecha.getDay() === 6) {
+        fecha.setDate(fecha.getDate() - 1);
+      }
+      eventos.push({
+        id: `sat_diot_${m.num}_2026`,
+        tipo: 'diot',
+        titulo: `DIOT ${m.nombre}`,
+        descripcion: `Declaración Informativa de Operaciones con Terceros · ${m.periodo}`,
+        fecha: fecha.getTime(),
+        impuestos: ['DIOT'],
+        plataforma: 'Mi Portal SAT',
+        prioridad: 'media',
+        recurrente: true
+      });
+    });
+
+    return eventos.sort((a, b) => a.fecha - b.fecha);
+  },
+
+  /**
+   * Calcula días de extensión por sexto dígito del RFC (regla SAT).
+   */
+  getExtension(digito) {
+    const map = {
+      '1': 1, '2': 1,
+      '3': 2, '4': 2,
+      '5': 3, '6': 3,
+      '7': 4, '8': 4,
+      '9': 5, '0': 5
+    };
+    return map[digito] || 0;
+  },
+
+  /**
+   * Carga el calendario al storage (idempotente).
+   */
+  loadCalendar() {
+    const config = Store.get(Store.KEYS.CONFIG, {});
+    const rfc = config.rfc || '';
+    const calendar = this.buildCalendar2026(rfc);
+    Store.set('alan_mando_sat_calendar', calendar);
+    return calendar;
+  },
+
+  /**
+   * Próximas obligaciones (siguientes 90 días).
+   */
+  upcoming(limit = 5) {
+    const cal = Store.get('alan_mando_sat_calendar', []);
+    const ahora = Date.now();
+    const limite = ahora + 90 * 86400000;
+    return cal.filter(e => e.fecha >= ahora && e.fecha <= limite).slice(0, limit);
+  }
+};
+
+// ============================================================
+// 9 · ATTACHMENTS · documentos consultables por la IA
 // ============================================================
 
 const Attach = {
@@ -986,7 +1171,7 @@ const Attach = {
     opinion_cumplimiento: { label: 'Opinión cumplimiento SAT', icon: '✓', accept: 'application/pdf,image/*' },
     identificacion: { label: 'Identificación oficial · INE', icon: '◇', accept: 'image/*,application/pdf' },
     comprobante_domicilio: { label: 'Comprobante de domicilio', icon: '⌂', accept: 'application/pdf,image/*' },
-    contrato: { label: 'Contrato / acuerdo', icon: '§', accept: 'application/pdf,image/*' },
+    contrato: { label: 'Contrato · acuerdo', icon: '§', accept: 'application/pdf,image/*' },
     cfdi: { label: 'CFDI · factura', icon: '$', accept: 'application/pdf,application/xml,text/xml' },
     manual_g2c: { label: 'Manual G2C · uso interno', icon: '★', accept: 'application/pdf,text/markdown,text/plain' },
     portafolio: { label: 'Portafolio productos G2C', icon: '▦', accept: 'application/pdf,text/markdown' },
@@ -994,13 +1179,8 @@ const Attach = {
     otro: { label: 'Otro documento', icon: '·', accept: '*/*' }
   },
 
-  list() {
-    return Store.get(Store.KEYS.ATTACHMENTS, []);
-  },
-
-  byType(type) {
-    return this.list().filter(a => a.type === type);
-  },
+  list() { return Store.get(Store.KEYS.ATTACHMENTS, []); },
+  byType(type) { return this.list().filter(a => a.type === type); },
 
   async save(att) {
     const all = this.list();
@@ -1018,8 +1198,7 @@ const Attach = {
   },
 
   remove(id) {
-    const all = this.list();
-    Store.set(Store.KEYS.ATTACHMENTS, all.filter(a => a.id !== id));
+    Store.set(Store.KEYS.ATTACHMENTS, this.list().filter(a => a.id !== id));
   },
 
   fileToBase64(file) {
@@ -1032,8 +1211,7 @@ const Attach = {
   },
 
   /**
-   * Construye el contexto de adjuntos para inyectar al system prompt de la IA.
-   * Esto es lo que permite que Claude consulte tus documentos cuando le preguntas.
+   * Inyecta documentos al system prompt de la IA.
    */
   buildContext() {
     const atts = this.list();
@@ -1045,7 +1223,7 @@ const Attach = {
       grouped[a.type].push(a);
     });
 
-    let ctx = '\n# DOCUMENTOS DISPONIBLES DE ALAN\nTienes estos documentos cargados que puedes consultar para análisis fiscal, comercial y operativo:\n';
+    let ctx = '\n# DOCUMENTOS DE ALAN (consulta cuando relevante)\n';
     Object.entries(grouped).forEach(([type, items]) => {
       const meta = this.TYPES[type] || { label: type };
       ctx += `\n## ${meta.label}\n`;
@@ -1062,27 +1240,19 @@ const Attach = {
 };
 
 // ============================================================
-// 9 · API KEYS · Conexiones que el usuario configura desde UI
+// 10 · API KEYS · conexiones que el usuario configura
 // ============================================================
 
 const ApiKeys = {
-  /**
-   * Definición de las conexiones disponibles. Cada una tiene:
-   * - name: nombre humano
-   * - storage_key: dónde se guarda (cliente vs worker)
-   * - test_url: endpoint para validar conexión
-   * - required: si es indispensable
-   */
   CONNECTIONS: {
     anthropic: {
       name: 'Anthropic Claude API',
       description: 'Cerebro IA · Sonnet 4.5 + Haiku 4.5',
       storage: 'worker',
-      test_endpoint: '/health',
       required: true,
       doc_url: 'https://console.anthropic.com/settings/keys',
       placeholder: 'sk-ant-api03-...',
-      hint: 'La key se guarda en el Worker de Cloudflare como Secret · NUNCA en el cliente'
+      hint: 'Se guarda en Cloudflare Worker como Secret · NUNCA en cliente'
     },
     youtube: {
       name: 'YouTube Data API',
@@ -1097,7 +1267,6 @@ const ApiKeys = {
       name: 'Google Maps API',
       description: 'Prospects · venues música · lugares Tijuana',
       storage: 'worker',
-      test_endpoint: '/api/maps/test',
       required: false,
       doc_url: 'https://console.cloud.google.com/google/maps-apis/credentials',
       placeholder: 'AIzaSy...'
@@ -1124,7 +1293,6 @@ const ApiKeys = {
       name: 'OpenAI Whisper',
       description: 'Voz a texto · registrar movimientos hablando',
       storage: 'worker',
-      test_endpoint: '/api/whisper/test',
       required: false,
       doc_url: 'https://platform.openai.com/api-keys',
       placeholder: 'sk-...'
@@ -1133,7 +1301,6 @@ const ApiKeys = {
       name: 'Zoho Bigin',
       description: 'Sync leads del Diagnóstico Inteligente',
       storage: 'worker',
-      test_endpoint: '/api/bigin/test',
       required: false,
       doc_url: 'https://www.zoho.com/bigin/developer/docs/',
       placeholder: '1000.xxx...'
@@ -1149,18 +1316,15 @@ const ApiKeys = {
     }
   },
 
-  /**
-   * Get/set keys que viven en el cliente (NO sensibles, OK exponer).
-   */
-  getClient(connection_id) {
+  getClient(id) {
     const config = Store.get(Store.KEYS.CONFIG, {});
-    const conn = this.CONNECTIONS[connection_id];
+    const conn = this.CONNECTIONS[id];
     if (!conn || conn.storage !== 'client') return null;
     return config[conn.key_name] || null;
   },
 
-  setClient(connection_id, value) {
-    const conn = this.CONNECTIONS[connection_id];
+  setClient(id, value) {
+    const conn = this.CONNECTIONS[id];
     if (!conn || conn.storage !== 'client') return false;
     const config = Store.get(Store.KEYS.CONFIG, {});
     config[conn.key_name] = value;
@@ -1168,8 +1332,8 @@ const ApiKeys = {
     return Store.set(Store.KEYS.CONFIG, config);
   },
 
-  removeClient(connection_id) {
-    const conn = this.CONNECTIONS[connection_id];
+  removeClient(id) {
+    const conn = this.CONNECTIONS[id];
     if (!conn || conn.storage !== 'client') return false;
     const config = Store.get(Store.KEYS.CONFIG, {});
     delete config[conn.key_name];
@@ -1177,24 +1341,19 @@ const ApiKeys = {
     return Store.set(Store.KEYS.CONFIG, config);
   },
 
-  /**
-   * Para keys que viven en el Worker · solo enviamos la key al worker para que la guarde.
-   * El cliente NO la persiste.
-   */
-  async setWorker(connection_id, value) {
+  async setWorker(id, value) {
     try {
       const res = await fetch(G2C.api.proxy + '/api/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ connection: connection_id, key: value })
+        body: JSON.stringify({ connection: id, key: value })
       });
-      if (!res.ok) throw new Error('Worker rechazó la conexión: ' + res.status);
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Worker error ' + res.status);
 
-      // Marcamos en config local que SÍ está conectado, sin guardar la key
       const config = Store.get(Store.KEYS.CONFIG, {});
-      config['conn_' + connection_id + '_connected'] = true;
-      config['conn_' + connection_id + '_connected_at'] = Date.now();
+      config['conn_' + id + '_connected'] = true;
+      config['conn_' + id + '_connected_at'] = Date.now();
       Store.set(Store.KEYS.CONFIG, config);
 
       return { success: true, ...data };
@@ -1203,16 +1362,16 @@ const ApiKeys = {
     }
   },
 
-  async removeWorker(connection_id) {
+  async removeWorker(id) {
     try {
       await fetch(G2C.api.proxy + '/api/disconnect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ connection: connection_id })
+        body: JSON.stringify({ connection: id })
       });
       const config = Store.get(Store.KEYS.CONFIG, {});
-      delete config['conn_' + connection_id + '_connected'];
-      delete config['conn_' + connection_id + '_connected_at'];
+      delete config['conn_' + id + '_connected'];
+      delete config['conn_' + id + '_connected_at'];
       Store.set(Store.KEYS.CONFIG, config);
       return { success: true };
     } catch (err) {
@@ -1220,15 +1379,11 @@ const ApiKeys = {
     }
   },
 
-  /**
-   * Test de una conexión.
-   */
-  async test(connection_id) {
-    const conn = this.CONNECTIONS[connection_id];
+  async test(id) {
+    const conn = this.CONNECTIONS[id];
     if (!conn) return { success: false, error: 'Conexión desconocida' };
 
-    if (connection_id === 'anthropic') {
-      // Test rápido con Haiku
+    if (id === 'anthropic') {
       try {
         const res = await fetch(G2C.api.proxy + '/api/chat', {
           method: 'POST',
@@ -1240,16 +1395,14 @@ const ApiKeys = {
           })
         });
         const data = await res.json();
-        if (data.content && data.content[0]) {
-          return { success: true, response: data.content[0].text };
-        }
-        return { success: false, error: data.error || 'Sin respuesta' };
+        if (data.content && data.content[0]) return { success: true, response: data.content[0].text };
+        return { success: false, error: data.error || data.hint || 'Sin respuesta' };
       } catch (err) {
         return { success: false, error: err.message };
       }
     }
 
-    if (connection_id === 'youtube') {
+    if (id === 'youtube') {
       const key = this.getClient('youtube');
       if (!key) return { success: false, error: 'No hay key configurada' };
       try {
@@ -1262,12 +1415,9 @@ const ApiKeys = {
       }
     }
 
-    return { success: true, message: 'Test no implementado · marca como conectada manualmente' };
+    return { success: true, message: 'Test no implementado' };
   },
 
-  /**
-   * Estado de todas las conexiones.
-   */
   status() {
     const config = Store.get(Store.KEYS.CONFIG, {});
     const status = {};
@@ -1284,7 +1434,7 @@ const ApiKeys = {
 };
 
 // ============================================================
-// 10 · PUSH NOTIFICATIONS · suscripción + test profesional
+// 11 · PUSH NOTIFICATIONS
 // ============================================================
 
 const Push = {
@@ -1323,7 +1473,7 @@ const Push = {
   async requestPermission() {
     if (!('Notification' in window)) return { granted: false, error: 'Notification API no disponible' };
     if (Notification.permission === 'granted') return { granted: true };
-    if (Notification.permission === 'denied') return { granted: false, error: 'Permiso denegado · habilítalo manualmente en ajustes del navegador' };
+    if (Notification.permission === 'denied') return { granted: false, error: 'Permiso denegado · habilítalo en ajustes del navegador' };
     try {
       const result = await Notification.requestPermission();
       return { granted: result === 'granted' };
@@ -1414,37 +1564,9 @@ const Push = {
     }
   },
 
-  /**
-   * Test local · muestra notificación inmediata para validar.
-   * Aplica formato profesional: SIN emojis, con prioridad y monto.
-   */
-  async testLocal(opts = {}) {
-    const perm = await this.requestPermission();
-    if (!perm.granted) return { success: false, error: perm.error || 'Sin permiso' };
-
-    await this.registerSW();
-    const reg = await navigator.serviceWorker.ready;
-    if (!reg.active) return { success: false, error: 'Service Worker no activo · espera unos segundos y reintenta' };
-
-    const payload = {
-      priority: opts.priority || 'media',
-      subject: opts.subject || 'Test del sistema',
-      body: opts.body || 'Sistema de notificaciones operativo. Mando puede alertarte de cobros, tocadas y deadlines fiscales.',
-      amount: opts.amount,
-      url: opts.url || '/'
-    };
-
-    reg.active.postMessage({ type: 'TEST_NOTIFICATION', payload });
-    return { success: true };
-  },
-
-  /**
-   * Programa notificación remota vía Worker.
-   * Estructura profesional: priority + subject + amount.
-   */
   async schedule(opts) {
-    if (!opts.title && !opts.subject) return { success: false, error: 'Falta subject o title' };
-    if (!opts.sendAt) return { success: false, error: 'Falta sendAt (timestamp)' };
+    if (!opts.subject && !opts.title) return { success: false, error: 'Falta subject' };
+    if (!opts.sendAt) return { success: false, error: 'Falta sendAt' };
 
     const subData = Store.get(Store.KEYS.PUSH_SUB);
     if (!subData) return { success: false, error: 'No hay suscripción activa' };
@@ -1474,7 +1596,7 @@ const Push = {
 };
 
 // ============================================================
-// 11 · INICIALIZACIÓN
+// 12 · INICIALIZACIÓN
 // ============================================================
 
 window.G2C = G2C;
@@ -1485,6 +1607,7 @@ window.IA = IA;
 window.Cascada = Cascada;
 window.UI = UI;
 window.Auth = Auth;
+window.SAT = SAT;
 window.Attach = Attach;
 window.ApiKeys = ApiKeys;
 window.Push = Push;

@@ -2,8 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0F1419">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mando">
 <title>Pendientes · Mando</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
@@ -269,22 +272,134 @@ function eliminarPendiente(id) {
   renderVista(document.querySelector('.tab.active').dataset.vista);
 }
 
+// Estado temporal del modal
+let modalState = { prioridad: 'media', dias: 3 };
+
 function agregarPendiente() {
-  const titulo = prompt('Título del pendiente:');
-  if (!titulo) return;
-  const prioridad = prompt('Prioridad (alta/media/baja):', 'media');
-  const dias = parseInt(prompt('¿En cuántos días vence? (0 = hoy)', '3') || '3');
+  modalState = { prioridad: 'media', dias: 3 };
+
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-pendiente';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+
+      <div class="g2c-modal-eyebrow">
+        <div class="dot"></div>
+        <div class="label">Nuevo pendiente</div>
+      </div>
+      <div class="g2c-modal-title">¿Qué hay que hacer?</div>
+
+      <div class="form-field">
+        <input type="text"
+               class="field-input"
+               id="pend-titulo"
+               placeholder="Ej: Mandar Loom propuesta a NEOS exp"
+               autofocus
+               style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">PRIORIDAD</div>
+        <div class="g2c-quick-grid" id="pend-prio">
+          <div class="g2c-quick-btn" data-prio="alta">
+            <div class="qb-label">ALTA</div>
+            <div class="qb-value" style="color:rgba(255,170,110,0.95);">Urgente · hoy</div>
+          </div>
+          <div class="g2c-quick-btn active" data-prio="media">
+            <div class="qb-label">MEDIA</div>
+            <div class="qb-value" style="color:rgba(244,213,128,0.95);">Esta semana</div>
+          </div>
+          <div class="g2c-quick-btn" data-prio="baja">
+            <div class="qb-label">BAJA</div>
+            <div class="qb-value" style="color:var(--text-secondary);">Cuando se pueda</div>
+          </div>
+          <div class="g2c-quick-btn" data-prio="critica">
+            <div class="qb-label">CRÍTICA</div>
+            <div class="qb-value" style="color:rgba(255,170,110,0.95);">Ahora</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">VENCE</div>
+        <div class="g2c-quick-grid" id="pend-dias">
+          <div class="g2c-quick-btn" data-dias="0">
+            <div class="qb-label">HOY</div>
+            <div class="qb-value">Mismo día</div>
+          </div>
+          <div class="g2c-quick-btn" data-dias="1">
+            <div class="qb-label">MAÑANA</div>
+            <div class="qb-value">+1 día</div>
+          </div>
+          <div class="g2c-quick-btn active" data-dias="3">
+            <div class="qb-label">3 DÍAS</div>
+            <div class="qb-value">Esta semana</div>
+          </div>
+          <div class="g2c-quick-btn" data-dias="7">
+            <div class="qb-label">7 DÍAS</div>
+            <div class="qb-value">Próxima semana</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalPend()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarPendiente()">Guardar</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalPend);
+  document.body.appendChild(modal);
+
+  // Bind quick buttons
+  modal.querySelectorAll('[data-prio]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-prio]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      modalState.prioridad = btn.dataset.prio;
+    });
+  });
+  modal.querySelectorAll('[data-dias]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-dias]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      modalState.dias = parseInt(btn.dataset.dias);
+    });
+  });
+
+  // Focus input
+  setTimeout(() => document.getElementById('pend-titulo')?.focus(), 100);
+}
+
+function cerrarModalPend() {
+  const m = document.getElementById('modal-pendiente');
+  if (m) m.remove();
+}
+
+function guardarPendiente() {
+  const titulo = document.getElementById('pend-titulo').value.trim();
+  if (!titulo) {
+    UI.toast('Falta el título', 'error');
+    return;
+  }
+
+  const isAlta = modalState.prioridad === 'alta' || modalState.prioridad === 'critica';
+  const dueT = Date.now() + modalState.dias * 86400000;
 
   Store.push(Store.KEYS.PENDIENTES, {
     titulo,
-    prioridad: ['alta', 'media', 'baja'].includes(prioridad) ? prioridad : 'media',
-    urgente: dias <= 1,
-    importante: prioridad === 'alta',
-    due_ts: Date.now() + dias * 86400000,
+    prioridad: modalState.prioridad === 'critica' ? 'alta' : modalState.prioridad,
+    urgente: modalState.dias <= 1 || modalState.prioridad === 'critica',
+    importante: isAlta,
+    due_ts: dueT,
     fecha_creacion: Date.now(),
     done: false
   });
+
   UI.toast('Pendiente agregado ✓', 'success');
+  cerrarModalPend();
   renderStats();
   renderVista(document.querySelector('.tab.active').dataset.vista);
 }

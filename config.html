@@ -2,8 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0F1419">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mando">
 <title>Configuración · Mando</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
@@ -12,14 +15,13 @@
 .conn-card { background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 11px; padding: 12px; margin-bottom: 8px; }
 .conn-card.connected { background: rgba(180,220,170,0.04); border-color: rgba(180,220,170,0.2); }
 .conn-card.required-missing { background: rgba(255,79,0,0.04); border-color: rgba(255,79,0,0.25); }
-.conn-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.conn-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
 .conn-name { font-size: 12px; font-weight: 500; }
 .conn-desc { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
 .conn-input-row { display: flex; gap: 6px; margin-top: 8px; }
-.conn-input { flex: 1; background: rgba(15,20,25,0.6); border: 0.5px solid var(--border-mid); border-radius: 7px; padding: 8px 10px; font-size: 11px; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; outline: none; }
-.conn-input:focus { border-color: rgba(255,79,0,0.4); }
+.conn-input { flex: 1; background: rgba(15,20,25,0.6); border: 0.5px solid var(--border-mid); border-radius: 7px; padding: 9px 11px; font-size: 16px !important; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; outline: none; min-width: 0; }
 .conn-input.has-value { background: rgba(180,220,170,0.05); }
-.conn-btn-small { padding: 7px 11px; font-size: 11px; border-radius: 7px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border-mid); background: transparent; color: var(--text-secondary); white-space: nowrap; }
+.conn-btn-small { padding: 8px 11px; font-size: 11px; border-radius: 7px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border-mid); background: transparent; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; }
 .conn-btn-small.primary { background: rgba(255,79,0,0.18); border-color: rgba(255,79,0,0.4); color: rgba(255,170,110,0.95); }
 .conn-btn-small.success { background: rgba(180,220,170,0.18); border-color: rgba(180,220,170,0.4); color: rgba(200,230,200,0.95); }
 .conn-btn-small.danger { background: rgba(255,79,0,0.08); border-color: rgba(255,79,0,0.3); color: rgba(255,170,110,0.95); }
@@ -31,18 +33,17 @@
 .att-info { flex: 1; min-width: 0; }
 .att-name { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .att-sub { font-size: 9px; color: var(--text-tertiary); margin-top: 1px; }
-.att-actions { display: flex; gap: 4px; }
-.att-btn-mini { background: rgba(244,243,239,0.06); border: 0.5px solid var(--border-mid); border-radius: 5px; padding: 4px 8px; font-size: 10px; color: var(--text-secondary); cursor: pointer; }
+.att-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.att-btn-mini { background: rgba(244,243,239,0.06); border: 0.5px solid var(--border-mid); border-radius: 5px; padding: 5px 9px; font-size: 10px; color: var(--text-secondary); cursor: pointer; }
 
 .add-att-zone { background: rgba(244,243,239,0.02); border: 0.5px dashed rgba(244,243,239,0.2); border-radius: 11px; padding: 14px; text-align: center; cursor: pointer; transition: all 0.15s; }
-.add-att-zone:hover { background: rgba(255,79,0,0.04); border-color: rgba(255,79,0,0.3); }
-.add-att-zone.dragover { background: rgba(255,79,0,0.08); border-color: rgba(255,79,0,0.5); }
+.add-att-zone:hover, .add-att-zone:active { background: rgba(255,79,0,0.04); border-color: rgba(255,79,0,0.3); }
 
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; padding: 18px; }
-.modal-backdrop.active { display: flex; }
-.modal-content { background: var(--g2c-dark-2); border: 0.5px solid var(--border-mid); border-radius: 14px; padding: 18px; width: 100%; max-width: 380px; max-height: 80vh; overflow-y: auto; }
-.modal-title { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
-.modal-actions { display: flex; gap: 7px; margin-top: 14px; }
+.fiscal-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 0.5px solid rgba(244,243,239,0.04); gap: 8px; }
+.fiscal-row:last-child { border-bottom: none; }
+.fiscal-label { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
+.fiscal-input { background: rgba(15,20,25,0.6); border: 0.5px solid var(--border-mid); border-radius: 6px; padding: 7px 10px; font-size: 16px !important; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; outline: none; max-width: 180px; text-align: right; min-width: 0; }
+.fiscal-static { font-size: 11px; color: var(--text-primary); text-align: right; }
 </style>
 </head>
 <body>
@@ -58,7 +59,7 @@
 </header>
 
 <!-- ============================================================ -->
-<!-- SECCIÓN 1 · CONEXIONES API · te conectas tú · automático -->
+<!-- 1 · CONEXIONES API -->
 <!-- ============================================================ -->
 <div class="section-block">
   <div class="section-eyebrow">
@@ -72,13 +73,13 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- SECCIÓN 2 · DOCUMENTOS · que la IA puede consultar -->
+<!-- 2 · DOCUMENTOS -->
 <!-- ============================================================ -->
 <div class="section-block">
   <div class="section-eyebrow">
     <div>
       <div class="label">documentos · IA los consulta</div>
-      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">cédulas, declaraciones, manuales · Mando los lee al responder</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">cédulas · declaraciones · manuales G2C · contratos</div>
     </div>
     <div style="font-size:11px;color:rgba(150,210,230,0.85);" id="att-count">0 docs</div>
   </div>
@@ -93,13 +94,13 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- SECCIÓN 3 · NOTIFICACIONES PUSH -->
+<!-- 3 · NOTIFICACIONES PUSH -->
 <!-- ============================================================ -->
 <div class="section-block">
   <div class="section-eyebrow">
     <div>
       <div class="label">notificaciones push</div>
-      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">cobros · tocadas · deadlines · sin emojis · con monto y prioridad</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">cobros · tocadas · deadlines fiscales · sin emojis · con monto y prioridad</div>
     </div>
     <div style="font-size:11px;" id="push-status-pill">—</div>
   </div>
@@ -113,21 +114,73 @@
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;" id="push-actions"></div>
   </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 4 · DATOS FISCALES (editables y persistentes) -->
+<!-- ============================================================ -->
+<div class="section-block">
+  <div class="section-eyebrow">
+    <div>
+      <div class="label">datos fiscales</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">Persona Física · Actividad Empresarial · Régimen General</div>
+    </div>
+  </div>
+
+  <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;">
+    <div class="fiscal-row">
+      <div class="fiscal-label">RFC</div>
+      <input type="text" class="fiscal-input" id="fiscal-rfc" placeholder="DAVA920607XXX" maxlength="13" style="text-transform:uppercase;">
+    </div>
+    <div class="fiscal-row">
+      <div class="fiscal-label">CURP</div>
+      <input type="text" class="fiscal-input" id="fiscal-curp" placeholder="DAVA920607HBCXXXX" maxlength="18" style="text-transform:uppercase;">
+    </div>
+    <div class="fiscal-row">
+      <div class="fiscal-label">Nombre fiscal</div>
+      <input type="text" class="fiscal-input" id="fiscal-nombre" placeholder="Alan Davis Smith" style="max-width:220px;font-family:'Inter',sans-serif;">
+    </div>
+    <div class="fiscal-row">
+      <div class="fiscal-label">Régimen</div>
+      <input type="text" class="fiscal-input" id="fiscal-regimen" value="612 · Personas Físicas con Actividades Empresariales y Profesionales" disabled style="max-width:220px;font-family:'Inter',sans-serif;font-size:10px !important;background:rgba(15,20,25,0.3);">
+    </div>
+    <div class="fiscal-row">
+      <div class="fiscal-label">IVA</div>
+      <div class="fiscal-static">16% · No RESICO</div>
+    </div>
+    <div class="fiscal-row">
+      <div class="fiscal-label">Código postal</div>
+      <input type="text" class="fiscal-input" id="fiscal-cp" placeholder="22000" maxlength="5">
+    </div>
+
+    <button class="conn-btn-small primary" style="width:100%;margin-top:12px;padding:10px;" onclick="guardarFiscales()">Guardar datos fiscales</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 5 · CALENDARIO SAT 2026 (cargado de base de datos oficial) -->
+<!-- ============================================================ -->
+<div class="section-block">
+  <div class="section-eyebrow">
+    <div>
+      <div class="label">agenda fiscal SAT · próximas obligaciones</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;" id="sat-info">cargando calendario oficial...</div>
+    </div>
+    <a href="javascript:recargarCalendarioSAT()" style="font-size:11px;color:rgba(255,150,80,0.9);text-decoration:none;">recargar</a>
+  </div>
+
+  <div id="sat-events"></div>
 
   <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:10px;padding:11px;margin-top:8px;">
-    <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">formato de notificaciones</div>
+    <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">cómo se calcula</div>
     <div style="font-size:10px;color:rgba(244,243,239,0.8);line-height:1.5;">
-      Las notificaciones siguen reglas estrictas:<br>
-      · Sin emojis · solo símbolos limpios<br>
-      · Title con prioridad: ALTA / MEDIA / BAJA<br>
-      · Si es cobro o pago · incluye monto<br>
-      · Body con info relevante al asunto
+      Las fechas se calculan según las reglas oficiales SAT 2026. Día 17 del mes siguiente para declaraciones provisionales, con extensión por sexto dígito de tu RFC. Los fines de semana se mueven al siguiente día hábil.
     </div>
   </div>
 </div>
 
 <!-- ============================================================ -->
-<!-- SECCIÓN 4 · CEREBRO IA STATS -->
+<!-- 6 · CEREBRO IA STATS -->
 <!-- ============================================================ -->
 <div class="section-block">
   <div class="section-eyebrow">
@@ -153,12 +206,11 @@
       <div style="font-size:11px;color:var(--text-secondary);">Costo total mes</div>
       <div style="font-size:14px;font-weight:500;font-variant-numeric:tabular-nums;" id="costo-total">$0 USD</div>
     </div>
-    <div style="font-size:10px;color:var(--text-tertiary);margin-top:4px;">presupuesto: $50 USD/mes · margen seguro</div>
   </div>
 </div>
 
 <!-- ============================================================ -->
-<!-- SECCIÓN 5 · AUTOMATIZACIÓN IA -->
+<!-- 7 · AUTOMATIZACIÓN IA -->
 <!-- ============================================================ -->
 <div class="section-block">
   <div class="section-eyebrow">
@@ -181,36 +233,14 @@
       <div class="switch on" data-toggle="auto_briefing"><div></div></div>
     </div>
     <div class="list-row" style="cursor:default;">
-      <div class="row-main"><div class="row-content"><div class="row-title">Modo movimiento</div><div class="row-sub">respuestas más cortas en carretera</div></div></div>
-      <div class="switch" data-toggle="auto_movimiento"><div></div></div>
+      <div class="row-main"><div class="row-content"><div class="row-title">Recordatorios SAT</div><div class="row-sub">7d / 3d / 1d antes de cada obligación</div></div></div>
+      <div class="switch on" data-toggle="auto_sat"><div></div></div>
     </div>
   </div>
 </div>
 
 <!-- ============================================================ -->
-<!-- SECCIÓN 6 · DATOS FISCALES -->
-<!-- ============================================================ -->
-<div class="section-block">
-  <div class="section-eyebrow"><div><div class="label">datos fiscales</div></div></div>
-  <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;">
-    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-size:11px;color:var(--text-secondary);">RFC</div>
-      <input type="text" class="conn-input" id="fiscal-rfc" style="max-width:180px;text-align:right;" placeholder="DAVA920607XXX">
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-size:11px;color:var(--text-secondary);">Régimen</div>
-      <div style="font-size:11px;">Persona Física · Act. Empresarial</div>
-    </div>
-    <div style="display:flex;justify-content:space-between;">
-      <div style="font-size:11px;color:var(--text-secondary);">IVA</div>
-      <div style="font-size:11px;">16% · No RESICO</div>
-    </div>
-    <button class="conn-btn-small primary" style="width:100%;margin-top:10px;" onclick="guardarRFC()">Guardar RFC</button>
-  </div>
-</div>
-
-<!-- ============================================================ -->
-<!-- SECCIÓN 7 · DATOS · backup, import, borrar -->
+<!-- 8 · DATOS · backup -->
 <!-- ============================================================ -->
 <div class="section-block">
   <div class="section-eyebrow"><div><div class="label">tus datos</div></div></div>
@@ -230,42 +260,9 @@
   </div>
 </div>
 
-<div style="text-align:center;padding:14px 0;font-size:10px;color:var(--text-mute);">Mando v1.1.0 · 2026</div>
+<div style="text-align:center;padding:14px 0;font-size:10px;color:var(--text-mute);">Mando v1.2.0 · 2026</div>
 
 <button class="btn full" onclick="Auth.logout()" style="background:rgba(255,79,0,0.08);border-color:rgba(255,79,0,0.25);color:rgba(255,170,110,0.95);">Cerrar sesión</button>
-
-<!-- Modal para agregar attachment -->
-<div class="modal-backdrop" id="att-modal">
-  <div class="modal-content">
-    <div class="modal-title">Agregar documento</div>
-
-    <div class="form-field">
-      <div class="field-label">TIPO DE DOCUMENTO</div>
-      <select class="field-select" id="att-type"></select>
-    </div>
-
-    <div class="form-field">
-      <div class="field-label">TÍTULO</div>
-      <input type="text" class="field-input" id="att-title" placeholder="Ej: Cédula 2024 · Alan Davis">
-    </div>
-
-    <div class="form-field">
-      <div class="field-label">ARCHIVO</div>
-      <input type="file" class="field-input" id="att-file">
-      <div style="font-size:9px;color:var(--text-tertiary);margin-top:4px;">PDF, imágenes, XML CFDI · max 5MB</div>
-    </div>
-
-    <div class="form-field">
-      <div class="field-label">NOTAS (opcional)</div>
-      <textarea class="field-input field-textarea" id="att-notes" placeholder="Contexto que la IA debe saber sobre este doc..."></textarea>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn" style="flex:1;" onclick="cerrarModalAttachment()">Cancelar</button>
-      <button class="btn primary-orange" style="flex:1;" onclick="guardarAttachment()">Guardar</button>
-    </div>
-  </div>
-</div>
 
 <div id="footer-host"></div>
 <div id="nav-host"></div>
@@ -282,9 +279,9 @@
   renderAttachments();
   await renderPush();
   renderStats();
-  loadFiscalRFC();
+  loadFiscalData();
+  loadSATCalendar();
   bindToggles();
-  populateAttachmentTypes();
 })();
 
 // ============================================================
@@ -308,12 +305,12 @@ function renderConnections() {
       (isMissing ? `<div class="pill orange">REQUERIDA</div>` : `<div class="pill" style="background:rgba(244,243,239,0.04);border:0.5px solid var(--border-mid);color:var(--text-tertiary);">PENDIENTE</div>`);
 
     const currentValue = conn.storage === 'client' ? ApiKeys.getClient(id) : null;
-    const maskedValue = currentValue ? currentValue.slice(0, 8) + '•'.repeat(20) + currentValue.slice(-4) : '';
+    const maskedValue = currentValue ? currentValue.slice(0, 6) + '••••••••' + currentValue.slice(-4) : '';
 
     html += `
       <div class="conn-card ${cardClass}" data-conn-id="${id}">
         <div class="conn-header">
-          <div style="flex:1;">
+          <div style="flex:1;min-width:0;">
             <div class="conn-name">${Util.esc(conn.name)}</div>
             <div class="conn-desc">${Util.esc(conn.description)}</div>
           </div>
@@ -325,13 +322,15 @@ function renderConnections() {
                  class="conn-input ${isConnected ? 'has-value' : ''}"
                  id="key-${id}"
                  placeholder="${isConnected ? maskedValue : conn.placeholder}"
-                 autocomplete="off">
-          ${isConnected ? `
-            <button class="conn-btn-small success" onclick="testConnection('${id}')">Test</button>
-            <button class="conn-btn-small danger" onclick="disconnectKey('${id}')">Quitar</button>
-          ` : `
-            <button class="conn-btn-small primary" onclick="connectKey('${id}')">Conectar</button>
-          `}
+                 autocomplete="off"
+                 autocapitalize="off"
+                 autocorrect="off"
+                 spellcheck="false">
+          ${isConnected ?
+            `<button class="conn-btn-small success" onclick="testConnection('${id}')">Test</button>
+             <button class="conn-btn-small danger" onclick="disconnectKey('${id}')">Quitar</button>` :
+            `<button class="conn-btn-small primary" onclick="connectKey('${id}')">Conectar</button>`
+          }
         </div>
 
         <div class="conn-meta">
@@ -367,17 +366,13 @@ async function connectKey(id) {
   }
 
   if (result.success) {
-    UI.toast(`${conn.name} · conectada ✓`, 'success');
+    UI.toast(`${conn.name} · conectada`, 'success');
     input.value = '';
 
-    // Test inmediato si es Anthropic
     if (id === 'anthropic') {
       const test = await ApiKeys.test('anthropic');
-      if (test.success) {
-        UI.toast('Cerebro IA respondiendo correctamente', 'success');
-      } else {
-        UI.toast('Conectada pero el test falló: ' + test.error, 'error');
-      }
+      if (test.success) UI.toast('Cerebro IA respondiendo', 'success');
+      else UI.toast('Conectada pero test falló: ' + test.error, 'error');
     }
 
     renderConnections();
@@ -387,39 +382,24 @@ async function connectKey(id) {
 }
 
 async function testConnection(id) {
-  UI.toast('Probando conexión...', 'info', 1500);
+  UI.toast('Probando...', 'info', 1500);
   const result = await ApiKeys.test(id);
-  if (result.success) {
-    UI.toast(`${ApiKeys.CONNECTIONS[id].name} · OK`, 'success');
-  } else {
-    UI.toast('Error: ' + result.error, 'error');
-  }
+  if (result.success) UI.toast(`${ApiKeys.CONNECTIONS[id].name} · OK`, 'success');
+  else UI.toast('Error: ' + result.error, 'error');
 }
 
 async function disconnectKey(id) {
   if (!confirm(`¿Desconectar ${ApiKeys.CONNECTIONS[id].name}?`)) return;
   const conn = ApiKeys.CONNECTIONS[id];
-  if (conn.storage === 'client') {
-    ApiKeys.removeClient(id);
-  } else {
-    await ApiKeys.removeWorker(id);
-  }
+  if (conn.storage === 'client') ApiKeys.removeClient(id);
+  else await ApiKeys.removeWorker(id);
   UI.toast('Desconectada', 'info');
   renderConnections();
 }
 
 // ============================================================
-// ATTACHMENTS · documentos
+// ATTACHMENTS
 // ============================================================
-function populateAttachmentTypes() {
-  const select = document.getElementById('att-type');
-  let html = '';
-  Object.entries(Attach.TYPES).forEach(([id, t]) => {
-    html += `<option value="${id}">${t.icon} ${t.label}</option>`;
-  });
-  select.innerHTML = html;
-}
-
 function renderAttachments() {
   const atts = Attach.list();
   document.getElementById('att-count').textContent = `${atts.length} doc${atts.length !== 1 ? 's' : ''}`;
@@ -450,19 +430,76 @@ function renderAttachments() {
   }).join('');
 }
 
+let attModalState = { type: 'cedula_fiscal' };
+
 function abrirModalAttachment() {
-  document.getElementById('att-title').value = '';
-  document.getElementById('att-file').value = '';
-  document.getElementById('att-notes').value = '';
-  document.getElementById('att-modal').classList.add('active');
+  attModalState = { type: 'cedula_fiscal' };
+
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-att';
+
+  const types = Object.entries(Attach.TYPES);
+  const typeButtons = types.map(([id, t]) => `
+    <div class="g2c-quick-btn ${id === 'cedula_fiscal' ? 'active' : ''}" data-att-type="${id}">
+      <div class="qb-label">${t.icon}</div>
+      <div class="qb-value" style="font-size:10px;">${t.label}</div>
+    </div>
+  `).join('');
+
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow">
+        <div class="dot"></div>
+        <div class="label">Nuevo documento</div>
+      </div>
+      <div class="g2c-modal-title">¿Qué tipo de documento?</div>
+
+      <div class="g2c-quick-grid" id="att-type-grid" style="grid-template-columns:1fr 1fr;max-height:280px;overflow-y:auto;">
+        ${typeButtons}
+      </div>
+
+      <div class="form-field" style="margin-top:14px;">
+        <div class="field-label">TÍTULO</div>
+        <input type="text" class="field-input" id="att-title" placeholder="Ej: Cédula 2024 · Alan Davis" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">ARCHIVO</div>
+        <input type="file" class="field-input" id="att-file" style="font-size:16px !important;">
+        <div style="font-size:9px;color:var(--text-tertiary);margin-top:4px;">PDF · imagen · XML CFDI · max 5MB</div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">NOTAS (opcional)</div>
+        <textarea class="field-input field-textarea" id="att-notes" placeholder="Contexto que la IA debe saber..." style="font-size:16px !important;"></textarea>
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalAttachment()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarAttachment()">Guardar</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalAttachment);
+  document.body.appendChild(modal);
+
+  modal.querySelectorAll('[data-att-type]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-att-type]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      attModalState.type = btn.dataset.attType;
+    });
+  });
 }
 
 function cerrarModalAttachment() {
-  document.getElementById('att-modal').classList.remove('active');
+  const m = document.getElementById('modal-att');
+  if (m) m.remove();
 }
 
 async function guardarAttachment() {
-  const type = document.getElementById('att-type').value;
   const title = document.getElementById('att-title').value.trim();
   const fileInput = document.getElementById('att-file');
   const notes = document.getElementById('att-notes').value.trim();
@@ -474,7 +511,7 @@ async function guardarAttachment() {
 
   const file = fileInput.files[0];
   if (file.size > 5 * 1024 * 1024) {
-    UI.toast('Archivo > 5MB · usa uno más pequeño', 'error');
+    UI.toast('Archivo > 5MB', 'error');
     return;
   }
 
@@ -482,15 +519,13 @@ async function guardarAttachment() {
 
   try {
     const base64 = await Attach.fileToBase64(file);
-
-    // Para texto/PDF intentamos extraer texto preview (simple)
     let extractedText = '';
     if (file.type === 'text/plain' || file.type === 'text/markdown') {
       extractedText = await file.text();
     }
 
     await Attach.save({
-      type,
+      type: attModalState.type,
       title: title || file.name,
       fileName: file.name,
       fileType: file.type,
@@ -514,9 +549,8 @@ function verAttachment(id) {
     UI.toast('Sin datos para mostrar', 'error');
     return;
   }
-  // Abre en pestaña nueva
   const w = window.open();
-  if (att.fileType.startsWith('image/')) {
+  if (att.fileType?.startsWith('image/')) {
     w.document.write(`<img src="${att.data_base64}" style="max-width:100%;">`);
   } else if (att.fileType === 'application/pdf') {
     w.document.write(`<embed src="${att.data_base64}" style="width:100%;height:100vh;">`);
@@ -533,7 +567,7 @@ function eliminarAttachment(id) {
 }
 
 // ============================================================
-// PUSH NOTIFICATIONS
+// PUSH
 // ============================================================
 async function renderPush() {
   const support = Push.support();
@@ -544,7 +578,6 @@ async function renderPush() {
   const pill = document.getElementById('push-status-pill');
   const card = document.getElementById('push-card');
 
-  // Determinar estado
   if (!support.supported) {
     desc.textContent = 'Tu navegador no soporta notificaciones push';
     pill.innerHTML = '<div class="pill" style="background:rgba(244,243,239,0.04);border:0.5px solid var(--border-mid);color:var(--text-tertiary);">NO SOPORTADO</div>';
@@ -553,29 +586,24 @@ async function renderPush() {
   }
 
   if (support.requires_pwa_install) {
-    desc.textContent = 'iOS requiere instalar como app antes · botón compartir → Agregar a pantalla de inicio';
+    desc.textContent = 'iOS requiere instalar como app · botón compartir → Agregar a pantalla de inicio';
     pill.innerHTML = '<div class="pill orange">REQUIERE PWA</div>';
-    actions.innerHTML = '<button class="conn-btn-small" onclick="alert(\'En Safari: tap botón Compartir (cuadro con flecha) · scroll abajo · Agregar a pantalla de inicio · abre desde el icono nuevo\');">Cómo instalar</button>';
-    card.classList.add('required-missing');
+    actions.innerHTML = '';
     return;
   }
 
   if (status.subscribed) {
-    desc.textContent = 'Notificaciones activas · listas para recibir alertas reales';
+    desc.textContent = 'Notificaciones activas · recibirás alertas de cobros, tocadas y deadlines fiscales';
     pill.innerHTML = '<div class="pill green">ACTIVAS</div>';
-    actions.innerHTML = `
-      <button class="conn-btn-small success" onclick="testPush('media')">Test prioridad MEDIA</button>
-      <button class="conn-btn-small primary" onclick="testPush('alta', 4500)">Test ALTA · cobro $4,500</button>
-      <button class="conn-btn-small danger" onclick="desuscribir()">Desactivar</button>
-    `;
+    actions.innerHTML = `<button class="conn-btn-small danger" onclick="desuscribir()">Desactivar</button>`;
     card.classList.add('connected');
   } else if (support.permission === 'denied') {
     desc.textContent = 'Permiso denegado · habilítalo en ajustes del navegador';
     pill.innerHTML = '<div class="pill orange">DENEGADO</div>';
-    actions.innerHTML = '<button class="conn-btn-small" onclick="alert(\'Ajustes navegador → Sitio web → alan.g2c.com.mx → Notificaciones → Permitir\');">Cómo habilitar</button>';
+    actions.innerHTML = '';
     card.classList.add('required-missing');
   } else {
-    desc.textContent = 'Click "Activar" para recibir alertas de cobros, tocadas y deadlines';
+    desc.textContent = 'Click "Activar" para recibir alertas reales del sistema';
     pill.innerHTML = '<div class="pill" style="background:rgba(244,213,128,0.06);border:0.5px solid rgba(244,213,128,0.25);color:rgba(244,213,128,0.95);">PENDIENTE</div>';
     actions.innerHTML = '<button class="conn-btn-small primary" onclick="suscribir()">Activar notificaciones</button>';
   }
@@ -585,7 +613,7 @@ async function suscribir() {
   UI.toast('Solicitando permiso...', 'info', 1500);
   const r = await Push.subscribe();
   if (r.success) {
-    UI.toast('Notificaciones activadas ✓', 'success');
+    UI.toast('Notificaciones activadas', 'success');
     if (r.warning) UI.toast(r.warning, 'info', 3000);
     setTimeout(renderPush, 500);
   } else {
@@ -600,35 +628,116 @@ async function desuscribir() {
   setTimeout(renderPush, 500);
 }
 
-async function testPush(priority, amount) {
-  const opts = { priority };
-  if (amount) {
-    opts.amount = amount;
-    opts.subject = 'Cobro vencido · NEOS Regenerative';
-    opts.body = 'NEOS Regenerative tiene mensualidad vencida hace 5 días. Te sugiero generar liga de pago y mandar WhatsApp ahora.';
-  } else if (priority === 'alta') {
-    opts.subject = 'Tocada confirmada';
-    opts.body = 'Las Pulgas confirmó tu tocada del viernes 9 mayo · 9pm · pago $1,500. Falta agendar ensayo previo.';
-  } else {
-    opts.subject = 'Briefing del día';
-    opts.body = 'Tienes 3 pendientes alta prioridad y 1 cobro vence hoy. Dale prioridad a NEOS exp · cierre asumido.';
+// ============================================================
+// FISCALES (persistentes)
+// ============================================================
+function loadFiscalData() {
+  const config = Store.get(Store.KEYS.CONFIG, {});
+  document.getElementById('fiscal-rfc').value = config.rfc || '';
+  document.getElementById('fiscal-curp').value = config.curp || '';
+  document.getElementById('fiscal-nombre').value = config.nombre_fiscal || '';
+  document.getElementById('fiscal-cp').value = config.codigo_postal || '';
+}
+
+function guardarFiscales() {
+  const rfc = document.getElementById('fiscal-rfc').value.trim().toUpperCase();
+  const curp = document.getElementById('fiscal-curp').value.trim().toUpperCase();
+  const nombre = document.getElementById('fiscal-nombre').value.trim();
+  const cp = document.getElementById('fiscal-cp').value.trim();
+
+  if (rfc && !/^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$/.test(rfc)) {
+    UI.toast('RFC inválido · 4 letras + 6 dígitos + 3 caracteres', 'error');
+    return;
+  }
+  if (curp && !/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/.test(curp)) {
+    UI.toast('CURP inválida · formato incorrecto', 'error');
+    return;
+  }
+  if (cp && !/^\d{5}$/.test(cp)) {
+    UI.toast('CP inválido · 5 dígitos', 'error');
+    return;
   }
 
-  const r = await Push.testLocal(opts);
-  if (r.success) {
-    UI.toast('Notificación enviada · revisa tu pantalla', 'success');
-  } else {
-    UI.toast('Error: ' + r.error, 'error');
-  }
+  const config = Store.get(Store.KEYS.CONFIG, {});
+  if (rfc) config.rfc = rfc;
+  if (curp) config.curp = curp;
+  if (nombre) config.nombre_fiscal = nombre;
+  if (cp) config.codigo_postal = cp;
+  config.regimen = '612';
+  config.regimen_nombre = 'Personas Físicas con Actividades Empresariales y Profesionales';
+  config.fiscal_actualizado = Date.now();
+  Store.set(Store.KEYS.CONFIG, config);
+
+  UI.toast('Datos fiscales guardados', 'success');
+
+  // Recargar calendario SAT con nuevo RFC
+  loadSATCalendar();
 }
 
 // ============================================================
-// STATS · cerebro IA
+// CALENDARIO SAT (cargado de base de datos)
+// ============================================================
+function loadSATCalendar() {
+  const config = Store.get(Store.KEYS.CONFIG, {});
+  const calendar = SAT.loadCalendar();
+  const upcoming = SAT.upcoming(8);
+
+  const sub = document.getElementById('sat-info');
+  sub.textContent = config.rfc ?
+    `RFC ${config.rfc.slice(0, 4)}••• · ${calendar.length} obligaciones cargadas` :
+    `${calendar.length} obligaciones cargadas · agrega RFC para fechas exactas`;
+
+  const container = document.getElementById('sat-events');
+  if (!upcoming.length) {
+    container.innerHTML = '<div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:16px;text-align:center;color:var(--text-tertiary);font-size:11px;">Sin obligaciones próximas</div>';
+    return;
+  }
+
+  container.innerHTML = upcoming.map(e => {
+    const dias = Util.daysUntil(e.fecha);
+    let cardClass = '';
+    let pillClass = 'pill';
+    let pillText = `${dias}d`;
+
+    if (dias <= 3) {
+      cardClass = 'alert';
+      pillClass = 'pill orange';
+      pillText = dias === 0 ? 'HOY' : `${dias}d`;
+    } else if (dias <= 7) {
+      cardClass = 'upcoming';
+      pillClass = 'pill yellow';
+    }
+
+    const fecha = new Date(e.fecha);
+    const day = fecha.getDate();
+    const month = fecha.toLocaleDateString('es-MX', { month: 'short' });
+
+    return `
+      <div class="sat-event ${cardClass}">
+        <div class="sat-event-date">
+          <div class="sat-event-day">${day}</div>
+          <div class="sat-event-month">${month}</div>
+        </div>
+        <div class="sat-event-info">
+          <div class="sat-event-title">${Util.esc(e.titulo)}</div>
+          <div class="sat-event-sub">${Util.esc(e.descripcion)}</div>
+        </div>
+        <div class="${pillClass}" style="font-size:9px;padding:3px 7px;">${pillText}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function recargarCalendarioSAT() {
+  loadSATCalendar();
+  UI.toast('Calendario SAT recargado', 'success');
+}
+
+// ============================================================
+// STATS
 // ============================================================
 function renderStats() {
   const stats = Store.get(Store.KEYS.CHAT_STATS, { sonnet: { msgs: 0, in: 0, out: 0 }, haiku: { msgs: 0, in: 0, out: 0 } });
-
-  // Pricing real Anthropic
   const sonnetCost = (stats.sonnet.in / 1000000) * 3 + (stats.sonnet.out / 1000000) * 15;
   const haikuCost = (stats.haiku.in / 1000000) * 1 + (stats.haiku.out / 1000000) * 5;
 
@@ -640,30 +749,9 @@ function renderStats() {
 }
 
 // ============================================================
-// FISCAL
-// ============================================================
-function loadFiscalRFC() {
-  const config = Store.get(Store.KEYS.CONFIG, {});
-  document.getElementById('fiscal-rfc').value = config.rfc || G2C.user.rfc;
-}
-
-function guardarRFC() {
-  const rfc = document.getElementById('fiscal-rfc').value.trim().toUpperCase();
-  if (!/^[A-Z]{4}\d{6}[A-Z0-9]{3}$/.test(rfc)) {
-    UI.toast('RFC inválido · formato: 4 letras + 6 dígitos + 3 caracteres', 'error');
-    return;
-  }
-  const config = Store.get(Store.KEYS.CONFIG, {});
-  config.rfc = rfc;
-  Store.set(Store.KEYS.CONFIG, config);
-  UI.toast('RFC guardado', 'success');
-}
-
-// ============================================================
-// TOGGLES AUTOMATIZACIÓN
+// TOGGLES
 // ============================================================
 function bindToggles() {
-  // Cargar estados guardados
   const config = Store.get(Store.KEYS.CONFIG, {});
   document.querySelectorAll('[data-toggle]').forEach(s => {
     const key = s.dataset.toggle;
@@ -675,7 +763,7 @@ function bindToggles() {
       const config = Store.get(Store.KEYS.CONFIG, {});
       config[s.dataset.toggle] = s.classList.contains('on');
       Store.set(Store.KEYS.CONFIG, config);
-      UI.toast(`${s.dataset.toggle.replace('_', ' ')} · ${s.classList.contains('on') ? 'activado' : 'desactivado'}`, 'info', 1200);
+      UI.toast(`${s.dataset.toggle.replace(/_/g, ' ')} · ${s.classList.contains('on') ? 'activado' : 'desactivado'}`, 'info', 1200);
     });
   });
 }
@@ -693,7 +781,7 @@ function exportarDatos() {
   a.download = `g2c-mando-backup-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  UI.toast('Backup descargado ✓', 'success');
+  UI.toast('Backup descargado', 'success');
 }
 
 function importarDatos() {
@@ -708,17 +796,16 @@ function importarDatos() {
       const data = JSON.parse(text);
       if (!confirm('Esto sobrescribe tus datos actuales. ¿Continuar?')) return;
 
-      // Soporte para 2 formatos: nuevo (snapshot directo) y viejo (con .data wrapper)
       const payload = data.data || data;
       for (const [k, v] of Object.entries(payload)) {
         if (k === '_meta' || k === 'version' || k === 'exportedAt') continue;
         const fullKey = k.startsWith('alan_mando_') ? k : 'alan_mando_' + k;
         localStorage.setItem(fullKey, JSON.stringify(v));
       }
-      UI.toast('Datos importados · refresca la página', 'success');
+      UI.toast('Importado · refrescando...', 'success');
       setTimeout(() => location.reload(), 1500);
     } catch (e) {
-      UI.toast('Error: archivo inválido · ' + e.message, 'error');
+      UI.toast('Error: ' + e.message, 'error');
     }
   };
   input.click();
@@ -730,6 +817,7 @@ function borrarTodo() {
   for (const k of Object.values(Store.KEYS)) localStorage.removeItem(k);
   localStorage.removeItem('alan_mando_movimientos');
   localStorage.removeItem('alan_mando_current_song');
+  localStorage.removeItem('alan_mando_sat_calendar');
   UI.toast('Todos los datos borrados', 'info');
   setTimeout(() => location.href = 'index.html', 1200);
 }

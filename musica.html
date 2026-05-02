@@ -2,8 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0F1419">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mando">
 <title>Música · Mando</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
@@ -218,18 +221,76 @@ function modoEscenaSet() {
 }
 
 function agregarCancion() {
-  const titulo = prompt('Título de la canción:');
-  if (!titulo) return;
-  const artista = prompt('Artista:');
-  if (!artista) return;
-  const tonalidad = prompt('Tonalidad (ej: Em):') || '';
-  const duracion = prompt('Duración (ej: 3:42):') || '';
-  const ytId = prompt('YouTube video ID (opcional):') || '';
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-cancion';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow">
+        <div class="dot" style="background:rgba(120,200,220,1);"></div>
+        <div class="label">Nueva canción</div>
+      </div>
+      <div class="g2c-modal-title">Agregar al repertorio</div>
+
+      <div class="form-field">
+        <div class="field-label">TÍTULO</div>
+        <input type="text" class="field-input" id="cancion-titulo" placeholder="Take Me to Church" autofocus style="font-size:16px !important;">
+      </div>
+      <div class="form-field">
+        <div class="field-label">ARTISTA</div>
+        <input type="text" class="field-input" id="cancion-artista" placeholder="Hozier" style="font-size:16px !important;">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="form-field">
+          <div class="field-label">TONALIDAD</div>
+          <input type="text" class="field-input" id="cancion-tonalidad" placeholder="Em" style="font-size:16px !important;">
+        </div>
+        <div class="form-field">
+          <div class="field-label">DURACIÓN</div>
+          <input type="text" class="field-input" id="cancion-duracion" placeholder="4:02" style="font-size:16px !important;">
+        </div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">YOUTUBE ID (opcional)</div>
+        <input type="text" class="field-input" id="cancion-yt" placeholder="MYSVMgRr6pw" style="font-size:16px !important;">
+        <div style="font-size:9px;color:var(--text-tertiary);margin-top:4px;">El ID es la parte después de v= en youtube.com/watch?v=...</div>
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalCancion()">Cancelar</button>
+        <button class="btn primary-cyan" onclick="guardarCancion()">Agregar</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalCancion);
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('cancion-titulo')?.focus(), 100);
+}
+
+function cerrarModalCancion() {
+  const m = document.getElementById('modal-cancion');
+  if (m) m.remove();
+}
+
+function guardarCancion() {
+  const titulo = document.getElementById('cancion-titulo').value.trim();
+  const artista = document.getElementById('cancion-artista').value.trim();
+  if (!titulo || !artista) {
+    UI.toast('Falta título o artista', 'error');
+    return;
+  }
+  const tonalidad = document.getElementById('cancion-tonalidad').value.trim();
+  const duracion = document.getElementById('cancion-duracion').value.trim();
+  const ytId = document.getElementById('cancion-yt').value.trim();
 
   Store.push(Store.KEYS.CANCIONES, {
     titulo, artista, tonalidad, duracion, youtube_id: ytId, dominio: 'aprendiendo'
   });
   UI.toast('Canción agregada al repertorio ✓', 'success');
+  cerrarModalCancion();
   renderRepertorio();
 }
 </script>

@@ -1,9 +1,10 @@
 // G2C Mando · Service Worker
-// v1.1 · Push notifications profesionales · sin emojis · prioridad + monto
+// v1.0 · Push notifications + cache básico
 
-const SW_VERSION = 'g2c-mando-sw-v1.1';
+const SW_VERSION = 'g2c-mando-sw-v1.0';
 const CACHE_NAME = 'g2c-mando-cache-v1';
 
+// Archivos críticos para cache offline
 const CACHE_URLS = [
   '/',
   '/index.html',
@@ -14,37 +15,48 @@ const CACHE_URLS = [
   '/icon-512x512.png'
 ];
 
+// === INSTALL ===
 self.addEventListener('install', (event) => {
   console.log('[SW] Install', SW_VERSION);
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(CACHE_URLS).catch(err => console.warn('[SW] Cache addAll failed:', err));
+      return cache.addAll(CACHE_URLS).catch(err => {
+        console.warn('[SW] Cache addAll failed:', err);
+      });
     })
   );
   self.skipWaiting();
 });
 
+// === ACTIVATE ===
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activate', SW_VERSION);
   event.waitUntil(
     caches.keys().then((keys) => {
-      return Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+      return Promise.all(
+        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+      );
     })
   );
   return self.clients.claim();
 });
 
+// === FETCH · network-first con fallback a cache ===
 self.addEventListener('fetch', (event) => {
+  // Solo cachear GET de mismo origen
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith(self.location.origin)) return;
+
   event.respondWith(
     fetch(event.request).then((res) => {
+      // Cachear las respuestas exitosas
       if (res && res.status === 200) {
         const resClone = res.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
       }
       return res;
     }).catch(() => {
+      // Si falla la red, fallback a cache
       return caches.match(event.request).then((cached) => {
         return cached || new Response('Offline', { status: 503 });
       });
@@ -52,155 +64,87 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// ============================================================
-// FORMATO PROFESIONAL DE NOTIFICACIONES (reglas Alan)
-// SIN emojis · prioridad explícita · monto cuando aplica
-// ============================================================
-
-const PRIORITY_LABELS = {
-  alta: 'PRIORIDAD ALTA',
-  media: 'PRIORIDAD MEDIA',
-  baja: 'INFO',
-  critica: 'CRÍTICO · ACCIÓN INMEDIATA'
-};
-
-function formatTitle(data) {
-  const prioLabel = PRIORITY_LABELS[data.priority] || PRIORITY_LABELS.media;
-  if (data.amount) {
-    const amount = Number(data.amount).toLocaleString('es-MX');
-    return `${prioLabel} · $${amount}`;
-  }
-  if (data.subject) {
-    return `${prioLabel} · ${data.subject}`;
-  }
-  return prioLabel + ' · Mando';
-}
-
-function formatBody(data) {
-  let body = data.body || '';
-  if (data.amount && !body.includes('$')) {
-    const amount = Number(data.amount).toLocaleString('es-MX');
-    body = `${body}\nMonto: $${amount} MXN`;
-  }
-  if (data.deadline && !body.toLowerCase().includes('vence')) {
-    body = `${body}\nVence: ${data.deadline}`;
-  }
-  return body || 'Sin detalles adicionales';
-}
-
+// === PUSH · recepción de notificación push ===
 self.addEventListener('push', (event) => {
   console.log('[SW] Push received');
+
   let data = {};
   try {
     data = event.data ? event.data.json() : {};
   } catch (e) {
-    data = { title: 'Mando', body: event.data ? event.data.text() : 'Nueva notificación', priority: 'media' };
+    data = { title: 'G2C Mando', body: event.data ? event.data.text() : 'Nueva notificación' };
   }
 
-  const isCritical = data.priority === 'alta' || data.priority === 'critica';
-
   const options = {
-    body: formatBody(data),
+    body: data.body || 'Tienes una notificación nueva',
     icon: data.icon || '/icon-192x192.png',
     badge: data.badge || '/icon-192x192.png',
     image: data.image,
-    vibrate: isCritical ? [300, 100, 300, 100, 300] : [200, 100, 200],
-    tag: data.tag || 'g2c-' + (data.type || 'notif') + '-' + Date.now(),
-    requireInteraction: isCritical || data.requireInteraction || false,
+    vibrate: [200, 100, 200],
+    tag: data.tag || 'g2c-notif-' + Date.now(),
+    requireInteraction: data.requireInteraction || false,
     silent: false,
-    timestamp: data.timestamp || Date.now(),
     data: {
       url: data.url || '/',
       timestamp: Date.now(),
       type: data.type || 'general',
-      priority: data.priority || 'media',
-      amount: data.amount || null,
-      subject: data.subject || null,
       payload: data.payload || {}
     },
-    actions: data.actions || defaultActions(data.type)
+    actions: data.actions || []
   };
 
-  event.waitUntil(self.registration.showNotification(formatTitle(data), options));
+  event.waitUntil(
+    self.registration.showNotification(data.title || '★ G2C Mando', options)
+  );
 });
 
-function defaultActions(type) {
-  switch (type) {
-    case 'cobro_vencido':
-    case 'cobro_proximo':
-      return [{ action: 'view', title: 'Ver cliente' }, { action: 'dismiss', title: 'Después' }];
-    case 'tocada':
-      return [{ action: 'view', title: 'Ver tocada' }, { action: 'dismiss', title: 'Visto' }];
-    case 'pendiente':
-      return [{ action: 'view', title: 'Ver pendiente' }, { action: 'snooze', title: 'Posponer 1h' }];
-    case 'fiscal':
-      return [{ action: 'view', title: 'Ver SAT' }, { action: 'dismiss', title: 'Después' }];
-    default:
-      return [];
-  }
-}
-
+// === NOTIFICATIONCLICK · al tocar la notificación ===
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification click', event.action, event.notification.data);
+  console.log('[SW] Notification click', event.notification.data);
   event.notification.close();
-  const data = event.notification.data || {};
-  let url = data.url || '/';
 
-  if (event.action === 'dismiss') return;
-  if (event.action === 'snooze') {
-    setTimeout(() => {
-      self.registration.showNotification(event.notification.title, {
-        body: event.notification.body,
-        icon: event.notification.icon,
-        data: data,
-        tag: 'snoozed-' + Date.now()
-      });
-    }, 60 * 60 * 1000);
-    return;
+  const url = event.notification.data && event.notification.data.url ? event.notification.data.url : '/';
+
+  // Si una acción específica fue tocada
+  if (event.action) {
+    const actionMap = {
+      'view': url,
+      'dismiss': null,
+      'snooze': '/?snooze=1'
+    };
+    const target = actionMap[event.action];
+    if (!target) return; // dismiss · no hacer nada
   }
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Si ya hay una ventana abierta, enfocarla
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.postMessage({ type: 'notification-clicked', data: data });
+          client.postMessage({ type: 'notification-clicked', data: event.notification.data });
           return client.focus().then(() => {
             if ('navigate' in client) return client.navigate(url);
           });
         }
       }
-      if (self.clients.openWindow) return self.clients.openWindow(url);
+      // Si no, abrir ventana nueva
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(url);
+      }
     })
   );
 });
 
+// === MESSAGE · comunicación con la app ===
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
   if (event.data && event.data.type === 'TEST_NOTIFICATION') {
-    const payload = event.data.payload || {};
-    const testData = {
-      title: payload.title,
-      body: payload.body || 'Sistema de notificaciones operativo. Si ves esto, Mando puede alertarte de cobros, tocadas y deadlines fiscales.',
-      priority: payload.priority || 'media',
-      amount: payload.amount,
-      subject: payload.subject || 'Test del sistema',
-      url: payload.url || '/',
-      type: 'test',
-      timestamp: Date.now()
-    };
-
-    const isCritical = testData.priority === 'alta' || testData.priority === 'critica';
-
-    self.registration.showNotification(formatTitle(testData), {
-      body: formatBody(testData),
+    self.registration.showNotification('★ G2C Mando · Test', {
+      body: 'Las notificaciones funcionan correctamente',
       icon: '/icon-192x192.png',
-      badge: '/icon-192x192.png',
-      vibrate: isCritical ? [300, 100, 300, 100, 300] : [200, 100, 200],
-      tag: 'test-notif',
-      requireInteraction: isCritical,
-      data: { url: testData.url, type: 'test', priority: testData.priority }
+      vibrate: [200, 100, 200]
     });
   }
 });

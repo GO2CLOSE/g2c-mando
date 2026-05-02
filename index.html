@@ -2,8 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0F1419">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mando">
 <title>Mando · G2C</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -209,23 +212,63 @@ async function loadBriefing() {
   const fecha = new Date().toLocaleDateString('es-MX', { weekday: 'long' });
   eyebrow.textContent = `Briefing · ${fecha}`;
 
+  // Fallback estático (siempre se muestra primero)
+  const greeting = `${Util.greeting()}, Alan.`;
+  const fallbackBriefing = buildLocalBriefing();
+
+  content.innerHTML = `
+    <div style="font-size:24px;font-weight:500;letter-spacing:-0.02em;line-height:1.15;margin-bottom:8px;">${Util.esc(greeting)}</div>
+    <div style="font-size:13px;color:rgba(244,243,239,0.85);line-height:1.55;" id="briefing-text">${Util.esc(fallbackBriefing)}</div>
+  `;
+  chips.style.display = 'flex';
+
+  // Intenta mejorar con IA en background
   try {
-    const text = await IA.briefing();
-    if (text) {
-      // Separar saludo del resto
-      const lines = text.split('\n').filter(Boolean);
-      const greeting = lines[0] || `${Util.greeting()}, Alan.`;
+    const result = await IA.briefing();
+
+    if (result.error) {
+      // Solo log silencioso · NO mostrar error al usuario · ya tiene briefing local
+      console.warn('[Briefing] IA no disponible:', result.error_message);
+      return;
+    }
+
+    if (result.text) {
+      const lines = result.text.split('\n').filter(Boolean);
+      const aiGreeting = lines[0] || greeting;
       const rest = lines.slice(1).join(' ').trim();
 
       content.innerHTML = `
-        <div style="font-size:24px;font-weight:500;letter-spacing:-0.02em;line-height:1.15;margin-bottom:8px;">${Util.esc(greeting)}</div>
-        <div style="font-size:13px;color:rgba(244,243,239,0.85);line-height:1.55;">${Util.esc(rest)}</div>
+        <div style="font-size:24px;font-weight:500;letter-spacing:-0.02em;line-height:1.15;margin-bottom:8px;">${Util.esc(aiGreeting)}</div>
+        <div style="font-size:13px;color:rgba(244,243,239,0.85);line-height:1.55;">${Util.esc(rest || fallbackBriefing)}</div>
       `;
-      chips.style.display = 'flex';
     }
   } catch (e) {
-    content.innerHTML = `<div style="font-size:13px;color:var(--text-secondary);">Hola Alan. Tu sistema está listo.</div>`;
+    console.warn('[Briefing] Error:', e);
+    // Briefing local ya está visible, no hacer nada
   }
+}
+
+/**
+ * Briefing local · construido con datos del ERP sin llamar IA.
+ * Útil como fallback cuando hay problemas de red o el cerebro está apagado.
+ */
+function buildLocalBriefing() {
+  const clientes = Store.get(Store.KEYS.CLIENTES, []);
+  const pendientes = Store.get(Store.KEYS.PENDIENTES, []).filter(p => !p.done);
+  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
+  const finanzas = Store.get(Store.KEYS.FINANZAS, {});
+
+  const vencidos = clientes.filter(c => c.status === 'vencido');
+  const altas = pendientes.filter(p => p.prioridad === 'alta');
+  const proxTocada = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now()).sort((a, b) => a.ts - b.ts)[0];
+
+  const partes = [];
+  if (vencidos.length) partes.push(`${vencidos.length} cobro${vencidos.length > 1 ? 's' : ''} vencido${vencidos.length > 1 ? 's' : ''}`);
+  if (altas.length) partes.push(`${altas.length} pendiente${altas.length > 1 ? 's' : ''} alta prioridad`);
+  if (proxTocada) partes.push(`tocada en ${Util.daysUntil(proxTocada.ts)} días`);
+
+  if (partes.length === 0) return 'Día limpio · sin urgencias detectadas. Aprovecha para trabajo profundo o prospección.';
+  return 'Hoy: ' + partes.join(' · ') + '.';
 }
 
 // ============================================================
