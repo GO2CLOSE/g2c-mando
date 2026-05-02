@@ -2,2870 +2,530 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#080D1A">
-<title>Finanzas · G2C Mando</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F1419">
+<title>Finanzas · Mando</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
-<style>
-.fin-shell { min-height: 100vh; display: flex; flex-direction: column; background: var(--dark); }
-.fin-shell::before {
-  content:''; position: fixed; inset: 0;
-  background:
-    radial-gradient(ellipse at 70% 20%, rgba(255,79,0,0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 20% 80%, rgba(0,217,126,0.04) 0%, transparent 50%);
-  pointer-events: none; z-index: 0;
-}
-.fin-content { position: relative; z-index: 5; flex: 1; padding: 16px 22px 60px; max-width: 1280px; margin: 0 auto; width: 100%; }
-
-.fin-header { margin-bottom: 18px; }
-.fin-eyebrow { font-family: var(--mono); font-size: 10px; color: var(--orange); letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 5px; }
-.fin-eyebrow::before { content: '▸ '; }
-.fin-title { font-family: var(--display); font-size: 28px; color: var(--white); margin-bottom: 4px; line-height: 1.1; }
-.fin-subtitle { color: var(--gray-light); font-size: 12px; }
-
-.fin-ai-hero {
-  background: linear-gradient(135deg, rgba(255,79,0,0.06), var(--dark-2) 60%);
-  border: 1px solid rgba(255,79,0,0.2); border-radius: 4px;
-  padding: 14px; margin-bottom: 16px;
-}
-.fin-ai-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.fin-ai-input {
-  flex: 1; min-width: 220px; padding: 11px 14px;
-  background: rgba(0,0,0,0.4); border: 1px solid rgba(255,79,0,0.2);
-  color: var(--gray-light); font-style: italic; font-size: 13px;
-  border-radius: 2px; cursor: pointer; transition: border-color var(--t-fast);
-}
-.fin-ai-input:hover { border-color: var(--orange); }
-.fin-ai-btn {
-  padding: 11px 18px; background: var(--orange); color: var(--white);
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em;
-  text-transform: uppercase; font-weight: 700; border: none; border-radius: 2px;
-  cursor: pointer; transition: all var(--t-fast);
-}
-.fin-ai-btn:hover { background: var(--orange-light); transform: translateY(-1px); }
-.fin-ai-chips { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-.fin-ai-chip {
-  padding: 5px 10px; background: rgba(255,79,0,0.06);
-  border: 1px solid rgba(255,79,0,0.2); color: var(--orange-light);
-  font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em;
-  text-transform: uppercase; border-radius: 2px; cursor: pointer;
-  transition: all var(--t-fast);
-}
-.fin-ai-chip:hover { background: rgba(255,79,0,0.15); color: var(--orange); }
-
-.fin-metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
-.fin-metric {
-  background: var(--dark-2); border: 1px solid rgba(255,79,0,0.15);
-  border-left: 2px solid var(--orange); padding: 11px 12px; border-radius: 3px;
-}
-.fin-metric-label {
-  font-family: var(--mono); font-size: 8px; color: var(--gray);
-  letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 3px;
-}
-.fin-metric-value { font-family: var(--display); font-size: 17px; color: var(--white); line-height: 1; margin-bottom: 3px; }
-.fin-metric-trend { font-family: var(--mono); font-size: 9px; }
-
-.chart-card {
-  background: var(--dark-2); border: 1px solid rgba(255,79,0,0.15);
-  padding: 14px; border-radius: 3px;
-}
-.chart-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.chart-card-title {
-  font-family: var(--mono); font-size: 9px; color: var(--orange);
-  letter-spacing: 0.25em; text-transform: uppercase;
-}
-.chart-card-title::before { content: '★ '; }
-.chart-card-meta { font-family: var(--mono); font-size: 9px; color: var(--gray); }
-.chart-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; font-size: 10px; color: var(--gray-light); }
-.chart-legend-item { display: flex; align-items: center; gap: 5px; }
-.chart-legend-dot { width: 10px; height: 3px; border-radius: 1px; }
-.chart-legend-dot.dashed { background: transparent !important; border-top: 2px dashed; }
-.chart-canvas-wrap { position: relative; height: 240px; }
-
-.fin-grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 16px; }
-.fin-grid-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-
-.action-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
-.action-btn {
-  padding: 12px 14px; text-align: center; font-family: var(--mono);
-  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
-  font-weight: 700; border: 1px solid; border-radius: 3px; cursor: pointer;
-  transition: all var(--t-fast);
-}
-.action-btn-success { background: rgba(0,217,126,0.08); border-color: var(--success); color: var(--success); }
-.action-btn-success:hover { background: rgba(0,217,126,0.18); transform: translateY(-1px); }
-.action-btn-danger { background: rgba(230,57,70,0.08); border-color: var(--danger); color: var(--danger); }
-.action-btn-danger:hover { background: rgba(230,57,70,0.18); transform: translateY(-1px); }
-.action-btn-orange { background: rgba(255,79,0,0.08); border-color: var(--orange); color: var(--orange); }
-.action-btn-orange:hover { background: rgba(255,79,0,0.18); transform: translateY(-1px); }
-
-/* Coach */
-.coach-card {
-  background: var(--dark-2); border: 1px solid rgba(255,79,0,0.15);
-  border-left: 3px solid var(--orange); padding: 14px; border-radius: 3px;
-  transition: transform var(--t-fast);
-}
-.coach-card:hover { transform: translateY(-2px); }
-.coach-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 8px; }
-.coach-card-cat { font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 4px; }
-.coach-card-cat::before { content: '▸ '; }
-.coach-card-title { font-family: var(--display); font-size: 16px; color: var(--white); line-height: 1.2; }
-.coach-card-progress-text { font-family: var(--mono); font-size: 10px; color: var(--gray-light); margin-bottom: 8px; }
-.coach-progress-bar { height: 6px; background: rgba(0,0,0,0.5); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
-.coach-progress-fill { height: 100%; transition: width var(--t-slow); }
-.coach-progress-stats { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9px; }
-.coach-kpis-section { padding-top: 8px; margin-top: 8px; border-top: 1px solid rgba(255,79,0,0.1); }
-.coach-kpis-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 5px; }
-.coach-kpis-label::before { content: '▸ '; }
-.coach-kpi-item { font-size: 11px; color: var(--white); line-height: 1.6; }
-.coach-kpi-icon { display: inline-block; width: 12px; }
-
-/* Servicios fijos */
-.serv-table {
-  background: var(--dark-2); border: 1px solid rgba(255,79,0,0.1); border-radius: 3px;
-  overflow: hidden;
-}
-.serv-table-header {
-  display: grid; grid-template-columns: 2fr 1.4fr 1fr 1fr 1fr 130px; gap: 10px;
-  padding: 11px 14px; background: rgba(0,0,0,0.4);
-  border-bottom: 1px solid rgba(255,79,0,0.15);
-  font-family: var(--mono); font-size: 8px; color: var(--orange);
-  letter-spacing: 0.25em; text-transform: uppercase;
-}
-.serv-row {
-  display: grid; grid-template-columns: 2fr 1.4fr 1fr 1fr 1fr 130px; gap: 10px;
-  padding: 12px 14px; align-items: center;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  transition: background var(--t-fast);
-}
-.serv-row:hover { background: rgba(255,79,0,0.03); }
-.serv-row:last-child { border-bottom: none; }
-.serv-row.vencido { background: rgba(230,57,70,0.04); }
-.serv-row.pagado { opacity: 0.55; }
-.serv-cell-motivo { font-size: 12px; color: var(--white); font-weight: 600; margin-bottom: 2px; }
-.serv-cell-motivo.tachado { text-decoration: line-through; }
-.serv-cell-prov { font-family: var(--mono); font-size: 9px; color: var(--orange-light); }
-.serv-cell-tipo { font-family: var(--mono); font-size: 10px; color: var(--gray-light); }
-.serv-cell-total { font-family: var(--mono); font-size: 12px; color: var(--orange); font-weight: 700; }
-.serv-cell-total.pagado { color: var(--success); }
-.serv-cell-vence { font-family: var(--mono); font-size: 10px; }
-.serv-pay-btn {
-  padding: 6px 10px; color: var(--white); font-family: var(--mono);
-  font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
-  font-weight: 700; text-align: center; cursor: pointer; border: none;
-  border-radius: 2px; transition: transform var(--t-fast);
-  width: 100%;
-}
-.serv-pay-btn:hover { transform: translateY(-1px); }
-.serv-pay-btn.success { background: var(--success); }
-.serv-pay-btn.danger { background: var(--danger); }
-.serv-pay-done {
-  font-family: var(--mono); font-size: 9px; color: var(--success);
-  letter-spacing: 0.15em; text-align: center;
-}
-
-/* Modales */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 1000;
-  display: flex; align-items: flex-start; padding: 30px 16px; justify-content: center;
-  overflow-y: auto; animation: fadeIn var(--t-fast);
-}
-.modal-box {
-  background: var(--dark-2); border-radius: 5px; max-width: 580px; width: 100%;
-  max-height: calc(100vh - 60px); overflow: hidden;
-  display: flex; flex-direction: column; animation: slideUp var(--t-med);
-}
-.modal-box.success-border { border: 1px solid rgba(0,217,126,0.4); }
-.modal-box.orange-border { border: 1px solid rgba(255,79,0,0.4); }
-.modal-header {
-  padding: 14px 18px; border-bottom: 1px solid rgba(255,79,0,0.2);
-  display: flex; justify-content: space-between; align-items: center;
-}
-.modal-title { font-family: var(--display); font-size: 17px; color: var(--white); }
-.modal-close {
-  width: 26px; height: 26px; border: 1px solid rgba(255,255,255,0.1);
-  background: transparent; color: var(--gray); font-size: 14px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; border-radius: 2px;
-  transition: all var(--t-fast);
-}
-.modal-close:hover { color: var(--danger); border-color: var(--danger); }
-.modal-body { padding: 18px; overflow-y: auto; flex: 1; }
-.modal-footer {
-  padding: 12px 18px; border-top: 1px solid rgba(255,255,255,0.05);
-  display: flex; gap: 6px; justify-content: flex-end;
-}
-
-.field { margin-bottom: 12px; }
-.field-label {
-  font-family: var(--mono); font-size: 9px; color: var(--orange);
-  letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 4px;
-}
-.field-input, .field-select, .field-textarea {
-  width: 100%; padding: 9px 12px; background: var(--dark);
-  border: 1px solid rgba(255,79,0,0.2); color: var(--white);
-  font-size: 13px; font-family: var(--body); border-radius: 2px;
-  transition: border-color var(--t-fast);
-}
-.field-input:focus, .field-select:focus, .field-textarea:focus {
-  outline: none; border-color: var(--orange);
-}
-.field-textarea { min-height: 60px; resize: vertical; font-family: var(--body); }
-.field-row { display: grid; gap: 8px; }
-.field-row.cols-2 { grid-template-columns: 1fr 1fr; }
-.field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
-.field-hint { font-family: var(--mono); font-size: 8px; color: var(--gray); letter-spacing: 0.1em; margin-top: 3px; }
-
-.modal-impact {
-  padding: 12px 14px;
-  background: linear-gradient(135deg, rgba(255,79,0,0.06), rgba(255,215,0,0.04));
-  border: 1px solid rgba(255,79,0,0.25); border-radius: 3px;
-  margin-top: 14px;
-}
-.modal-impact-label {
-  font-family: var(--mono); font-size: 9px; color: var(--gold);
-  letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 6px;
-}
-.modal-impact-label::before { content: '★ '; }
-.modal-impact-text { font-size: 11px; color: var(--white); line-height: 1.7; }
-
-/* Coach hero */
-.coach-hero {
-  background: linear-gradient(135deg, rgba(255,79,0,0.12), rgba(0,217,126,0.08), var(--dark-2) 60%);
-  border: 1px solid rgba(255,79,0,0.3); padding: 16px; margin-bottom: 16px;
-  border-radius: 3px; position: relative; overflow: hidden;
-}
-.coach-hero::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--orange), transparent);
-}
-.coach-hero-row { display: flex; gap: 12px; align-items: flex-start; }
-.coach-hero-content { flex: 1; }
-.coach-hero-eyebrow {
-  font-family: var(--mono); font-size: 9px; color: var(--orange);
-  letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 6px;
-}
-.coach-hero-eyebrow::before { content: '▸ '; }
-.coach-hero-text { color: var(--white); font-size: 14px; line-height: 1.65; margin-bottom: 12px; }
-.coach-hero-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-
-/* Bitácoras */
-.bitacora-section {
-  background: linear-gradient(135deg, rgba(74,158,255,0.06), var(--dark-2));
-  border: 1px solid rgba(74,158,255,0.25); border-left: 3px solid var(--info);
-  padding: 14px; border-radius: 3px;
-}
-.bitacora-grid {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
-}
-.bitacora-card {
-  padding: 9px 10px; background: rgba(0,0,0,0.3); border-left: 2px solid;
-  cursor: pointer; transition: transform var(--t-fast);
-}
-.bitacora-card:hover { transform: translateY(-1px); }
-.bitacora-cat-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 3px; }
-.bitacora-cat-label::before { content: '▸ '; }
-.bitacora-cat-count { font-size: 11px; color: var(--white); }
-
-/* Insight */
-.insight-card {
-  background: linear-gradient(135deg, rgba(74,158,255,0.06), var(--dark-2));
-  border: 1px solid rgba(74,158,255,0.25); border-left: 3px solid var(--info);
-  padding: 14px; border-radius: 3px;
-}
-.insight-card.gold { background: linear-gradient(135deg, rgba(255,215,0,0.06), var(--dark-2)); border-color: rgba(255,215,0,0.25); border-left-color: var(--gold); }
-.insight-card.success { background: linear-gradient(135deg, rgba(0,217,126,0.06), var(--dark-2) 70%); border-color: rgba(0,217,126,0.25); border-left-color: var(--success); }
-.insight-eyebrow { font-family: var(--mono); font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 8px; }
-.insight-eyebrow::before { content: '★ '; }
-.insight-text { color: var(--white); font-size: 12px; line-height: 1.55; }
-
-/* Health score */
-.health-card {
-  background: linear-gradient(135deg, rgba(0,217,126,0.06), var(--dark-2) 70%);
-  border: 1px solid rgba(0,217,126,0.25); border-left: 3px solid var(--success);
-  padding: 14px; margin-bottom: 16px; border-radius: 3px;
-}
-.health-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.health-title { font-family: var(--mono); font-size: 9px; color: var(--success); letter-spacing: 0.25em; text-transform: uppercase; }
-.health-title::before { content: '★ '; }
-.health-score { font-family: var(--mono); font-size: 10px; color: var(--gold); }
-.health-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.health-item { background: rgba(0,0,0,0.3); padding: 10px 12px; border-left: 2px solid; border-radius: 2px; }
-.health-label { font-family: var(--mono); font-size: 8px; color: var(--gray); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 3px; }
-.health-value { font-family: var(--display); font-size: 18px; color: var(--white); line-height: 1; margin-bottom: 3px; }
-.health-trend { font-family: var(--mono); font-size: 9px; }
-
-/* Filtros */
-.filter-row { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
-
-@media (max-width: 880px) {
-  .fin-content { padding: 12px 14px 60px; }
-  .fin-metrics { grid-template-columns: repeat(2, 1fr); }
-  .fin-grid-2, .fin-grid-1-1 { grid-template-columns: 1fr; }
-  .action-buttons { grid-template-columns: 1fr; }
-  .health-grid { grid-template-columns: repeat(2, 1fr); }
-  .bitacora-grid { grid-template-columns: repeat(2, 1fr); }
-  .serv-table-header, .serv-row { grid-template-columns: 1fr 90px; gap: 8px; }
-  .serv-table-header > span:not(:first-child):not(:last-child),
-  .serv-row > div:not(:first-child):not(:nth-last-child(1)):not(:nth-last-child(2)) { display: none; }
-  .field-row.cols-3 { grid-template-columns: 1fr; }
-  .modal-overlay { padding: 16px 8px; }
-}
-
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-</style>
 </head>
 <body>
-<a href="index.html" id="floatBack" style="position:fixed;top:10px;left:10px;z-index:99999;display:inline-flex;align-items:center;gap:5px;padding:8px 12px;background:var(--orange);color:white;text-decoration:none;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;border-radius:3px;box-shadow:0 4px 12px rgba(255,79,0,0.4);">
-  <span style="font-size:14px;line-height:1;">‹</span>
-  <span>Mando</span>
-</a>
-<div id="passwordGate"></div>
 
-<div class="fin-shell">
+<div id="status-bar"></div>
 
-  <div class="fin-content">
-    
-
-    <div class="fin-header">
-      <div class="fin-eyebrow" id="finEyebrow">ERP personal · Alan Davis SA de CV</div>
-      <h1 class="fin-title">Finanzas</h1>
-      <p class="fin-subtitle">G2C · Música · Otros · Personal · cada peso ligado a tu sistema</p>
-    </div>
-
-    <div class="tabs-strip">
-      <button class="tab-strip-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">★ Dashboard</button>
-      <button class="tab-strip-btn" data-tab="coach" onclick="switchTab('coach')">▣ Coach motivador</button>
-      <button class="tab-strip-btn" data-tab="servicios" onclick="switchTab('servicios')">↻ Servicios fijos</button>
-      <button class="tab-strip-btn" data-tab="clientes" onclick="switchTab('clientes')">◈ Clientes</button>
-      <button class="tab-strip-btn" data-tab="movimientos" onclick="switchTab('movimientos')">≡ Movimientos</button>
-      <button class="tab-strip-btn" data-tab="proyec" onclick="switchTab('proyec')">▴ Proyecciones</button>
-    </div>
-
-    <div id="tabContent"></div>
+<header class="module-header">
+  <div class="module-eyebrow">
+    <div class="dot"></div>
+    <div class="label">Finanzas · CFO integral</div>
   </div>
+  <div class="module-title" id="finanzas-title">Vida financiera</div>
+  <div class="module-subtitle" id="finanzas-sub">Trabajo + personal + objetivos · todo conectado</div>
+</header>
+
+<div class="tab-bar" id="tab-bar">
+  <div class="tab active" data-tab="resumen">Resumen</div>
+  <div class="tab" data-tab="trabajo">Trabajo</div>
+  <div class="tab" data-tab="personal">Personal</div>
+  <div class="tab" data-tab="musica">Música</div>
+  <div class="tab" data-tab="objetivos">Objetivos</div>
 </div>
 
-<div id="modalsMount"></div>
-<div id="toast"></div>
+<div id="tab-content"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<div id="chat-input-host"></div>
+<div id="footer-host"></div>
+<div id="nav-host"></div>
+
 <script src="shared.js"></script>
 <script>
-// ============================================
-// FINANZAS · v0.4 Fase B.1
-// ============================================
-let currentTab = 'dashboard';
-let chartInstances = [];
-
-const CATEGORIAS = {
-  personal: { label: 'Personal', color: '#FF7A00', icon: '✦' },
-  g2c: { label: 'G2C', color: '#FF4F00', icon: '★' },
-  musica: { label: 'Música', color: '#8B85FF', icon: '♪' },
-  financiero: { label: 'Financiero', color: '#00D97E', icon: '$' },
-  compromiso: { label: 'Compromiso', color: '#FFD700', icon: '↻' }
-};
-
-const ESTADO_COLORS = {
-  'EN PROGRESO': '#FF4F00',
-  'EN RACHA': '#00D97E',
-  'ATRASADO': '#E63946',
-  'COMPLETADO': '#FFD700'
-};
-
-// ============================================
-// METRICS COMPUTE
-// ============================================
-function computeFinanzasMetrics() {
-  const fin = load(STORAGE.FINANZAS, []);
-  const clientes = load(STORAGE.CLIENTES, []);
-  const cuentasCobrar = load(STORAGE.CUENTAS_COBRAR, []);
-  const cuentasPagar = load(STORAGE.CUENTAS_PAGAR, []);
-  const calendario = load(STORAGE.CALENDARIO, []);
-  const serviciosFijos = load(STORAGE.SERVICIOS_FIJOS, []);
-
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  const thisMonth = today.toISOString().slice(0,7);
-  const todayStr = today.toISOString().slice(0,10);
-
-  // Ingresos/egresos REALMENTE registrados este mes
-  const ingresos = fin.filter(f => f.fecha?.startsWith(thisMonth) && f.tipo === 'ingreso')
-    .reduce((s,f) => s + Number(f.monto||0), 0);
-  const egresos = fin.filter(f => f.fecha?.startsWith(thisMonth) && f.tipo === 'gasto')
-    .reduce((s,f) => s + Number(f.monto||0), 0);
-  const utilidad = ingresos - egresos;
-
-  // MRR · clientes activos recurrentes
-  const activos = clientes.filter(c => c.status === 'activo' && c.frecuencia === 'mensual');
-  const mrr = activos.reduce((s,c) => s + Number(c.monto||0), 0);
-
-  // Tendencias mes anterior
-  const lastMonth = new Date(today.getFullYear(), today.getMonth()-1, 1).toISOString().slice(0,7);
-  const ingresosMesAnterior = fin.filter(f => f.fecha?.startsWith(lastMonth) && f.tipo === 'ingreso')
-    .reduce((s,f) => s + Number(f.monto||0), 0);
-  const egresosMesAnterior = fin.filter(f => f.fecha?.startsWith(lastMonth) && f.tipo === 'gasto')
-    .reduce((s,f) => s + Number(f.monto||0), 0);
-  const trendIng = ingresosMesAnterior > 0 ? Math.round((ingresos - ingresosMesAnterior) / ingresosMesAnterior * 100) : 0;
-  const trendEgr = egresosMesAnterior > 0 ? Math.round((egresos - egresosMesAnterior) / egresosMesAnterior * 100) : 0;
-
-  // CUENTAS POR COBRAR · TOTAL real
-  // 1) Cobros calendario pendientes (no marcados cobrado)
-  const cobrosPendCal = calendario.filter(e => e.category === 'cobro' && !e.cobrado);
-  const totalCobrosCal = cobrosPendCal.reduce((s,e) => s + Number(e.amount||0), 0);
-  // 2) Cuentas por cobrar manuales
-  const xCobrarPend = cuentasCobrar.filter(c => !c.cobrado);
-  const totalXCobrar = xCobrarPend.reduce((s,c) => s + Number(c.monto||0), 0);
-  const totalPorCobrar = totalCobrosCal + totalXCobrar;
-
-  // CUENTAS POR PAGAR · TOTAL real
-  // 1) Cuentas por pagar manuales pendientes
-  const xPagarPend = cuentasPagar.filter(c => !c.pagado);
-  const totalXPagar = xPagarPend.reduce((s,c) => s + Number(c.monto||0), 0);
-  // 2) Servicios fijos vencidos
-  const serviciosVencidos = serviciosFijos.filter(s => s.estado === 'vencido');
-  const totalServVencido = serviciosVencidos.reduce((s,sv) => s + Number(sv.total||0), 0);
-  const totalPorPagar = totalXPagar + totalServVencido;
-
-  // Vencidos · alertas críticas
-  const cobrosVencidosCount = cobrosPendCal.filter(e => new Date(e.date + 'T12:00:00') < today).length
-    + xCobrarPend.filter(c => c.fechaVence && new Date(c.fechaVence + 'T12:00:00') < today).length;
-  const pagosVencidosCount = serviciosVencidos.length
-    + xPagarPend.filter(c => c.fechaVence && new Date(c.fechaVence + 'T12:00:00') < today).length;
-
-  // Proyección 90d real · MRR + cuentas por cobrar - egresos previstos
-  const egresoMensualFijo = serviciosFijos.filter(s => s.frecuencia === 'mensual').reduce((s,sv) => s + Number(sv.total||0), 0);
-  const proyeccion90d = (mrr * 3) + totalPorCobrar - (egresoMensualFijo * 3) - totalPorPagar;
-
-  // Flujo neto proyectado próximos 30 días
-  const flujoNeto30 = totalPorCobrar - totalPorPagar - egresoMensualFijo;
-
-  return {
-    ingresos, egresos, utilidad, mrr,
-    margen: ingresos > 0 ? Math.round(utilidad/ingresos*100) : 0,
-    trendIng, trendEgr,
-    contratosActivos: activos.length,
-    proyeccion90d,
-    totalPorCobrar, totalPorPagar,
-    cobrosVencidosCount, pagosVencidosCount,
-    flujoNeto30,
-    egresoMensualFijo
-  };
-}
-
-function computeHealthScore() {
-  const m = computeFinanzasMetrics();
-  const clientes = load(STORAGE.CLIENTES, []);
-
-  // Ratio de gasto sobre ingreso
-  const ratio = m.ingresos > 0 ? Math.round(m.egresos/m.ingresos*100) : 0;
-  const ratioOK = ratio > 0 && ratio < 60;
-
-  // Liquidez · meses de operación cubiertos por utilidad
-  const meses = m.egresos > 0 ? (m.utilidad / m.egresos).toFixed(1) : 0;
-  const liquidezOK = Number(meses) > 2;
-
-  // Concentración · % del MRR que viene del top cliente
-  const totalMRR = m.mrr;
-  const topCliente = clientes.filter(c => c.status === 'activo')
-    .sort((a,b) => Number(b.monto||0) - Number(a.monto||0))[0];
-  const concentracion = totalMRR > 0 && topCliente ? Math.round(Number(topCliente.monto||0)/totalMRR*100) : 0;
-  const concentracionOK = concentracion > 0 && concentracion < 50;
-
-  // Velocidad de cobro · cobros vencidos como señal
-  const velocidadCobro = m.cobrosVencidosCount > 0 ? 25 : m.totalPorCobrar > 0 ? 11 : 0;
-  const velocidadOK = velocidadCobro > 0 && velocidadCobro < 15;
-
-  // Score composite
-  let score = 0;
-  score += ratioOK ? 25 : (ratio === 0 ? 15 : 10);
-  score += liquidezOK ? 25 : 10;
-  score += concentracionOK ? 20 : (concentracion === 0 ? 15 : 5);
-  score += velocidadOK ? 30 : (velocidadCobro === 0 ? 25 : 15);
-  // Penalización por vencidos
-  if (m.cobrosVencidosCount > 0) score -= Math.min(15, m.cobrosVencidosCount * 5);
-  if (m.pagosVencidosCount > 0) score -= Math.min(10, m.pagosVencidosCount * 3);
-  score = Math.max(0, Math.min(100, score));
-
-  return { ratio, ratioOK, meses, liquidezOK, concentracion, concentracionOK, velocidadCobro, velocidadOK, score };
-}
-
-function generateProyeccion12Meses() {
-  const fin = load(STORAGE.FINANZAS, []);
-  const today = new Date();
-  const labels = [];
-  const ingresosReales = [];
-  const ingresosProy = [];
-  const egresosLine = [];
-  const utilidadAcum = [];
-  let utilAcc = 0;
-
-  const m = computeFinanzasMetrics();
-  const baseIngreso = m.ingresos || 35000;
-  const baseEgreso = m.egresos || 22000;
-
-  for (let i = -6; i < 6; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-    const monthKey = d.toISOString().slice(0,7);
-    const monthLabel = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][d.getMonth()];
-    labels.push(monthLabel);
-
-    const ingMes = fin.filter(f => f.fecha?.startsWith(monthKey) && f.tipo === 'ingreso')
-      .reduce((s,f) => s + Number(f.monto||0), 0);
-    const egrMes = fin.filter(f => f.fecha?.startsWith(monthKey) && f.tipo === 'gasto')
-      .reduce((s,f) => s + Number(f.monto||0), 0);
-
-    if (i <= 0) {
-      ingresosReales.push(ingMes || baseIngreso + (Math.random() * 5000 - 2500));
-      ingresosProy.push(null);
-      egresosLine.push(egrMes || baseEgreso + (Math.random() * 2000 - 1000));
-    } else {
-      ingresosReales.push(null);
-      ingresosProy.push(Math.round(baseIngreso * (1 + i * 0.04)));
-      egresosLine.push(Math.round(baseEgreso * (1 + i * 0.02)));
-    }
-
-    const ing = ingresosReales[ingresosReales.length-1] || ingresosProy[ingresosProy.length-1] || 0;
-    const egr = egresosLine[egresosLine.length-1] || 0;
-    utilAcc += (ing - egr);
-    utilidadAcum.push(Math.round(utilAcc));
-  }
-
-  return { labels, ingresosReales, ingresosProy, egresosLine, utilidadAcum };
-}
-
-function getIngresosLineas() {
-  const fin = load(STORAGE.FINANZAS, []);
-  const ingresos = fin.filter(f => f.tipo === 'ingreso');
-  const totals = { g2c: 0, musica: 0, otros: 0 };
-  ingresos.forEach(i => {
-    const cat = (i.categoria || 'otros').toLowerCase();
-    if (cat === 'g2c') totals.g2c += Number(i.monto||0);
-    else if (cat === 'musica') totals.musica += Number(i.monto||0);
-    else totals.otros += Number(i.monto||0);
-  });
-  const total = totals.g2c + totals.musica + totals.otros;
-  if (total === 0) return { g2c: 70, musica: 23, otros: 7 };
-  return {
-    g2c: Math.round(totals.g2c/total*100),
-    musica: Math.round(totals.musica/total*100),
-    otros: Math.round(totals.otros/total*100)
-  };
-}
-
-function getClientesGanadosPerdidos() {
-  const clientes = load(STORAGE.CLIENTES, []);
-  const labels = [];
-  const ganados = [];
-  const perdidos = [];
-  const today = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    const monthKey = d.toISOString().slice(0,7);
-    labels.push(['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][d.getMonth()]);
-    const gan = clientes.filter(c => {
-      const dt = new Date(c.createdAt).toISOString().slice(0,7);
-      return dt === monthKey && c.status === 'activo';
-    }).length;
-    const per = clientes.filter(c => {
-      const dt = new Date(c.createdAt).toISOString().slice(0,7);
-      return dt === monthKey && c.status === 'perdido';
-    }).length;
-    ganados.push(gan);
-    perdidos.push(per);
-  }
-  return { labels, ganados, perdidos };
-}
-
-// ============================================
-// RENDER · DASHBOARD
-// ============================================
-function renderDashboard() {
-  const m = computeFinanzasMetrics();
-  const h = computeHealthScore();
-
-  return `
-    <div class="fin-ai-hero">
-      <div class="fin-ai-row">
-        <span class="g2c-star md solid"><span class="g2c-star-glyph">★</span></span>
-        <div class="fin-ai-input" onclick="goToMandoFromFinanzas()">Pregunta a tu asesor IA: SAT, deducibles, proyecciones, estrategias...</div>
-        <button class="fin-ai-btn" onclick="goToMandoFromFinanzas()">▸ Asesor IA</button>
-      </div>
-      <div class="fin-ai-chips">
-        <span class="fin-ai-chip" onclick="askAi('Resumen financiero del mes')">▸ Resumen del mes</span>
-        <span class="fin-ai-chip" onclick="askAi('¿Cuánto pago de ISR este mes con mi facturación actual?')">▸ ¿Cuánto pago de ISR?</span>
-        <span class="fin-ai-chip" onclick="askAi('Dame proyección financiera de los próximos 90 días')">▸ Proyección 90 días</span>
-        <span class="fin-ai-chip" onclick="askAi('Tip de optimización fiscal para mi situación actual')">▸ Tip de optimización</span>
-      </div>
-    </div>
-
-    <div class="fin-metrics">
-      <div class="fin-metric">
-        <div class="fin-metric-label">Ingresos mes</div>
-        <div class="fin-metric-value" style="color:var(--success);">$${m.ingresos.toLocaleString('es-MX')}</div>
-        <div class="fin-metric-trend" style="color:${m.trendIng >= 0 ? 'var(--success)' : 'var(--danger)'};">${m.trendIng >= 0 ? '+' : ''}${m.trendIng}% vs ant.</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--danger);">
-        <div class="fin-metric-label">Egresos mes</div>
-        <div class="fin-metric-value" style="color:var(--danger);">$${m.egresos.toLocaleString('es-MX')}</div>
-        <div class="fin-metric-trend" style="color:${m.trendEgr <= 0 ? 'var(--success)' : 'var(--danger)'};">${m.trendEgr >= 0 ? '+' : ''}${m.trendEgr}% vs ant.</div>
-      </div>
-      <div class="fin-metric">
-        <div class="fin-metric-label">Utilidad neta</div>
-        <div class="fin-metric-value">$${m.utilidad.toLocaleString('es-MX')}</div>
-        <div class="fin-metric-trend" style="color:var(--orange);">${m.margen}% margen</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--orange-light);">
-        <div class="fin-metric-label">MRR activo</div>
-        <div class="fin-metric-value" style="color:var(--orange-light);">$${m.mrr.toLocaleString('es-MX')}</div>
-        <div class="fin-metric-trend" style="color:var(--orange-light);">${m.contratosActivos} contratos</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--gold);">
-        <div class="fin-metric-label">Proyección 90d</div>
-        <div class="fin-metric-value" style="color:var(--gold);">$${(m.proyeccion90d/1000).toFixed(0)}K</div>
-        <div class="fin-metric-trend" style="color:var(--gold);">85% confirmado</div>
-      </div>
-    </div>
-
-    <div class="fin-grid-2">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title">Proyección 12 meses · ingresos vs egresos</div>
-          <div class="chart-card-meta">basado en histórico + contratos activos</div>
-        </div>
-        <div class="chart-legend">
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#FF4F00;"></span>Ingresos reales</span>
-          <span class="chart-legend-item"><span class="chart-legend-dot dashed" style="border-color:#FF7A00;"></span>Ingresos proyectados</span>
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#E63946;"></span>Egresos</span>
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#00D97E;"></span>Utilidad acumulada</span>
-        </div>
-        <div class="chart-canvas-wrap">
-          <canvas id="chartProy" role="img" aria-label="Proyección 12 meses ingresos versus egresos">Proyección 12 meses.</canvas>
-        </div>
-      </div>
-
-      <div class="insight-card">
-        <div class="insight-eyebrow" style="color:var(--info);">Insight IA del mes</div>
-        <div class="insight-text" style="margin-bottom: 10px;">
-          Tu MRR es <strong style="color:var(--info);">$${m.mrr.toLocaleString('es-MX')}</strong> · ${m.contratosActivos} contratos activos. ${m.contratosActivos < 12 ? `Te faltan <strong style="color:var(--info);">${12 - m.contratosActivos}</strong> cuentas para cumplir objetivo 2026.` : 'Cumpliste objetivo 2026!'}
-        </div>
-        <div class="insight-card gold" style="padding: 8px 10px; margin: 0 0 8px;">
-          <div class="insight-eyebrow" style="color:var(--gold); margin-bottom: 3px; font-size: 8px;">Tip · optimización fiscal</div>
-          <div class="insight-text" style="font-size: 11px;">Hosting + software + licencias ~$1,800/mes deducibles. Sube CFDIs al SAT.</div>
-        </div>
-        <button class="fin-ai-btn" style="background:var(--info); width: 100%; padding: 6px 10px; font-size: 9px;" onclick="askAi('Genérame un plan completo de optimización fiscal con mi situación actual')">▸ Generar plan completo</button>
-      </div>
-    </div>
-
-    <div class="fin-grid-1-1">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title">Ingresos por línea de negocio</div>
-        </div>
-        <div class="chart-legend" id="chartPieLegend"></div>
-        <div class="chart-canvas-wrap" style="height: 180px;">
-          <canvas id="chartPie" role="img" aria-label="Distribución ingresos por línea de negocio">Distribución por línea.</canvas>
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title">Clientes ganados / perdidos · 6 meses</div>
-        </div>
-        <div class="chart-legend">
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#00D97E;"></span>Ganados</span>
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#E63946;"></span>Perdidos</span>
-        </div>
-        <div class="chart-canvas-wrap" style="height: 180px;">
-          <canvas id="chartClientes" role="img" aria-label="Bar chart clientes ganados versus perdidos">Clientes ganados perdidos.</canvas>
-        </div>
-      </div>
-    </div>
-
-    <div class="health-card">
-      <div class="health-header">
-        <div class="health-title">Salud financiera · IA score</div>
-        <div class="health-score">${h.score} / 100 · ${h.score >= 80 ? 'excelente' : h.score >= 60 ? 'sano' : 'atención'}</div>
-      </div>
-      <div class="health-grid">
-        <div class="health-item" style="border-left-color:${h.ratioOK ? 'var(--success)' : 'var(--danger)'};">
-          <div class="health-label">Ratio gasto</div>
-          <div class="health-value">${h.ratio}%</div>
-          <div class="health-trend" style="color:${h.ratioOK ? 'var(--success)' : 'var(--danger)'};">sano &lt;60%</div>
-        </div>
-        <div class="health-item" style="border-left-color:${h.liquidezOK ? 'var(--success)' : 'var(--orange-light)'};">
-          <div class="health-label">Liquidez</div>
-          <div class="health-value">${h.meses} meses</div>
-          <div class="health-trend" style="color:${h.liquidezOK ? 'var(--success)' : 'var(--orange-light)'};">sano &gt;2</div>
-        </div>
-        <div class="health-item" style="border-left-color:${h.concentracionOK ? 'var(--success)' : 'var(--orange-light)'};">
-          <div class="health-label">Concentración</div>
-          <div class="health-value">${h.concentracion}%</div>
-          <div class="health-trend" style="color:${h.concentracionOK ? 'var(--success)' : 'var(--orange-light)'};">${h.concentracionOK ? 'sano' : 'riesgo medio'}</div>
-        </div>
-        <div class="health-item" style="border-left-color:${h.velocidadOK ? 'var(--success)' : 'var(--danger)'};">
-          <div class="health-label">Velocidad cobro</div>
-          <div class="health-value">${h.velocidadCobro} días</div>
-          <div class="health-trend" style="color:${h.velocidadOK ? 'var(--success)' : 'var(--danger)'};">sano &lt;15</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="action-buttons">
-      <button class="action-btn action-btn-success" onclick="openModalIngreso()">+ Registrar ingreso</button>
-      <button class="action-btn action-btn-danger" onclick="openModalEgreso()">- Registrar egreso</button>
-      <button class="action-btn action-btn-orange" onclick="openModalCliente()">◈ Cliente ganado</button>
-    </div>
-  `;
-}
-
-// ============================================
-// RENDER · COACH
-// ============================================
-function renderCoach() {
-  const objetivos = load(STORAGE.OBJETIVOS, []);
-  const bitacoras = load(STORAGE.BITACORAS, []);
-  const m = computeFinanzasMetrics();
-  const stats = getAchievementsStats();
-  const dailyActivity = getDailyActivity(14);
-
-  const objetivosActivos = objetivos.filter(o => !o.completed);
-  const objetivosCompletados = objetivos.filter(o => o.completed);
-  const week = new Date();
-  const weekStart = new Date(week.setDate(week.getDate() - week.getDay() + 1));
-
-  // Calcular total KPIs en todos los objetivos
-  let totalKpis = 0;
-  let totalKpisDone = 0;
-  objetivos.forEach(o => {
-    const kpis = (o.kpis || []).map(k => typeof k === 'string' ? { text: k, done: false } : k);
-    totalKpis += kpis.length;
-    totalKpisDone += kpis.filter(k => k.done).length;
-  });
-  const completionPct = totalKpis > 0 ? Math.round(totalKpisDone / totalKpis * 100) : 0;
-
-  // Mini gráfica de actividad · sparkline tipo barras
-  const maxActivity = Math.max(...dailyActivity.map(d => d.count), 1);
-  const sparkline = dailyActivity.map(d => {
-    const pct = (d.count / maxActivity) * 100;
-    return `<div title="${d.label}: ${d.count} cumplidos" style="flex: 1; height: ${Math.max(pct, 3)}%; background: ${d.count > 0 ? 'var(--orange)' : 'rgba(255,79,0,0.15)'}; border-radius: 1px; min-height: 3px;"></div>`;
-  }).join('');
-
-  return `
-    <div class="fin-metrics" style="grid-template-columns: repeat(4,1fr); margin-bottom: 12px;">
-      <div class="fin-metric" style="border-left-color:var(--success);">
-        <div class="fin-metric-label">KPIs cumplidos</div>
-        <div class="fin-metric-value" style="color:var(--success);">${totalKpisDone}<span style="font-size:13px;color:var(--gray);">/${totalKpis}</span></div>
-        <div class="fin-metric-trend" style="color:var(--success);">${completionPct}% del total</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--gold);">
-        <div class="fin-metric-label">Racha actual</div>
-        <div class="fin-metric-value" style="color:var(--gold);">${stats.streakDias}<span style="font-size:13px;color:var(--gray);"> días</span></div>
-        <div class="fin-metric-trend" style="color:var(--gold);">consecutivos</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--orange);">
-        <div class="fin-metric-label">Esta semana</div>
-        <div class="fin-metric-value">${stats.kpisDoneWeek + stats.pendientesCompletadosSemana}</div>
-        <div class="fin-metric-trend" style="color:var(--orange);">cumplidos · KPIs+tareas</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--info);">
-        <div class="fin-metric-label">Objetivos hechos</div>
-        <div class="fin-metric-value" style="color:var(--info);">${stats.objetivosCompletados}</div>
-        <div class="fin-metric-trend" style="color:var(--info);">${objetivosActivos.length} activos</div>
-      </div>
-    </div>
-
-    <div class="coach-hero" style="padding: 14px;">
-      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 200px;">
-          <div class="coach-hero-eyebrow">Actividad · últimos 14 días</div>
-          <div style="display: flex; gap: 2px; align-items: flex-end; height: 40px; margin: 8px 0;">
-            ${sparkline}
-          </div>
-          <div style="font-family: var(--mono); font-size: 9px; color: var(--gray); display: flex; justify-content: space-between;">
-            <span>${dailyActivity[0].label}</span>
-            <span style="color: var(--orange);">Hoy: ${dailyActivity[dailyActivity.length-1].count} cumplidos</span>
-          </div>
-        </div>
-        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-          <button class="fin-ai-btn" onclick="askAi('Dame mi plan de la semana basado en mis objetivos activos y KPIs pendientes')">▸ Plan IA</button>
-          <button class="fin-ai-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--gray-light);" onclick="openModalObjetivo()">+ Objetivo</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="filter-row">
-      <span class="chip chip-active" data-cat="todos" onclick="filterCoach('todos')">★ Activos · ${objetivosActivos.length}</span>
-      ${Object.entries(CATEGORIAS).map(([key, cat]) => {
-        const count = objetivosActivos.filter(o => o.categoria === key).length;
-        return `<span class="chip chip-default" data-cat="${key}" onclick="filterCoach('${key}')" style="${count===0?'opacity:0.4;':''}">▸ ${cat.label} · ${count}</span>`;
-      }).join('')}
-      ${objetivosCompletados.length > 0 ? `<span class="chip chip-default" data-cat="completados" onclick="filterCoach('completados')">✓ Completados · ${objetivosCompletados.length}</span>` : ''}
-      <span class="chip chip-success" onclick="openModalObjetivo()" style="margin-left:auto;">+ Nuevo</span>
-    </div>
-
-    <div id="coachCardsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-      ${objetivosActivos.length === 0 ? `
-        <div style="grid-column: 1 / -1; padding: 30px; text-align: center; background: var(--dark-2); border: 1px solid rgba(255,79,0,0.15); border-radius: 3px;">
-          <div style="font-family: var(--display); font-size: 16px; color: var(--white); margin-bottom: 8px;">Aún sin objetivos activos</div>
-          <div style="color: var(--gray-light); font-size: 13px; margin-bottom: 14px;">Crea tu primer objetivo SMART para empezar a registrar progreso</div>
-          <button class="fin-ai-btn" onclick="openModalObjetivo()">+ Crear primer objetivo</button>
-        </div>
-      ` : objetivosActivos.map(o => renderCoachCard(o)).join('')}
-    </div>
-
-    ${stats.historicoTimeline.length > 0 ? `
-      <div class="bitacora-section" style="background: linear-gradient(135deg, rgba(0,217,126,0.06), var(--dark-2)); border-color: rgba(0,217,126,0.25); border-left-color: var(--success); margin-bottom: 14px;">
-        <div class="insight-eyebrow" style="color:var(--success); display: flex; justify-content: space-between; align-items: center;">
-          <span>Histórico de progreso · timeline</span>
-          <span style="font-family: var(--mono); font-size: 9px; color: var(--gray); text-transform: none; letter-spacing: 0.05em;">Últimos ${Math.min(stats.historicoTimeline.length, 8)} eventos</span>
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          ${stats.historicoTimeline.slice(0, 8).map(a => renderAchievementRow(a)).join('')}
-        </div>
-        ${stats.historicoTimeline.length > 8 ? `<div style="text-align: center; margin-top: 10px;"><button class="fin-ai-btn" style="background: transparent; border: 1px solid rgba(0,217,126,0.3); color: var(--success); padding: 6px 14px; font-size: 9px;" onclick="openModalHistorico()">▸ Ver histórico completo (${stats.historicoTimeline.length})</button></div>` : ''}
-      </div>
-    ` : ''}
-
-    <div class="bitacora-section">
-      <div class="insight-eyebrow" style="color:var(--info);">Bitácora de motivación · sub-registros</div>
-      <div class="insight-text" style="margin-bottom: 10px;">Cada categoría tiene su propia bitácora. Aquí entrenas la IA con tu "por qué" personal para cada objetivo.</div>
-      <div class="bitacora-grid">
-        ${Object.entries(CATEGORIAS).map(([key, cat]) => {
-          const count = bitacoras.filter(b => b.categoria === key).length;
-          return `
-            <div class="bitacora-card" style="border-left-color:${cat.color};" onclick="openModalBitacora('${key}')">
-              <div class="bitacora-cat-label" style="color:${cat.color};">${cat.label}</div>
-              <div class="bitacora-cat-count">${count} ${count === 1 ? 'entrada' : 'entradas'}</div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    </div>
-  `;
-}
-
-function renderAchievementRow(a) {
-  const date = new Date(a.timestamp);
-  const dateStr = date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-
-  const labels = {
-    kpi_done: { icon: '✓', color: 'var(--success)', text: `KPI cumplido · ${a.payload.kpiText || ''}`, sub: a.payload.objetivoTitulo ? `Objetivo · ${a.payload.objetivoTitulo}` : '' },
-    objetivo_done: { icon: '★', color: 'var(--gold)', text: `Objetivo COMPLETADO · ${a.payload.objetivoTitulo || ''}`, sub: `${a.payload.kpisCount || 0} KPIs cumplidos` },
-    pendiente_done: { icon: '✓', color: 'var(--info)', text: `Tarea completada · ${a.payload.text || ''}`, sub: a.payload.categoria ? `Categoría · ${a.payload.categoria}` : '' },
-    servicio_pagado: { icon: '$', color: 'var(--success)', text: `Pago realizado · ${a.payload.proveedor || ''}`, sub: `$${Number(a.payload.monto || 0).toLocaleString('es-MX')} · ${a.payload.motivo || ''}` },
-    cliente_ganado: { icon: '◆', color: 'var(--orange)', text: `Cliente ganado · ${a.payload.nombre || ''}`, sub: `LTV $${Number(a.payload.ltv || 0).toLocaleString('es-MX')}` },
-    kpi_undone: { icon: '↻', color: 'var(--gray)', text: `KPI desmarcado`, sub: a.payload.kpiText || '' }
-  };
-  const meta = labels[a.type] || { icon: '·', color: 'var(--gray)', text: a.type, sub: '' };
-
-  return `
-    <div style="display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; background: rgba(0,0,0,0.25); border-left: 2px solid ${meta.color}; border-radius: 2px;">
-      <span style="font-size: 14px; color: ${meta.color}; line-height: 1; font-weight: 700;">${meta.icon}</span>
-      <div style="min-width: 0;">
-        <div style="font-size: 12px; color: var(--white); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(meta.text)}</div>
-        ${meta.sub ? `<div style="font-family: var(--mono); font-size: 9px; color: var(--gray); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px;">${escapeHTML(meta.sub)}</div>` : ''}
-      </div>
-      <div style="font-family: var(--mono); font-size: 9px; color: var(--gray); white-space: nowrap;">${dateStr}</div>
-    </div>
-  `;
-}
-
-function openModalHistorico() {
-  const ach = load(STORAGE.ACHIEVEMENTS, []);
-  document.getElementById('modalsMount').innerHTML = `
-    <div class="modal-overlay" id="modalHist" onclick="if(event.target.id==='modalHist')closeModal()">
-      <div class="modal-box orange-border" style="max-width: 600px;">
-        <div class="modal-header">
-          <div class="modal-title">Histórico completo de progreso</div>
-          <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="modal-body">
-          <div style="font-family: var(--mono); font-size: 9px; color: var(--gray); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 10px;">▸ ${ach.length} eventos registrados</div>
-          ${ach.length === 0 ? `
-            <div style="padding: 30px; text-align: center; color: var(--gray-light);">Aún no hay eventos registrados</div>
-          ` : `
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-              ${ach.slice(0, 100).map(a => renderAchievementRow(a)).join('')}
-            </div>
-            ${ach.length > 100 ? `<div style="text-align: center; margin-top: 12px; font-family: var(--mono); font-size: 9px; color: var(--gray);">Mostrando los 100 más recientes de ${ach.length}</div>` : ''}
-          `}
-        </div>
-        <div class="modal-footer">
-          <button class="action-btn" style="background:transparent;color:var(--gray-light);border-color:rgba(255,255,255,0.1);" onclick="closeModal()">Cerrar</button>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function renderCoachCard(o) {
-  const cat = CATEGORIAS[o.categoria] || CATEGORIAS.personal;
-  // Normalizar KPIs
-  const kpis = (o.kpis || []).map(k => typeof k === 'string' ? { text: k, deadline: '', done: false } : k);
-  // Auto-calcular progreso si tiene KPIs
-  const progreso = kpis.length > 0
-    ? Math.round((kpis.filter(k => k.done).length / kpis.length) * 100)
-    : Number(o.progreso) || 0;
-
-  const today = new Date(); today.setHours(0,0,0,0);
-  const deadline = o.deadline ? new Date(o.deadline) : null;
-  const diasRestantes = deadline ? Math.ceil((deadline - today) / 86400000) : null;
-
-  let estado = 'EN PROGRESO';
-  let estadoColor = '#FF4F00';
-  if (progreso >= 100) { estado = 'COMPLETADO'; estadoColor = '#FFD700'; }
-  else if (deadline && diasRestantes < 0) { estado = 'ATRASADO'; estadoColor = '#E63946'; }
-  else if (progreso >= 75) { estado = 'EN RACHA'; estadoColor = '#00D97E'; }
-  else if (deadline && diasRestantes < 7 && progreso < 50) { estado = 'ATRASADO'; estadoColor = '#E63946'; }
-
-  const completados = kpis.filter(k => k.done).length;
-
-  return `
-    <div class="coach-card" style="border-left-color:${cat.color};">
-      <div class="coach-card-header" onclick="openModalObjetivo('${o.id}')" style="cursor:pointer;">
-        <div>
-          <div class="coach-card-cat" style="color:${cat.color};">${cat.label} · ${o.categoria === 'compromiso' ? 'Compromiso fijo' : 'Objetivo'}</div>
-          <div class="coach-card-title">${escapeHTML(o.titulo)}</div>
-        </div>
-        <span class="pill" style="background:${estadoColor}22;color:${estadoColor};">${estado}</span>
-      </div>
-      <div class="coach-card-progress-text">${progreso}% completado${deadline ? ` · vence ${deadline.toLocaleDateString('es-MX', {day:'numeric', month:'short'})}` : ''}</div>
-      <div class="coach-progress-bar">
-        <div class="coach-progress-fill" style="width:${Math.min(100, progreso)}%; background:${progreso === 100 ? 'var(--gold)' : cat.color};"></div>
-      </div>
-      <div class="coach-progress-stats">
-        <span style="color:${cat.color}; font-weight: 700;">${progreso}%</span>
-        <span style="color:var(--gray);">${diasRestantes !== null ? (diasRestantes > 0 ? `${diasRestantes}d restantes` : 'Vencido') : 'Sin deadline'}</span>
-      </div>
-      ${kpis.length > 0 ? `
-        <div class="coach-kpis-section">
-          <div class="coach-kpis-label" style="color:${cat.color};">KPIs · ${completados}/${kpis.length} completados</div>
-          ${kpis.map((k, idx) => {
-            const dl = k.deadline ? new Date(k.deadline) : null;
-            const isVencido = dl && !k.done && dl < today;
-            const dias = dl ? Math.ceil((dl - today) / 86400000) : null;
-            const dlText = !dl ? '' : k.done ? '· cumplido' : isVencido ? `· vencido hace ${Math.abs(dias)}d` : dias === 0 ? '· hoy' : dias === 1 ? '· mañana' : `· ${dias}d`;
-            const dlColor = k.done ? 'var(--success)' : isVencido ? 'var(--danger)' : (dias !== null && dias <= 3) ? 'var(--orange-light)' : 'var(--gray)';
-            return `
-              <div onclick="event.stopPropagation(); toggleKpiInCard('${o.id}', ${idx})" style="display: flex; align-items: center; gap: 8px; padding: 7px 0; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04);">
-                <span style="width: 16px; height: 16px; border: 1px solid ${k.done ? 'var(--success)' : 'rgba(255,79,0,0.4)'}; background: ${k.done ? 'var(--success)' : 'transparent'}; color: var(--white); font-size: 10px; line-height: 1; display: flex; align-items: center; justify-content: center; border-radius: 2px; flex-shrink: 0;">${k.done ? '✓' : ''}</span>
-                <span style="flex: 1; font-size: 12px; color: ${k.done ? 'var(--gray-light)' : 'var(--white)'}; ${k.done ? 'text-decoration: line-through;' : ''} line-height: 1.4;">${escapeHTML(k.text)}</span>
-                ${dlText ? `<span style="font-family: var(--mono); font-size: 9px; color: ${dlColor}; flex-shrink: 0;">${dlText}</span>` : ''}
-              </div>
-            `;
-          }).join('')}
-        </div>
-      ` : ''}
-    </div>
-  `;
-}
-
-function toggleKpiInCard(objId, kpiIdx) {
-  const objs = load(STORAGE.OBJETIVOS, []);
-  const idx = objs.findIndex(o => o.id === objId);
-  if (idx < 0) return;
-  // Normalizar KPIs si vienen como strings
-  objs[idx].kpis = (objs[idx].kpis || []).map(k => typeof k === 'string' ? { text: k, deadline: '', done: false } : k);
-  if (!objs[idx].kpis[kpiIdx]) return;
-
-  const wasDone = objs[idx].kpis[kpiIdx].done;
-  const wasObjCompleted = objs[idx].completed;
-
-  objs[idx].kpis[kpiIdx].done = !wasDone;
-  if (objs[idx].kpis[kpiIdx].done) {
-    objs[idx].kpis[kpiIdx].completedAt = Date.now();
-  } else {
-    delete objs[idx].kpis[kpiIdx].completedAt;
-  }
-
-  // Recalcular progreso
-  const total = objs[idx].kpis.length;
-  const completos = objs[idx].kpis.filter(k => k.done).length;
-  objs[idx].progreso = total > 0 ? Math.round((completos / total) * 100) : 0;
-  objs[idx].completed = objs[idx].progreso === 100;
-
-  if (objs[idx].completed && !objs[idx].completedAt) {
-    objs[idx].completedAt = Date.now();
-  } else if (!objs[idx].completed) {
-    delete objs[idx].completedAt;
-  }
-
-  save(STORAGE.OBJETIVOS, objs);
-
-  // Registrar en histórico
-  if (objs[idx].kpis[kpiIdx].done) {
-    logAchievement('kpi_done', {
-      objetivoId: objId,
-      objetivoTitulo: objs[idx].titulo,
-      kpiText: objs[idx].kpis[kpiIdx].text,
-      categoria: objs[idx].categoria,
-      progresoNuevo: objs[idx].progreso
+(async function init() {
+  if (!Auth.enforce()) return;
+  document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
+  document.getElementById('chat-input-host').innerHTML = UI.renderChatInput('Pregunta o registra movimiento...');
+  document.getElementById('footer-host').innerHTML = UI.renderFooter();
+  document.getElementById('nav-host').innerHTML = UI.renderBottomNav('finanzas');
+
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      renderTab(t.dataset.tab);
     });
-
-    // Si recién se completó el objetivo (no estaba antes), también logueamos
-    if (objs[idx].completed && !wasObjCompleted) {
-      logAchievement('objetivo_done', {
-        objetivoId: objId,
-        objetivoTitulo: objs[idx].titulo,
-        categoria: objs[idx].categoria,
-        kpisCount: total
-      });
-      showToast('🎉 OBJETIVO COMPLETADO · ' + objs[idx].titulo);
-    } else {
-      showToast('✓ KPI cumplido · ' + objs[idx].progreso + '% del objetivo');
-    }
-  } else {
-    logAchievement('kpi_undone', {
-      objetivoId: objId,
-      kpiText: objs[idx].kpis[kpiIdx].text
-    });
-    showToast('KPI desmarcado · ' + objs[idx].progreso + '%');
-  }
-
-  switchTab('coach');
-}
-
-function filterCoach(category) {
-  const todos = load(STORAGE.OBJETIVOS, []);
-  let filtered;
-  if (category === 'completados') {
-    filtered = todos.filter(o => o.completed);
-  } else if (category === 'todos') {
-    filtered = todos.filter(o => !o.completed);
-  } else {
-    filtered = todos.filter(o => !o.completed && o.categoria === category);
-  }
-  document.querySelectorAll('.chip[data-cat]').forEach(chip => {
-    chip.classList.remove('chip-active');
-    chip.classList.add('chip-default');
-  });
-  const activeChip = document.querySelector(`.chip[data-cat="${category}"]`);
-  if (activeChip) {
-    activeChip.classList.remove('chip-default');
-    activeChip.classList.add('chip-active');
-  }
-  document.getElementById('coachCardsGrid').innerHTML = filtered.length === 0 ? `
-    <div style="grid-column: 1 / -1; padding: 22px; text-align: center; color: var(--gray-light);">Sin objetivos en esta categoría</div>
-  ` : filtered.map(o => renderCoachCard(o)).join('');
-}
-
-// ============================================
-// RENDER · SERVICIOS FIJOS
-// ============================================
-function renderServicios() {
-  checkServiciosVencidos();
-  const servicios = load(STORAGE.SERVICIOS_FIJOS, []);
-  const alertas = getServiciosAlertas();
-
-  const totalMensual = servicios.reduce((s, sv) => s + Number(sv.total||0), 0);
-  const pagadosMes = servicios.filter(s => {
-    if (!s.historialPagos || !s.historialPagos.length) return false;
-    const last = s.historialPagos[s.historialPagos.length - 1];
-    return last.fechaPago?.startsWith(new Date().toISOString().slice(0,7));
-  }).length;
-
-  const proxAlerta = [...alertas.vencidos, ...alertas.proximos][0];
-
-  return `
-    ${(alertas.vencidos.length > 0 || alertas.proximos.length > 0) ? `
-      <div class="ai-banner ${alertas.vencidos.length > 0 ? 'danger' : 'warning'}">
-        <div class="ai-banner-row">
-          <span class="g2c-star md solid"><span class="g2c-star-glyph">★</span></span>
-          <div class="ai-banner-content">
-            <div class="ai-banner-eyebrow" style="color:${alertas.vencidos.length > 0 ? 'var(--danger)' : 'var(--orange-light)'};">${alertas.vencidos.length > 0 ? '⚠ Alerta IA · prioritaria' : '⏱ Próximos vencimientos'}</div>
-            <div class="ai-banner-text">
-              ${alertas.vencidos.length > 0 ? `
-                Tienes <strong style="color:var(--danger);">${alertas.vencidos.length} servicio${alertas.vencidos.length>1?'s':''} vencido${alertas.vencidos.length>1?'s':''}</strong>:<br>
-                ${alertas.vencidos.slice(0,3).map(s => `<span style="color:var(--orange-light);">•</span> ${escapeHTML(s.motivo)} · ${escapeHTML(s.proveedor)} · <strong style="color:var(--danger);">$${Number(s.total).toLocaleString('es-MX')}</strong>`).join('<br>')}
-              ` : ''}
-              ${alertas.proximos.length > 0 ? `
-                ${alertas.vencidos.length > 0 ? '<br><br>También se acercan:' : ''}<br>
-                ${alertas.proximos.slice(0,3).map(s => `<span style="color:var(--orange-light);">•</span> ${escapeHTML(s.motivo)} · ${escapeHTML(s.proveedor)} · <strong style="color:var(--orange-light);">$${Number(s.total).toLocaleString('es-MX')}</strong>`).join('<br>')}
-              ` : ''}
-            </div>
-            <div class="ai-banner-actions">
-              <a href="https://cobros.g2c.com.mx" target="_blank" class="fin-ai-btn" style="background:var(--success); text-decoration:none; display:inline-block;">▸ Pagar en cobros.g2c.com.mx</a>
-              <button class="fin-ai-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--gray-light);" onclick="askAi('Dame estrategia para pagar mis servicios próximos a vencer este mes')">▸ Estrategia IA</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    ` : ''}
-
-    <div class="fin-metrics" style="grid-template-columns:repeat(5,1fr);">
-      <div class="fin-metric">
-        <div class="fin-metric-label">Servicios activos</div>
-        <div class="fin-metric-value">${servicios.length}</div>
-        <div class="fin-metric-trend" style="color:var(--orange);">registrados</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--orange-light);">
-        <div class="fin-metric-label">Total mensual</div>
-        <div class="fin-metric-value">$${totalMensual.toLocaleString('es-MX')}</div>
-        <div class="fin-metric-trend" style="color:var(--orange-light);">egreso fijo</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--danger);">
-        <div class="fin-metric-label">Vencidos</div>
-        <div class="fin-metric-value" style="color:var(--danger);">${alertas.vencidos.length}</div>
-        <div class="fin-metric-trend" style="color:var(--danger);">pago atrasado</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--orange-light);">
-        <div class="fin-metric-label">Próximos 7d</div>
-        <div class="fin-metric-value" style="color:var(--orange-light);">${alertas.proximos.length}</div>
-        <div class="fin-metric-trend" style="color:var(--orange-light);">urgentes</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--success);">
-        <div class="fin-metric-label">Pagados mes</div>
-        <div class="fin-metric-value" style="color:var(--success);">${pagadosMes} / ${servicios.length}</div>
-        <div class="fin-metric-trend" style="color:var(--success);">${servicios.length > 0 ? Math.round(pagadosMes/servicios.length*100) : 0}%</div>
-      </div>
-    </div>
-
-    <div class="filter-row">
-      <span class="chip chip-active" id="srvFilterTodos" onclick="filterServicios('todos')">▣ Todos · ${servicios.length}</span>
-      <span class="chip chip-danger" id="srvFilterVencidos" onclick="filterServicios('vencidos')">⚠ Vencidos · ${alertas.vencidos.length}</span>
-      <span class="chip chip-warning" id="srvFilterProximos" onclick="filterServicios('proximos')">⏱ Próximos · ${alertas.proximos.length}</span>
-      <span class="chip chip-success" id="srvFilterPagados" onclick="filterServicios('pagados')">✓ Pagados · ${pagadosMes}</span>
-      <span class="chip chip-success" onclick="openModalServicio()" style="margin-left:auto;">+ Nuevo servicio</span>
-    </div>
-
-    <div class="serv-table" id="servTable">
-      <div class="serv-table-header">
-        <span>Motivo · proveedor</span>
-        <span>Tipo</span>
-        <span>Total</span>
-        <span>Vence</span>
-        <span>Estado</span>
-        <span>Acción</span>
-      </div>
-      <div id="servRows">
-        ${servicios.length === 0 ? `
-          <div style="padding: 30px; text-align: center; color: var(--gray-light);">
-            <div style="font-family: var(--display); font-size: 14px; color: var(--white); margin-bottom: 8px;">Sin servicios fijos registrados</div>
-            <div style="font-size: 12px; margin-bottom: 14px;">Registra tu primer servicio recurrente (luz, internet, telefonía, hosting...)</div>
-            <button class="fin-ai-btn" onclick="openModalServicio()">+ Registrar primer servicio</button>
-          </div>
-        ` : servicios.map(s => renderServicioRow(s)).join('')}
-      </div>
-    </div>
-
-    ${servicios.length > 0 ? `
-      <div class="insight-card gold" style="margin-top: 14px;">
-        <div class="insight-eyebrow" style="color:var(--gold);">Insight IA · patrón histórico</div>
-        <div class="insight-text">
-          Este mes pagas <strong style="color:var(--gold);">$${totalMensual.toLocaleString('es-MX')}</strong> en servicios fijos.
-          ${totalMensual > 20000 ? ' Es un egreso fijo alto · revisa si todos siguen siendo necesarios.' : ' Egreso fijo controlado.'}
-          <a href="https://cobros.g2c.com.mx" target="_blank" style="color:var(--gold); text-decoration: underline; margin-left: 4px;">Cobrar/pagar en cobros.g2c.com.mx</a>
-        </div>
-      </div>
-    ` : ''}
-  `;
-}
-
-function renderServicioRow(s) {
-  const estado = s.estado || 'activo';
-  const isVencido = estado === 'vencido';
-  const isProximo = estado === 'proximo';
-  const isPagado = (() => {
-    if (!s.historialPagos || !s.historialPagos.length) return false;
-    const last = s.historialPagos[s.historialPagos.length - 1];
-    return last.fechaPago?.startsWith(new Date().toISOString().slice(0,7));
-  })();
-
-  const stateColor = isPagado ? 'var(--success)' : isVencido ? 'var(--danger)' : isProximo ? 'var(--orange-light)' : 'var(--orange)';
-  const stateName = isPagado ? 'PAGADO' : isVencido ? 'VENCIDO' : isProximo ? 'PRÓXIMO' : 'ACTIVO';
-
-  const proxVenc = computeProximoVencimiento(s);
-  const today = new Date(); today.setHours(0,0,0,0);
-  const diffDias = proxVenc ? Math.ceil((proxVenc - today) / 86400000) : null;
-  const venceText = isPagado
-    ? (s.historialPagos[s.historialPagos.length-1].fechaPago ? `Pagado · ${s.historialPagos[s.historialPagos.length-1].fechaPago.slice(5)}` : 'Pagado')
-    : isVencido
-    ? `Vencido hace ${Math.abs(diffDias)}d`
-    : diffDias === 0 ? 'Hoy'
-    : diffDias === 1 ? 'En 1 día'
-    : `En ${diffDias} días${proxVenc ? ' · ' + proxVenc.toISOString().slice(8,10) + ' ' + ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][proxVenc.getMonth()] : ''}`;
-
-  const tipoColor = s.tipo === 'negocio' ? 'var(--orange)' : 'var(--purple)';
-
-  // Detectar si el proveedor tiene app/portal · botón rápido
-  const providerApp = typeof findProviderApp === 'function' ? findProviderApp(s.proveedor) : null;
-  const appBadge = providerApp ? `
-    <a href="${providerApp.appUrl}" target="_blank" rel="noopener"
-       onclick="event.stopPropagation();"
-       title="Abrir ${providerApp.label}"
-       style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; background: ${providerApp.color}22; border: 1px solid ${providerApp.color}55; color: ${providerApp.color}; font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; border-radius: 2px; text-decoration: none; margin-left: 6px;">
-      ▸ Abrir app
-    </a>
-  ` : '';
-
-  return `
-    <div class="serv-row ${isVencido ? 'vencido' : ''} ${isPagado ? 'pagado' : ''}" data-srv-id="${s.id}" data-state="${stateName}">
-      <div>
-        <div class="serv-cell-motivo ${isPagado ? 'tachado' : ''}">${escapeHTML(s.motivo || 'Sin motivo')}</div>
-        <div class="serv-cell-prov" style="color:${tipoColor};">${escapeHTML(s.proveedor || 'Sin proveedor')}${appBadge}</div>
-      </div>
-      <div class="serv-cell-tipo">${s.tipo === 'negocio' ? 'Negocio' : 'Personal'} · ${escapeHTML(s.categoria || '—')}</div>
-      <div class="serv-cell-total ${isPagado ? 'pagado' : ''}">$${Number(s.total||0).toLocaleString('es-MX')}</div>
-      <div class="serv-cell-vence" style="color:${stateColor};">${venceText}</div>
-      <div><span class="pill" style="background:${stateColor}22;color:${stateColor};border:1px solid ${stateColor}55;">${stateName}</span></div>
-      <div>
-        ${isPagado
-          ? `<div class="serv-pay-done">✓ Registrado</div>`
-          : `<button class="serv-pay-btn ${isVencido ? 'danger' : 'success'}" onclick="openModalPago('${s.id}')">✓ Pagado</button>`
-        }
-      </div>
-    </div>
-  `;
-}
-
-function filterServicios(filter) {
-  const all = load(STORAGE.SERVICIOS_FIJOS, []);
-  ['Todos','Vencidos','Proximos','Pagados'].forEach(f => {
-    const el = document.getElementById('srvFilter' + f);
-    if (el) {
-      el.classList.remove('chip-active');
-      el.classList.add(f === 'Vencidos' ? 'chip-danger' : f === 'Proximos' ? 'chip-warning' : f === 'Pagados' ? 'chip-success' : 'chip-default');
-    }
-  });
-  const activeEl = document.getElementById('srvFilter' + filter.charAt(0).toUpperCase() + filter.slice(1));
-  if (activeEl) {
-    activeEl.classList.remove('chip-default','chip-danger','chip-warning','chip-success');
-    activeEl.classList.add('chip-active');
-  }
-  let filtered = all;
-  if (filter === 'vencidos') filtered = all.filter(s => s.estado === 'vencido');
-  else if (filter === 'proximos') filtered = all.filter(s => s.estado === 'proximo');
-  else if (filter === 'pagados') filtered = all.filter(s => {
-    if (!s.historialPagos || !s.historialPagos.length) return false;
-    return s.historialPagos[s.historialPagos.length-1].fechaPago?.startsWith(new Date().toISOString().slice(0,7));
-  });
-  const rowsEl = document.getElementById('servRows');
-  if (rowsEl) rowsEl.innerHTML = filtered.length === 0
-    ? `<div style="padding: 22px; text-align: center; color: var(--gray-light);">Sin servicios en esta categoría</div>`
-    : filtered.map(s => renderServicioRow(s)).join('');
-}
-
-// ============================================
-// MODALES
-// ============================================
-function openModalServicio() {
-  const html = `
-    <div class="modal-overlay" id="modalSrv" onclick="if(event.target.id==='modalSrv')closeModal()">
-      <div class="modal-box orange-border">
-        <div class="modal-header">
-          <div class="modal-title">Nuevo servicio fijo</div>
-          <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="ai-banner info" style="margin-bottom: 14px;">
-            <div class="ai-banner-row">
-              <span class="g2c-star sm solid"><span class="g2c-star-glyph">★</span></span>
-              <div class="ai-banner-content">
-                <div class="ai-banner-text" style="font-size: 12px; margin: 0;">Este servicio se monitoreará automáticamente. Te avisaré 7, 3 y 1 día antes del vencimiento. Si pasa la fecha sin pagar, se marca <strong style="color:var(--danger);">VENCIDO</strong>.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-label">Motivo de pago</div>
-            <input type="text" class="field-input" id="srvMotivo" placeholder="Ej. Línea de telefonía móvil">
-          </div>
-          <div class="field">
-            <div class="field-label">Proveedor</div>
-            <input type="text" class="field-input" id="srvProveedor" placeholder="Ej. ATT México">
-          </div>
-          <div class="field-row cols-2">
-            <div class="field">
-              <div class="field-label">Tipo</div>
-              <select class="field-select" id="srvTipo">
-                <option value="negocio">Negocio</option>
-                <option value="personal">Personal</option>
-              </select>
-              <div class="field-hint">Negocio (G2C) / Personal</div>
-            </div>
-            <div class="field">
-              <div class="field-label">Categoría</div>
-              <select class="field-select" id="srvCategoria">
-                <option value="comunicacion">Comunicación</option>
-                <option value="vivienda">Vivienda</option>
-                <option value="infra">Infraestructura</option>
-                <option value="entretenimiento">Entretenimiento</option>
-                <option value="servicios">Servicios públicos</option>
-                <option value="software">Software / SaaS</option>
-                <option value="otro">Otro</option>
-              </select>
-            </div>
-          </div>
-          <div class="field-row cols-3">
-            <div class="field">
-              <div class="field-label">Total</div>
-              <input type="number" class="field-input" id="srvTotal" placeholder="698" min="0" step="0.01">
-            </div>
-            <div class="field">
-              <div class="field-label">Día corte</div>
-              <input type="number" class="field-input" id="srvDiaCorte" placeholder="3" min="1" max="31">
-            </div>
-            <div class="field">
-              <div class="field-label">Frecuencia</div>
-              <select class="field-select" id="srvFrecuencia">
-                <option value="mensual">Mensual</option>
-                <option value="anual">Anual</option>
-                <option value="bimestral">Bimestral</option>
-              </select>
-            </div>
-          </div>
-          <div class="field">
-            <div class="field-label">Notas</div>
-            <textarea class="field-textarea" id="srvNotas" placeholder="Plan, folio cliente, observaciones..."></textarea>
-          </div>
-
-          <div class="modal-impact">
-            <div class="modal-impact-label">Impacto al sistema · auto-calculado</div>
-            <div class="modal-impact-text">
-              <span style="color:var(--danger);">+egreso recurrente mensual</span><br>
-              <span style="color:var(--gold);">12 alertas auto-agendadas</span> al calendario<br>
-              <span style="color:var(--orange-light);">Avisos IA</span> a 7, 3 y 1 día antes<br>
-              <span style="color:var(--success);">Deducible SAT</span> si es negocio
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="action-btn" style="background:transparent;color:var(--gray-light);border-color:rgba(255,255,255,0.1);" onclick="closeModal()">Cancelar</button>
-          <button class="action-btn action-btn-orange" onclick="saveServicio()">✓ Registrar servicio</button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.getElementById('modalsMount').innerHTML = html;
-}
-
-function saveServicio() {
-  // Validación con highlight visual + mensajes claros
-  const validation = validateForm('formServicio', [
-    { id: 'srvMotivo', label: 'Motivo', type: 'text' },
-    { id: 'srvProveedor', label: 'Proveedor', type: 'text' },
-    { id: 'srvTotal', label: 'Monto', type: 'number' },
-    { id: 'srvDiaCorte', label: 'Día de corte', type: 'number' }
-  ]);
-
-  if (!validation.valid) {
-    showFormValidationToast(validation);
-    return;
-  }
-
-  const motivo = document.getElementById('srvMotivo').value.trim();
-  const proveedor = document.getElementById('srvProveedor').value.trim();
-  const total = Number(document.getElementById('srvTotal').value);
-  const diaCorte = Number(document.getElementById('srvDiaCorte').value);
-
-  executeTool({
-    action: 'add_servicio_fijo',
-    module: 'servicio_fijo',
-    data: {
-      motivo, proveedor, total, diaCorte,
-      tipo: document.getElementById('srvTipo').value,
-      categoria: document.getElementById('srvCategoria').value,
-      frecuencia: document.getElementById('srvFrecuencia').value,
-      notas: document.getElementById('srvNotas').value.trim()
-    },
-    summary: 'Servicio fijo registrado'
   });
 
-  showToast('✓ Servicio registrado · monitoreo activo');
-  closeModal();
-  switchTab('servicios');
+  renderTab('resumen');
+  UI.bindChatInput(handleChatMessage);
+})();
+
+function renderTab(tab) {
+  const c = document.getElementById('tab-content');
+  switch (tab) {
+    case 'resumen': c.innerHTML = renderResumen(); break;
+    case 'trabajo': c.innerHTML = renderTrabajo(); bindTrabajoActions(); break;
+    case 'personal': c.innerHTML = renderPersonal(); break;
+    case 'musica': c.innerHTML = renderMusica(); break;
+    case 'objetivos': c.innerHTML = renderObjetivos(); break;
+  }
 }
 
-function openModalPago(servicioId) {
-  const servicios = load(STORAGE.SERVICIOS_FIJOS, []);
-  const s = servicios.find(sv => sv.id === servicioId);
-  if (!s) return;
+// ============================================================
+// TAB RESUMEN
+// ============================================================
+function renderResumen() {
+  const finanzas = Store.get(Store.KEYS.FINANZAS, {});
+  const clientes = Store.get(Store.KEYS.CLIENTES, []);
+  const movimientos = Store.get('alan_mando_movimientos', []);
+  const proxCobros = clientes.filter(c => c.status !== 'archivado' && c.proximo_cobro && Util.daysUntil(c.proximo_cobro) <= 7);
 
-  const today = new Date().toISOString().slice(0,10);
+  const patrimonio = finanzas.patrimonio || (finanzas.mrr * 4) + 100000; // placeholder
+  const utilidad = (finanzas.mrr || 0) * 0.7; // 70% margen estimado
+  const flujo30d = finanzas.flujo_30d || (finanzas.mrr || 0) - 8000;
 
-  const html = `
-    <div class="modal-overlay" id="modalPago" onclick="if(event.target.id==='modalPago')closeModal()">
-      <div class="modal-box success-border" style="max-width:480px;">
-        <div class="modal-header">
-          <div class="modal-title">Confirmar pago</div>
-          <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="modal-body">
-          <div style="text-align: center; margin-bottom: 18px;">
-            <div style="display: inline-block; padding: 14px 24px; background: rgba(0,217,126,0.08); border: 1px solid rgba(0,217,126,0.3); border-radius: 3px; margin-bottom: 12px;">
-              <div style="font-family: var(--mono); font-size: 9px; color: var(--success); letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 4px;">▸ ${escapeHTML(s.proveedor)} · ${escapeHTML(s.motivo)}</div>
-              <div style="font-family: var(--display); font-size: 30px; color: var(--white); line-height: 1;">$${Number(s.total).toLocaleString('es-MX')} <span style="font-size: 14px; color: var(--success);">MXN</span></div>
-            </div>
-            <div style="font-family: var(--mono); font-size: 10px; color: var(--gray-light); letter-spacing: 0.1em;">¿Confirmas que pagaste este servicio?</div>
-          </div>
+  let html = `
+    <div style="background:linear-gradient(135deg,rgba(180,220,170,0.06),rgba(180,220,170,0.01));border:0.5px solid rgba(180,220,170,0.2);border-radius:16px;padding:14px;margin-bottom:14px;position:relative;overflow:hidden;">
+      <div style="font-size:9px;color:rgba(180,220,170,0.95);letter-spacing:0.15em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">patrimonio neto · hoy</div>
+      <div style="font-size:26px;font-weight:500;letter-spacing:-0.02em;line-height:1.1;font-variant-numeric:tabular-nums;">${Util.fmtMoney(patrimonio)}</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.65);margin-top:4px;">+$42K vs mes anterior · vas en buen camino</div>
+    </div>
 
-          <div class="field">
-            <div class="field-label">Fecha de pago</div>
-            <input type="date" class="field-input" id="pagoFecha" value="${today}">
-          </div>
-          <div class="field">
-            <div class="field-label">Método de pago</div>
-            <select class="field-select" id="pagoMetodo">
-              <option value="">Selecciona...</option>
-              <option value="BBVA débito">BBVA débito</option>
-              <option value="BBVA crédito">BBVA crédito</option>
-              <option value="HSBC">HSBC</option>
-              <option value="Banamex">Banamex</option>
-              <option value="Efectivo">Efectivo</option>
-              <option value="Transferencia">Transferencia</option>
-              <option value="cobros.g2c.com.mx">cobros.g2c.com.mx</option>
-              <option value="Otro">Otro</option>
-            </select>
-          </div>
-          <div class="field">
-            <div class="field-label">Comprobante / referencia (opcional)</div>
-            <input type="text" class="field-input" id="pagoRef" placeholder="Folio o número de operación">
-          </div>
-
-          <div class="modal-impact" style="background:linear-gradient(135deg, rgba(0,217,126,0.06), rgba(0,217,126,0.02)); border-color:rgba(0,217,126,0.3);">
-            <div class="modal-impact-label" style="color:var(--success);">Al confirmar se actualiza todo el sistema</div>
-            <div class="modal-impact-text">
-              <span style="color:var(--success);">✓</span> Movimiento egreso · -$${Number(s.total).toLocaleString('es-MX')} ${escapeHTML(s.proveedor)}<br>
-              <span style="color:var(--success);">✓</span> Estado servicio fijo → <strong style="color:var(--success);">PAGADO</strong><br>
-              <span style="color:var(--success);">✓</span> KPI "Pagos puntuales 100%" actualizado<br>
-              <span style="color:var(--success);">✓</span> Próximo vencimiento auto-agendado (mes siguiente)
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <a href="https://cobros.g2c.com.mx" target="_blank" class="action-btn" style="background:rgba(255,79,0,0.08); color:var(--orange); border-color:var(--orange); text-decoration:none; padding: 9px 14px; font-size: 9px;">▸ Ir a cobros.g2c.com.mx</a>
-          <button class="action-btn" style="background:transparent;color:var(--gray-light);border-color:rgba(255,255,255,0.1);padding: 9px 14px; font-size: 9px;" onclick="closeModal()">Cancelar</button>
-          <button class="action-btn action-btn-success" style="padding: 9px 14px; font-size: 9px;" onclick="confirmPago('${s.id}')">✓ Confirmar pago</button>
-        </div>
-      </div>
+    <div class="stat-grid cols-2">
+      <div class="stat-card"><div class="stat-label">UTILIDAD MES</div><div class="stat-value tabular">${Util.fmtMoney(utilidad)}</div></div>
+      <div class="stat-card"><div class="stat-label">FLUJO 30D</div><div class="stat-value tabular">+${Util.fmtMoneyK(flujo30d)}</div></div>
+      <div class="stat-card"><div class="stat-label">MRR</div><div class="stat-value tabular">${Util.fmtMoney(finanzas.mrr || 0)}</div></div>
+      <div class="stat-card"><div class="stat-label">MARGEN</div><div class="stat-value">68%</div></div>
     </div>
   `;
-  document.getElementById('modalsMount').innerHTML = html;
-}
 
-function confirmPago(servicioId) {
-  const fechaPago = document.getElementById('pagoFecha').value;
-  const metodoPago = document.getElementById('pagoMetodo').value;
-  const ref = document.getElementById('pagoRef').value.trim();
-
-  if (!fechaPago) {
-    showToast('Falta fecha de pago', true);
-    return;
-  }
-
-  executeTool({
-    action: 'mark_servicio_pagado',
-    module: 'servicio_fijo',
-    data: {
-      servicio_id: servicioId,
-      fechaPago,
-      metodoPago: metodoPago || 'No especificado',
-      comprobante: ref
-    },
-    summary: 'Pago confirmado'
-  });
-
-  showToast('✓ Pago registrado · sistema actualizado');
-  closeModal();
-  switchTab('servicios');
-}
-
-function openModalObjetivo(objId) {
-  const obj = objId ? load(STORAGE.OBJETIVOS, []).find(o => o.id === objId) : null;
-  // Normalizar KPIs · siempre como objetos { text, deadline, done }
-  const initialKpis = obj && obj.kpis
-    ? obj.kpis.map(k => typeof k === 'string' ? { text: k, deadline: '', done: false } : { text: k.text || '', deadline: k.deadline || '', done: !!k.done })
-    : [];
-  // Guardar en window para acceso desde funciones helper
-  window._modalKpis = [...initialKpis];
-
-  const html = `
-    <div class="modal-overlay" id="modalObj" onclick="if(event.target.id==='modalObj')closeModal()">
-      <div class="modal-box orange-border">
-        <div class="modal-header">
-          <div class="modal-title">${obj ? 'Editar objetivo' : 'Nuevo objetivo SMART'}</div>
-          <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="ai-banner info" style="margin-bottom: 14px;">
-            <div class="ai-banner-row">
-              <span class="g2c-star sm solid"><span class="g2c-star-glyph">★</span></span>
-              <div class="ai-banner-content">
-                <div class="ai-banner-text" style="font-size: 12px; margin: 0;">Objetivos <strong style="color:var(--info);">SMART</strong>: cada KPI con deadline propia. Marca el checkbox cuando lo cumplas y el progreso del objetivo se actualiza automáticamente.</div>
-              </div>
+  // Próximos cobros
+  if (proxCobros.length) {
+    html += `<div class="section-eyebrow"><div class="label">próximos cobros · 7 días</div></div>`;
+    html += `<div class="list-card">`;
+    proxCobros.forEach(c => {
+      const dias = Util.daysUntil(c.proximo_cobro);
+      const label = dias === 0 ? 'hoy' : dias === 1 ? 'mañana' : `${dias} días`;
+      html += `
+        <div class="list-row">
+          <div class="row-main">
+            <div class="row-content">
+              <div class="row-title">${Util.esc(c.nombre)}</div>
+              <div class="row-sub">${label}</div>
             </div>
           </div>
-
-          <div class="field">
-            <div class="field-label">Título del objetivo</div>
-            <input type="text" class="field-input" id="objTitulo" placeholder="Ej. Cerrar 12 cuentas G2C en 2026" value="${obj ? escapeHTML(obj.titulo) : ''}">
-          </div>
-          <div class="field">
-            <div class="field-label">Descripción</div>
-            <textarea class="field-textarea" id="objDesc" placeholder="Por qué este objetivo · qué pasa cuando lo cumplas">${obj ? escapeHTML(obj.descripcion || '') : ''}</textarea>
-          </div>
-          <div class="field-row cols-2">
-            <div class="field">
-              <div class="field-label">Categoría</div>
-              <select class="field-select" id="objCategoria">
-                ${Object.entries(CATEGORIAS).map(([key, cat]) => `
-                  <option value="${key}" ${obj?.categoria === key ? 'selected' : ''}>${cat.label}</option>
-                `).join('')}
-              </select>
-            </div>
-            <div class="field">
-              <div class="field-label">Deadline objetivo</div>
-              <input type="date" class="field-input" id="objDeadline" value="${obj?.deadline || ''}">
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-label">KPIs · checklist con deadline</div>
-            <div id="kpisList" style="display:flex; flex-direction: column; gap: 8px; margin-bottom: 8px;"></div>
-            <button type="button" class="action-btn action-btn-orange" style="width:100%;" onclick="addKpi()">+ Agregar KPI</button>
-            <div class="field-hint" style="margin-top:6px;">Marca el checkbox cuando cumplas cada KPI. El progreso del objetivo se calcula automáticamente.</div>
-          </div>
-
-          <div class="field">
-            <div class="field-label">¿Por qué importa? (motivación)</div>
-            <textarea class="field-textarea" id="objPorQue" placeholder="Para que la IA te recuerde tu motivación cuando vayas atrás...">${obj ? escapeHTML(obj.porQueMimporta || '') : ''}</textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          ${obj ? `<button class="action-btn" style="background:rgba(230,57,70,0.08);color:var(--danger);border-color:var(--danger);padding: 8px 14px; font-size: 9px;" onclick="deleteObjetivo('${obj.id}')">✗ Eliminar</button>` : ''}
-          <button class="action-btn" style="background:transparent;color:var(--gray-light);border-color:rgba(255,255,255,0.1);padding: 8px 14px; font-size: 9px;" onclick="closeModal()">Cancelar</button>
-          <button class="action-btn action-btn-orange" style="padding: 8px 14px; font-size: 9px;" onclick="saveObjetivo('${obj?.id || ''}')">✓ ${obj ? 'Guardar cambios' : 'Crear objetivo'}</button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.getElementById('modalsMount').innerHTML = html;
-  renderKpisList();
-}
-
-function renderKpisList() {
-  const list = document.getElementById('kpisList');
-  if (!list) return;
-  if (window._modalKpis.length === 0) {
-    list.innerHTML = `
-      <div style="padding: 18px 14px; text-align: center; background: rgba(255,79,0,0.04); border: 1px dashed rgba(255,79,0,0.25); border-radius: 3px; color: var(--gray-light); font-size: 12px;">
-        Aún sin KPIs · click <strong style="color:var(--orange);">+ Agregar KPI</strong> para empezar
-      </div>
-    `;
-    return;
-  }
-  list.innerHTML = window._modalKpis.map((k, idx) => {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const dl = k.deadline ? new Date(k.deadline) : null;
-    const isVencido = dl && !k.done && dl < today;
-    const diasRestantes = dl ? Math.ceil((dl - today) / 86400000) : null;
-    const dlColor = k.done ? 'var(--success)' : isVencido ? 'var(--danger)' : (diasRestantes !== null && diasRestantes <= 3) ? 'var(--orange-light)' : 'var(--gray-light)';
-
-    return `
-      <div style="display:grid; grid-template-columns: 24px 1fr 130px 28px; gap: 8px; align-items: center; padding: 10px 12px; background: ${k.done ? 'rgba(0,217,126,0.06)' : 'rgba(0,0,0,0.3)'}; border-left: 2px solid ${k.done ? 'var(--success)' : isVencido ? 'var(--danger)' : 'var(--orange)'}; border-radius: 2px;">
-        <button type="button" onclick="toggleKpi(${idx})" style="width:20px; height:20px; padding:0; border:1px solid ${k.done ? 'var(--success)' : 'rgba(255,79,0,0.4)'}; background: ${k.done ? 'var(--success)' : 'transparent'}; color: var(--white); font-size: 12px; line-height: 1; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center;">${k.done ? '✓' : ''}</button>
-        <input type="text" value="${escapeHTML(k.text)}" oninput="updateKpiText(${idx}, this.value)" placeholder="Ej. 5 prospectos calificados/mes" style="width:100%; padding: 7px 10px; background: var(--dark); border: 1px solid rgba(255,79,0,0.15); color: ${k.done ? 'var(--gray-light)' : 'var(--white)'}; font-size: 13px; font-family: var(--body); border-radius: 2px; ${k.done ? 'text-decoration: line-through;' : ''}">
-        <input type="date" value="${k.deadline || ''}" onchange="updateKpiDeadline(${idx}, this.value)" style="width:100%; padding: 7px 8px; background: var(--dark); border: 1px solid rgba(255,79,0,0.15); color: ${dlColor}; font-size: 12px; font-family: var(--mono); border-radius: 2px;">
-        <button type="button" onclick="removeKpi(${idx})" style="width:24px; height:24px; padding:0; border:1px solid rgba(255,255,255,0.1); background: transparent; color: var(--gray); font-size: 14px; cursor: pointer; border-radius: 2px;">✗</button>
-      </div>
-    `;
-  }).join('');
-}
-
-function addKpi() {
-  window._modalKpis.push({ text: '', deadline: '', done: false });
-  renderKpisList();
-  setTimeout(() => {
-    const inputs = document.querySelectorAll('#kpisList input[type="text"]');
-    if (inputs.length > 0) inputs[inputs.length - 1].focus();
-  }, 50);
-}
-
-function removeKpi(idx) {
-  window._modalKpis.splice(idx, 1);
-  renderKpisList();
-}
-
-function toggleKpi(idx) {
-  window._modalKpis[idx].done = !window._modalKpis[idx].done;
-  renderKpisList();
-}
-
-function updateKpiText(idx, value) {
-  window._modalKpis[idx].text = value;
-}
-
-function updateKpiDeadline(idx, value) {
-  window._modalKpis[idx].deadline = value;
-  renderKpisList();
-}
-
-function saveObjetivo(existingId) {
-  const titulo = document.getElementById('objTitulo').value.trim();
-  if (!titulo) {
-    showToast('Falta título del objetivo', true);
-    return;
-  }
-  // Filtrar KPIs vacíos
-  const kpis = (window._modalKpis || []).filter(k => k.text && k.text.trim()).map(k => ({
-    text: k.text.trim(),
-    deadline: k.deadline || '',
-    done: !!k.done
-  }));
-
-  // Calcular progreso automático: % KPIs completados
-  const progreso = kpis.length > 0
-    ? Math.round((kpis.filter(k => k.done).length / kpis.length) * 100)
-    : 0;
-
-  if (existingId) {
-    const objs = load(STORAGE.OBJETIVOS, []);
-    const idx = objs.findIndex(o => o.id === existingId);
-    if (idx >= 0) {
-      objs[idx] = { ...objs[idx],
-        titulo,
-        descripcion: document.getElementById('objDesc').value.trim(),
-        categoria: document.getElementById('objCategoria').value,
-        deadline: document.getElementById('objDeadline').value,
-        kpis,
-        progreso,
-        completed: progreso === 100,
-        porQueMimporta: document.getElementById('objPorQue').value.trim()
-      };
-      save(STORAGE.OBJETIVOS, objs);
-    }
-  } else {
-    // Para nuevo: usar executeTool pero luego actualizar con progreso
-    const objs = load(STORAGE.OBJETIVOS, []);
-    objs.push({
-      id: uid('obj'),
-      titulo,
-      descripcion: document.getElementById('objDesc').value.trim(),
-      categoria: document.getElementById('objCategoria').value,
-      deadline: document.getElementById('objDeadline').value,
-      kpis,
-      progreso,
-      completed: progreso === 100,
-      porQueMimporta: document.getElementById('objPorQue').value.trim(),
-      createdAt: Date.now()
-    });
-    save(STORAGE.OBJETIVOS, objs);
-  }
-
-  showToast('✓ Objetivo ' + (existingId ? 'actualizado' : 'creado') + ' · progreso ' + progreso + '%');
-  window._modalKpis = [];
-  closeModal();
-  switchTab('coach');
-}
-
-function deleteObjetivo(objId) {
-  if (!confirm('¿Eliminar este objetivo? No se puede deshacer.')) return;
-  const objs = load(STORAGE.OBJETIVOS, []).filter(o => o.id !== objId);
-  save(STORAGE.OBJETIVOS, objs);
-  showToast('Objetivo eliminado');
-  closeModal();
-  switchTab('coach');
-}
-
-function openModalBitacora(categoria) {
-  const cat = CATEGORIAS[categoria] || CATEGORIAS.personal;
-  const bitacoras = load(STORAGE.BITACORAS, []).filter(b => b.categoria === categoria);
-
-  const html = `
-    <div class="modal-overlay" id="modalBit" onclick="if(event.target.id==='modalBit')closeModal()">
-      <div class="modal-box orange-border">
-        <div class="modal-header">
-          <div class="modal-title" style="color:${cat.color};">Bitácora · ${cat.label}</div>
-          <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <div class="field-label">Nueva entrada · ¿por qué este objetivo importa hoy?</div>
-            <textarea class="field-textarea" id="bitText" placeholder="Escribe libre · esto entrena la IA con tu porqué personal" style="min-height: 80px;"></textarea>
-          </div>
-          <button class="action-btn action-btn-orange" style="margin-bottom: 14px;" onclick="saveBitacora('${categoria}')">+ Guardar entrada</button>
-
-          ${bitacoras.length === 0 ? `
-            <div style="padding: 22px; text-align: center; color: var(--gray-light); border: 1px dashed rgba(255,255,255,0.1); border-radius: 3px;">
-              Aún sin entradas en esta categoría
-            </div>
-          ` : `
-            <div style="font-family: var(--mono); font-size: 9px; color: ${cat.color}; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 8px;">▸ ${bitacoras.length} ${bitacoras.length === 1 ? 'entrada' : 'entradas'} previas</div>
-            ${bitacoras.slice(0, 10).map(b => `
-              <div style="padding: 10px 12px; background: rgba(0,0,0,0.3); border-left: 2px solid ${cat.color}; margin-bottom: 6px; border-radius: 2px;">
-                <div style="color: var(--white); font-size: 12px; line-height: 1.5; margin-bottom: 4px; font-style: italic;">"${escapeHTML(b.text)}"</div>
-                <div style="font-family: var(--mono); font-size: 9px; color: var(--gray);">${new Date(b.createdAt).toLocaleDateString('es-MX', {day:'numeric', month:'short', year:'numeric'})}</div>
-              </div>
-            `).join('')}
-          `}
-        </div>
-        <div class="modal-footer">
-          <button class="action-btn" style="background:transparent;color:var(--gray-light);border-color:rgba(255,255,255,0.1);padding: 8px 14px; font-size: 9px;" onclick="closeModal()">Cerrar</button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.getElementById('modalsMount').innerHTML = html;
-}
-
-function saveBitacora(categoria) {
-  const text = document.getElementById('bitText').value.trim();
-  if (!text) {
-    showToast('Escribe algo primero', true);
-    return;
-  }
-  const bits = load(STORAGE.BITACORAS, []);
-  bits.unshift({
-    id: uid('bit'),
-    text,
-    categoria,
-    createdAt: Date.now()
-  });
-  save(STORAGE.BITACORAS, bits);
-  showToast('✓ Entrada guardada · IA aprende tu porqué');
-  closeModal();
-}
-
-function openModalIngreso() { askAi('Quiero registrar un ingreso'); }
-function openModalEgreso() { askAi('Quiero registrar un egreso'); }
-// (funcion duplicada removida)
-
-function closeModal() {
-  document.getElementById('modalsMount').innerHTML = '';
-}
-
-function askAi(prompt) {
-  sessionStorage.setItem('alan_mando_pending_prompt', prompt);
-  window.location.href = 'index.html';
-}
-
-function goToMandoFromFinanzas() {
-  window.location.href = 'index.html';
-}
-
-// ============================================
-// CHARTS · Render con Chart.js
-// ============================================
-function renderCharts() {
-  destroyCharts();
-  if (typeof Chart === 'undefined') { setTimeout(renderCharts, 200); return; }
-
-  const proy = generateProyeccion12Meses();
-  const c1 = document.getElementById('chartProy');
-  if (c1) {
-    chartInstances.push(new Chart(c1, {
-      type: 'line',
-      data: {
-        labels: proy.labels,
-        datasets: [
-          { label: 'Ingresos reales', data: proy.ingresosReales, borderColor: '#FF4F00', backgroundColor: 'rgba(255,79,0,0.1)', tension: 0.3, fill: false, pointRadius: 4, borderWidth: 2.5 },
-          { label: 'Ingresos proyectados', data: proy.ingresosProy, borderColor: '#FF7A00', borderDash: [6,4], tension: 0.3, fill: false, pointRadius: 3, borderWidth: 2 },
-          { label: 'Egresos', data: proy.egresosLine, borderColor: '#E63946', tension: 0.3, fill: false, pointRadius: 3, borderWidth: 2 },
-          { label: 'Utilidad acumulada', data: proy.utilidadAcum, borderColor: '#00D97E', backgroundColor: 'rgba(0,217,126,0.05)', tension: 0.3, fill: true, pointRadius: 2, borderWidth: 1.5, yAxisID: 'y1' }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { intersect: false, mode: 'index' },
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { ticks: { color: '#C5C9D6', font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(0) + 'K' }, grid: { color: 'rgba(255,255,255,0.04)' } },
-          y1: { position: 'right', ticks: { color: '#00D97E', font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(0) + 'K' }, grid: { display: false } },
-          x: { ticks: { color: '#8B92A8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } }
-        }
-      }
-    }));
-  }
-
-  const lineas = getIngresosLineas();
-  const c2 = document.getElementById('chartPie');
-  if (c2) {
-    chartInstances.push(new Chart(c2, {
-      type: 'doughnut',
-      data: { labels: ['G2C','Música','Otros'], datasets: [{ data: [lineas.g2c, lineas.musica, lineas.otros], backgroundColor: ['#FF4F00','#8B85FF','#FFD700'], borderColor: '#0F1729', borderWidth: 2 }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '60%' }
-    }));
-    const legendEl = document.getElementById('chartPieLegend');
-    if (legendEl) legendEl.innerHTML = `
-      <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#FF4F00;"></span>G2C ${lineas.g2c}%</span>
-      <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#8B85FF;"></span>Música ${lineas.musica}%</span>
-      <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#FFD700;"></span>Otros ${lineas.otros}%</span>
-    `;
-  }
-
-  const cli = getClientesGanadosPerdidos();
-  const c3 = document.getElementById('chartClientes');
-  if (c3) {
-    chartInstances.push(new Chart(c3, {
-      type: 'bar',
-      data: {
-        labels: cli.labels,
-        datasets: [
-          { label: 'Ganados', data: cli.ganados, backgroundColor: '#00D97E' },
-          { label: 'Perdidos', data: cli.perdidos, backgroundColor: '#E63946' }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { ticks: { color: '#C5C9D6', font: { size: 10 }, stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true },
-          x: { ticks: { color: '#8B92A8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } }
-        }
-      }
-    }));
-  }
-}
-
-function destroyCharts() {
-  chartInstances.forEach(c => { try { c.destroy(); } catch(e){} });
-  chartInstances = [];
-}
-
-// ============================================
-// RENDER · CLIENTES & CONTRATOS (CRM)
-// ============================================
-function renderClientes() {
-  const clientes = load(STORAGE.CLIENTES, []);
-  const activos = clientes.filter(c => c.status === 'activo');
-  const prospectos = clientes.filter(c => c.status === 'prospecto');
-  const perdidos = clientes.filter(c => c.status === 'perdido');
-
-  const mrr = activos.filter(c => c.frecuencia === 'mensual').reduce((s,c) => s + Number(c.monto||0), 0);
-  const ltv = activos.length > 0 ? Math.round(activos.reduce((s,c) => s + (Number(c.monto||0) * Number(c.duracion||12)), 0) / activos.length) : 0;
-  const churnRate = clientes.length > 0 ? ((perdidos.length / clientes.length) * 100).toFixed(1) : 0;
-
-  // Detectar clientes con cobros vencidos (basado en próximo cobro vs hoy)
-  const today = new Date(); today.setHours(0,0,0,0);
-  const cal = load(STORAGE.CALENDARIO, []);
-  const vencidos = activos.filter(c => {
-    if (c.frecuencia !== 'mensual' || !c.diaCobro) return false;
-    const cobrosCliente = cal.filter(e => e.sourceId === c.id && e.category === 'cobro');
-    const proximoNoFacturado = cobrosCliente.find(e => {
-      const fechaEv = new Date(e.date);
-      return fechaEv < today && !e.cobrado;
-    });
-    return !!proximoNoFacturado;
-  });
-
-  return `
-    <div class="fin-metrics" style="grid-template-columns:repeat(4,1fr);">
-      <div class="fin-metric" style="border-left-color:var(--success);">
-        <div class="fin-metric-label">Activos</div>
-        <div class="fin-metric-value" style="color:var(--success);">${activos.length}</div>
-        <div class="fin-metric-trend" style="color:var(--success);">contratos vigentes</div>
-      </div>
-      <div class="fin-metric">
-        <div class="fin-metric-label">MRR total</div>
-        <div class="fin-metric-value">$${mrr.toLocaleString('es-MX')}</div>
-        <div class="fin-metric-trend" style="color:var(--orange);">recurrente mes</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--gold);">
-        <div class="fin-metric-label">LTV promedio</div>
-        <div class="fin-metric-value" style="color:var(--gold);">$${(ltv/1000).toFixed(0)}K</div>
-        <div class="fin-metric-trend" style="color:var(--gold);">por cliente</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--orange-light);">
-        <div class="fin-metric-label">Churn rate</div>
-        <div class="fin-metric-value" style="color:var(--orange-light);">${churnRate}%</div>
-        <div class="fin-metric-trend" style="color:var(--orange-light);">histórico</div>
-      </div>
-    </div>
-
-    <div class="filter-row">
-      <span class="chip chip-active" id="cliFilterActivos" onclick="filterClientes('activos')">▣ Activos · ${activos.length}</span>
-      <span class="chip chip-warning" id="cliFilterProspectos" onclick="filterClientes('prospectos')">▸ Prospectos · ${prospectos.length}</span>
-      <span class="chip chip-default" id="cliFilterPerdidos" onclick="filterClientes('perdidos')">✗ Perdidos · ${perdidos.length}</span>
-      <span class="chip chip-success" onclick="openModalCliente()" style="margin-left:auto;">+ Cliente ganado</span>
-    </div>
-
-    ${vencidos.length > 0 ? `
-      <div class="ai-banner danger" style="margin-bottom: 14px;">
-        <div class="ai-banner-row">
-          <span class="g2c-star md solid"><span class="g2c-star-glyph">★</span></span>
-          <div class="ai-banner-content">
-            <div class="ai-banner-eyebrow" style="color:var(--danger);">⚠ Coach IA · alerta churn</div>
-            <div class="ai-banner-text">
-              ${vencidos.length} cliente${vencidos.length>1?'s':''} con cobro pendiente. <em style="color:var(--orange-light);">Históricamente cuando un cliente pasa 15 días vencido, probabilidad de churn = 70%</em>. Activa cobro ya.
-            </div>
-            <div class="ai-banner-actions">
-              <button class="fin-ai-btn" style="background:var(--danger);" onclick="askAi('Genérame mensajes de cobro suaves pero efectivos para mis clientes con pago vencido')">▸ Generar mensajes cobro</button>
-              <a href="https://cobros.g2c.com.mx" target="_blank" class="fin-ai-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--gray-light); text-decoration: none;">▸ cobros.g2c.com.mx</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    ` : ''}
-
-    <div class="serv-table" id="clientesTable">
-      <div class="serv-table-header" style="grid-template-columns: 2.2fr 1.5fr 1fr 1.2fr 1fr 90px;">
-        <span>Cliente</span>
-        <span>Línea · Plan</span>
-        <span>Frecuencia</span>
-        <span>Pago / monto</span>
-        <span>Próximo cobro</span>
-        <span>Estado</span>
-      </div>
-      <div id="clientesRows">
-        ${clientes.length === 0 ? `
-          <div style="padding: 30px; text-align: center; color: var(--gray-light);">
-            <div style="font-family: var(--display); font-size: 14px; color: var(--white); margin-bottom: 8px;">Sin clientes registrados aún</div>
-            <div style="font-size: 12px; margin-bottom: 14px;">Registra tu primer cliente ganado para arrancar el CRM</div>
-            <button class="fin-ai-btn" onclick="openModalCliente()">+ Registrar primer cliente</button>
-          </div>
-        ` : activos.map(c => renderClienteRow(c)).join('')}
-      </div>
-    </div>
-
-    ${activos.length > 0 ? `
-      <div class="insight-card success" style="margin-top: 14px;">
-        <div class="insight-eyebrow" style="color:var(--success);">Insight CRM · IA</div>
-        <div class="insight-text">
-          Tienes <strong style="color:var(--success);">${activos.length} contratos activos</strong> con MRR de <strong style="color:var(--success);">$${mrr.toLocaleString('es-MX')}</strong>.
-          ${activos.length < 12 ? ` Te faltan <strong style="color:var(--gold);">${12 - activos.length} cuentas</strong> para tu objetivo 2026 (12 G2C).` : ' Cumpliste objetivo 12 cuentas G2C 2026!'}
-          ${churnRate > 5 ? ` <em style="color:var(--orange-light);">Churn ${churnRate}% es alto · revisa por qué.</em>` : ''}
-        </div>
-      </div>
-    ` : ''}
-  `;
-}
-
-function renderClienteRow(c) {
-  const cat = c.linea === 'g2c' ? { label: 'G2C', color: '#FF4F00' }
-    : c.linea === 'musica' ? { label: 'Música', color: '#8B85FF' }
-    : { label: 'Otros', color: '#FFD700' };
-
-  const today = new Date(); today.setHours(0,0,0,0);
-  const cal = load(STORAGE.CALENDARIO, []);
-  const cobrosCliente = cal.filter(e => e.sourceId === c.id && e.category === 'cobro')
-    .map(e => ({ ...e, dt: new Date(e.date) }))
-    .sort((a,b) => a.dt - b.dt);
-  const proximo = cobrosCliente.find(e => e.dt >= today);
-  const vencido = cobrosCliente.find(e => e.dt < today && !e.cobrado);
-
-  let statusColor = 'var(--success)';
-  let statusName = 'activo';
-  let proxText = 'Sin cobros';
-
-  if (c.status === 'prospecto') { statusColor = 'var(--orange-light)'; statusName = 'prospecto'; }
-  else if (c.status === 'perdido') { statusColor = 'var(--gray)'; statusName = 'perdido'; }
-  else if (vencido) {
-    statusColor = 'var(--danger)';
-    const diasVenc = Math.ceil((today - vencido.dt) / 86400000);
-    statusName = 'vencido';
-    proxText = 'Atrasado ' + diasVenc + 'd';
-  } else if (proximo) {
-    const dias = Math.ceil((proximo.dt - today) / 86400000);
-    proxText = dias === 0 ? 'Hoy' : dias === 1 ? 'Mañana' : 'En ' + dias + ' días';
-    if (dias <= 7) {
-      statusColor = 'var(--orange-light)';
-      statusName = 'próximo';
-    }
-  }
-
-  const monto = Number(c.monto || 0);
-  let mensual = 0, semanal = 0, quincenal = 0;
-  if (c.frecuencia === 'mensual') {
-    mensual = monto;
-    semanal = Math.round(monto / 4.33);
-    quincenal = Math.round(monto / 2);
-  } else if (c.frecuencia === 'anual') {
-    mensual = Math.round(monto / 12);
-    semanal = Math.round(mensual / 4.33);
-    quincenal = Math.round(mensual / 2);
-  } else {
-    mensual = monto;
-  }
-
-  const numContrato = c.numeroContrato || c.id.replace('cli_', 'C-').slice(0, 14).toUpperCase();
-
-  return `
-    <div class="cliente-card" data-cli-id="${c.id}" onclick="openModalCliente('${c.id}')" style="background:#0F1729;border:1px solid rgba(255,79,0,0.15);border-left:3px solid ${cat.color};border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-family:var(--display);font-size:16px;color:#fff;font-weight:600;line-height:1.2;margin-bottom:3px;">${escapeHTML(c.nombre || 'Sin nombre')}</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--gray);letter-spacing:0.1em;text-transform:uppercase;">REF · ${numContrato}</div>
-        </div>
-        <span class="pill" style="background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}55;font-size:9px;padding:3px 8px;white-space:nowrap;">${statusName}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:10px;color:var(--gray);letter-spacing:0.05em;margin-bottom:2px;">${cat.label}${c.plan ? ' · ' + escapeHTML(c.plan) : ''}</div>
-          <div style="font-size:10px;color:${statusColor};">${proxText}${c.duracion ? ' · ' + c.duracion + ' meses' : ''}</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-family:var(--display);font-size:18px;color:${cat.color};font-weight:700;line-height:1;">$${mensual.toLocaleString('es-MX')}<span style="font-size:11px;color:var(--gray);font-weight:400;">/mes</span></div>
-          ${c.frecuencia === 'mensual' || c.frecuencia === 'anual' ? `
-            <div style="font-size:9px;color:var(--gray);margin-top:4px;font-family:var(--mono);">
-              $${quincenal.toLocaleString('es-MX')}/quin · $${semanal.toLocaleString('es-MX')}/sem
-            </div>
-          ` : `<div style="font-size:9px;color:var(--gray);margin-top:4px;">${c.frecuencia || 'único'}</div>`}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-
-function filterClientes(filter) {
-  const all = load(STORAGE.CLIENTES, []);
-  ['Activos','Prospectos','Perdidos'].forEach(f => {
-    const el = document.getElementById('cliFilter' + f);
-    if (el) {
-      el.classList.remove('chip-active');
-      el.classList.add(f === 'Prospectos' ? 'chip-warning' : f === 'Perdidos' ? 'chip-default' : 'chip-default');
-    }
-  });
-  const activeEl = document.getElementById('cliFilter' + filter.charAt(0).toUpperCase() + filter.slice(1));
-  if (activeEl) {
-    activeEl.classList.remove('chip-default','chip-warning');
-    activeEl.classList.add('chip-active');
-  }
-  const map = { activos: 'activo', prospectos: 'prospecto', perdidos: 'perdido' };
-  const filtered = all.filter(c => c.status === map[filter]);
-  const rowsEl = document.getElementById('clientesRows');
-  if (rowsEl) rowsEl.innerHTML = filtered.length === 0
-    ? `<div style="padding: 22px; text-align: center; color: var(--gray-light);">Sin clientes en esta categoría</div>`
-    : filtered.map(c => renderClienteRow(c)).join('');
-}
-
-// ============================================
-// MODAL · CLIENTE GANADO
-// ============================================
-function openModalCliente(cliId) {
-  const today = new Date().toISOString().slice(0,10);
-  window._cliEditId = cliId || null;
-  
-  // Si hay cliId, cargar datos del cliente existente
-  let cliExistente = null;
-  let infoBlock = '';
-  if (cliId) {
-    const clientes = load(STORAGE.CLIENTES, []);
-    cliExistente = clientes.find(c => c.id === cliId);
-    if (cliExistente) {
-      const cal = load(STORAGE.CALENDARIO, []);
-      const cobros = cal.filter(e => e.sourceId === cliId && e.category === 'cobro').sort((a,b) => a.date.localeCompare(b.date));
-      const cobradosOk = cobros.filter(c => c.cobrado).length;
-      const cobrosPendientes = cobros.filter(c => !c.cobrado);
-      const totalGenerado = cobradosOk * Number(cliExistente.monto || 0);
-      const ltv = Number(cliExistente.monto || 0) * Number(cliExistente.duracion || 0);
-      const proximoCobro = cobrosPendientes[0];
-      const numContrato = cliExistente.numeroContrato || cliId.replace('cli_', 'C-').slice(0,14).toUpperCase();
-      
-      infoBlock = `
-        <div style="background:rgba(255,79,0,0.08);border:1px solid rgba(255,79,0,0.25);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
-          <div style="font-family:var(--mono);font-size:9px;color:var(--orange);letter-spacing:0.15em;margin-bottom:6px;">REF · ${numContrato}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;">
-            <div><span style="color:var(--gray);">Status:</span> <strong style="color:var(--success);">${cliExistente.status}</strong></div>
-            <div><span style="color:var(--gray);">Monto:</span> <strong>$${Number(cliExistente.monto||0).toLocaleString('es-MX')}/${cliExistente.frecuencia}</strong></div>
-            <div><span style="color:var(--gray);">Duración:</span> <strong>${cliExistente.duracion || 0} meses</strong></div>
-            <div><span style="color:var(--gray);">LTV:</span> <strong style="color:var(--orange);">$${ltv.toLocaleString('es-MX')}</strong></div>
-            <div><span style="color:var(--gray);">Cobrado:</span> <strong style="color:var(--success);">${cobradosOk}/${cobros.length}</strong></div>
-            <div><span style="color:var(--gray);">Generado:</span> <strong>$${totalGenerado.toLocaleString('es-MX')}</strong></div>
-          </div>
-          ${proximoCobro ? `
-            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,79,0,0.15);">
-              <div style="font-size:10px;color:var(--gray);margin-bottom:4px;">PRÓXIMO COBRO</div>
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                  <div style="font-size:13px;color:#fff;">${proximoCobro.date}</div>
-                  <div style="font-size:10px;color:var(--gray);">$${Number(proximoCobro.amount||0).toLocaleString('es-MX')}</div>
-                </div>
-                <button class="action-btn action-btn-success" style="padding:8px 14px;font-size:10px;" onclick="markCobroNow('${proximoCobro.id}', '${cliId}')">✓ Marcar pagado</button>
-              </div>
-            </div>
-          ` : '<div style="margin-top:10px;font-size:10px;color:var(--gray);">Sin cobros pendientes</div>'}
+          <div class="row-value">${Util.fmtMoneyK(c.monto_mensual)}</div>
         </div>
       `;
-    }
+    });
+    html += `</div>`;
   }
 
-  const html = `
-    <div class="modal-overlay" id="modalCli" onclick="if(event.target.id===\'modalCli\')closeModal()" style="display:flex;">
-      <div class="modal-box success-border">
-        <div class="modal-header">
-          <div class="modal-title">${cliExistente ? cliExistente.nombre : 'Nuevo cliente ganado'}</div>
-          <button class="modal-close" onclick="closeModal()">✕</button>
+  // Últimos movimientos
+  const recientes = movimientos.slice(-3).reverse();
+  if (recientes.length) {
+    html += `<div class="section-eyebrow"><div class="label">últimos movimientos</div></div>`;
+    html += `<div class="list-card">`;
+    recientes.forEach(m => {
+      const color = m.tipo === 'ingreso' ? 'rgba(180,220,170,0.95)' : 'rgba(244,213,128,0.95)';
+      const sign = m.tipo === 'ingreso' ? '+' : '−';
+      html += `
+        <div class="list-row">
+          <div class="row-main">
+            <div class="row-content">
+              <div class="row-title">${Util.esc(m.concepto)}</div>
+              <div class="row-sub">${Util.fmtDate(m.ts, { short: true })} · ${Util.esc(m.categoria || '—')}</div>
+            </div>
+          </div>
+          <div class="row-value" style="color:${color};">${sign}${Util.fmtMoney(m.monto)}</div>
         </div>
-        <div class="modal-body">
-          ${infoBlock}
-          <div class="ai-banner success" style="margin-bottom: 14px;">
-            <div class="ai-banner-row">
-              <span class="g2c-star sm solid"><span class="g2c-star-glyph">★</span></span>
-              <div class="ai-banner-content">
-                <div class="ai-banner-text" style="font-size: 12px; margin: 0;">Este cliente se sumará al CRM, MRR, proyecciones y misiones del coach. Si pago recurrente, se auto-agendará el cobro en calendario para los próximos meses.</div>
+      `;
+    });
+    html += `</div>`;
+  }
+
+  // Decisión fiscal
+  html += `
+    <div style="background:rgba(244,243,239,0.025);border:0.5px solid rgba(255,79,0,0.18);border-radius:12px;padding:13px 15px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px;">
+        <div style="width:3px;height:14px;background:#FF4F00;border-radius:1px;"></div>
+        <div style="font-size:10px;color:rgba(255,150,80,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;">decisión fiscal del mes</div>
+      </div>
+      <div style="font-size:12px;color:rgba(244,243,239,0.85);line-height:1.5;">22% IVA acreditable vs 16% facturado · descarga CFDIs para ahorrar $1.4K en ISR mayo.</div>
+    </div>
+
+    <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:14px;padding:14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;">
+        <div style="width:16px;height:16px;background:rgba(120,200,220,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:5px;height:5px;background:rgba(150,210,230,1);transform:rotate(45deg);"></div></div>
+        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;">Mando · proyección integrada</div>
+      </div>
+      <div style="font-size:13px;line-height:1.55;color:rgba(244,243,239,0.92);">Crucé tus 3 fuentes de ingreso, gastos fijos, hormiga, viajes pendientes y objetivo casa. Si cierras NEOS exp + sigues 2 tocadas/mes + recortas $4K hormiga · llegas a $128K en 90 días.</div>
+    </div>
+  `;
+
+  return html;
+}
+
+// ============================================================
+// TAB TRABAJO (clientes con flujo cobro adoptado)
+// ============================================================
+function renderTrabajo() {
+  const clientes = Store.get(Store.KEYS.CLIENTES, []);
+  const finanzas = Store.get(Store.KEYS.FINANZAS, {});
+
+  const cobrado = clientes.filter(c => c.ultimo_pago && Util.daysSince(c.ultimo_pago) < 30).reduce((s, c) => s + (c.monto_mensual || 0), 0);
+  const porCobrar = clientes.filter(c => c.status === 'vencido' || c.status === 'vence_hoy').reduce((s, c) => s + (c.monto_pendiente || c.monto_mensual || 0), 0);
+
+  let html = `
+    <div class="stat-grid cols-2">
+      <div class="stat-card green"><div class="stat-label" style="color:rgba(180,220,170,0.85);">COBRADO MES</div><div class="stat-value tabular">${Util.fmtMoneyK(cobrado)}</div></div>
+      <div class="stat-card alert"><div class="stat-label" style="color:rgba(255,150,80,0.95);">POR COBRAR</div><div class="stat-value tabular">${Util.fmtMoneyK(porCobrar)}</div></div>
+    </div>
+    <div class="section-eyebrow"><div class="label">clientes G2C · ${clientes.length} activos</div></div>
+  `;
+
+  if (!clientes.length) {
+    html += `<div style="background:rgba(244,243,239,0.025);border:0.5px dashed rgba(244,243,239,0.15);border-radius:12px;padding:24px;text-align:center;">
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">Sin clientes activos aún</div>
+      <button class="btn primary-orange" onclick="agregarCliente()">+ Agregar cliente</button>
+    </div>`;
+    return html;
+  }
+
+  html += `<div style="display:flex;flex-direction:column;gap:7px;">`;
+  clientes.forEach(c => {
+    const status = c.status || 'al_dia';
+    const isVencido = status === 'vencido';
+    const isVenceHoy = status === 'vence_hoy';
+    const isAlDia = status === 'al_dia';
+
+    const cardClass = isVencido ? 'orange' : (isVenceHoy ? 'yellow' : 'green');
+    const pillClass = isVencido ? 'orange' : (isVenceHoy ? 'yellow' : 'green');
+    const pillText = isVencido ? `VENCIDO ${c.dias_vencido || 0}d` : (isVenceHoy ? 'VENCE HOY' : 'AL DÍA');
+    const valueColor = isVencido ? 'rgba(255,170,110,0.95)' : '';
+
+    html += `
+      <div class="decision-card ${cardClass}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+              <div style="font-size:12px;font-weight:500;">${Util.esc(c.nombre)}</div>
+              <div class="pill ${pillClass}">${pillText}</div>
+            </div>
+            <div style="font-size:9px;color:rgba(244,243,239,0.55);">Plan ${Util.esc(c.tier || '—')} · contrato ${c.contrato_meses || 12}m · LTV ${Util.fmtMoneyK((c.monto_mensual || 0) * (c.contrato_meses || 12))}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:13px;font-weight:500;color:${valueColor};">${Util.fmtMoneyK(c.monto_pendiente || c.monto_mensual)}</div>
+            <div style="font-size:9px;color:rgba(244,243,239,0.5);">${c.proximo_cobro ? 'próx ' + Util.fmtDate(c.proximo_cobro, { short: true }) : '—'}</div>
+          </div>
+        </div>
+
+        ${(isVencido || isVenceHoy) ? `
+          <div style="display:flex;gap:5px;margin-bottom:9px;">
+            <button class="btn primary-green" data-cliente-id="${c.id}" data-action="marcar_pagado" style="flex:1.5;display:flex;align-items:center;justify-content:center;gap:6px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+              Marcar pagado
+            </button>
+            <button class="btn primary-orange" data-cliente-id="${c.id}" data-action="generar_liga" style="flex:1.2;display:flex;align-items:center;justify-content:center;gap:5px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9c1.5 0 2.9.4 4.1 1" stroke="currentColor" stroke-width="1.5"/></svg>
+              ${isVencido ? 'Liga' : 'Generar liga'}
+            </button>
+            ${isVencido ? `<button class="btn" data-cliente-id="${c.id}" data-action="whatsapp" style="flex:0.8;">WA</button>` : ''}
+          </div>
+        ` : ''}
+
+        ${isVencido ? `
+          <div style="background:rgba(15,20,25,0.4);border-radius:7px;padding:8px 10px;">
+            <div style="font-size:9px;color:rgba(244,243,239,0.55);letter-spacing:0.05em;margin-bottom:5px;">FLUJO COBRO ACTIVO</div>
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;gap:7px;font-size:10px;">
+                <div style="color:rgba(180,220,170,0.85);font-variant-numeric:tabular-nums;min-width:50px;">${c.fecha_factura ? Util.fmtDate(c.fecha_factura, { short: true }) : '—'}</div>
+                <div style="color:rgba(244,243,239,0.7);">factura emitida</div>
+              </div>
+              <div style="display:flex;gap:7px;font-size:10px;">
+                <div style="color:rgba(180,220,170,0.85);font-variant-numeric:tabular-nums;min-width:50px;">${c.fecha_recordatorio ? Util.fmtDate(c.fecha_recordatorio, { short: true }) : '—'}</div>
+                <div style="color:rgba(244,243,239,0.7);">recordatorio enviado</div>
+              </div>
+              <div style="display:flex;gap:7px;font-size:10px;">
+                <div style="color:rgba(255,150,80,0.85);font-variant-numeric:tabular-nums;min-width:50px;">hoy</div>
+                <div style="color:rgba(255,170,110,0.95);font-weight:500;">vencido · acción requerida</div>
               </div>
             </div>
           </div>
-
-          <div class="field">
-            <div class="field-label">Nombre del cliente</div>
-            <input type="text" class="field-input" id="cliNombre" placeholder="Ej. Restaurante La Diferencia" value="${cliExistente?escapeHTML(cliExistente.nombre):''}" oninput="updateClienteImpact()">
-          </div>
-
-          <div class="field-row cols-2">
-            <div class="field">
-              <div class="field-label">Línea de negocio</div>
-              <select class="field-select" id="cliLinea" onchange="updateClienteImpact()">
-                <option value="g2c">G2C</option>
-                <option value="musica">Música</option>
-                <option value="otros">Otros</option>
-              </select>
-            </div>
-            <div class="field">
-              <div class="field-label">Plan / contrato</div>
-              <select class="field-select" id="cliPlan">
-                <option value="Plan Visor">Plan Visor $7,000</option>
-                <option value="Plan Parcial">Plan Parcial $12,000</option>
-                <option value="Plan Total">Plan Total $16,000</option>
-                <option value="Tocada única">Tocada única</option>
-                <option value="Boda">Boda</option>
-                <option value="Otro">Otro</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="field-row cols-3">
-            <div class="field">
-              <div class="field-label">Monto</div>
-              <input type="number" class="field-input" id="cliMonto" placeholder="7000" min="0" step="100" oninput="updateClienteImpact()">
-            </div>
-            <div class="field">
-              <div class="field-label">Frecuencia</div>
-              <select class="field-select" id="cliFrecuencia" onchange="updateClienteImpact()">
-                <option value="mensual">Mensual</option>
-                <option value="anual">Anual</option>
-                <option value="unico">Único</option>
-              </select>
-            </div>
-            <div class="field">
-              <div class="field-label">Día cobro</div>
-              <input type="number" class="field-input" id="cliDiaCobro" placeholder="15" min="1" max="31">
-            </div>
-          </div>
-
-          <div class="field-row cols-2">
-            <div class="field">
-              <div class="field-label">Inicio contrato</div>
-              <input type="date" class="field-input" id="cliFechaInicio" value="${today}">
-            </div>
-            <div class="field">
-              <div class="field-label">Duración (meses)</div>
-              <select class="field-select" id="cliDuracion" onchange="updateClienteImpact()">
-                <option value="1">1 mes</option>
-                <option value="3">3 meses</option>
-                <option value="6">6 meses</option>
-                <option value="12" selected>12 meses</option>
-                <option value="24">24 meses</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-label">Número de contrato / referencia</div>
-            <input type="text" class="field-input" id="cliNumContrato" placeholder="Ej. NEOS-2026-001 · opcional">
-          </div>
-
-          <div class="field">
-            <div class="field-label">Notas / contexto</div>
-            <textarea class="field-textarea" id="cliNotas" placeholder="Cómo llegó · contacto · expectativas..."></textarea>
-          </div>
-
-          <div class="modal-impact" id="cliImpact">
-            <div class="modal-impact-label">Impacto al sistema · auto-calculado</div>
-            <div class="modal-impact-text" id="cliImpactText">
-              Llena los campos para ver el impacto...
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="action-btn" style="background:rgba(230,57,70,0.1);color:var(--danger);border-color:rgba(230,57,70,0.3);" onclick="deleteClienteFromModal()">Eliminar</button>
-          <button class="action-btn action-btn-orange" onclick="markClientePagadoFromModal()">Marcar pagado</button>
-          <button class="action-btn action-btn-success" onclick="saveCliente()">Guardar</button>
-        </div>
+        ` : ''}
       </div>
+    `;
+  });
+  html += `</div>`;
+
+  html += `
+    <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:12px;padding:12px;margin-top:12px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <div style="width:14px;height:14px;background:rgba(120,200,220,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:4px;height:4px;background:rgba(150,210,230,1);transform:rotate(45deg);"></div></div>
+        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">Mando · cascada cobro</div>
+      </div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.85);line-height:1.5;">Tap "Marcar pagado" dispara: registra +$X en Movimientos · cierra alerta · suma a Pagos puntuales · sube proyección 90d.</div>
     </div>
   `;
-  document.getElementById('modalsMount').innerHTML = html;
-  setTimeout(updateClienteImpact, 100);
+
+  return html;
 }
 
-function updateClienteImpact() {
-  const monto = Number(document.getElementById('cliMonto')?.value || 0);
-  const frecuencia = document.getElementById('cliFrecuencia')?.value || 'mensual';
-  const duracion = Number(document.getElementById('cliDuracion')?.value || 12);
-  const linea = document.getElementById('cliLinea')?.value || 'g2c';
-
-  const m = computeFinanzasMetrics();
-  const mrrAdded = frecuencia === 'mensual' ? monto : 0;
-  const ltv = monto * (frecuencia === 'mensual' ? duracion : frecuencia === 'anual' ? Math.ceil(duracion/12) : 1);
-
-  const clientes = load(STORAGE.CLIENTES, []);
-  const activos = clientes.filter(c => c.status === 'activo' && c.linea === 'g2c').length;
-  const restanG2C = Math.max(0, 12 - activos - (linea === 'g2c' ? 1 : 0));
-
-  const objetivoAhorro = 300000;
-  const ahorroActual = 84000;
-  const aporteAhorro = ltv * 0.5;
-  const pctAhorro = ((ahorroActual + aporteAhorro) / objetivoAhorro * 100).toFixed(1);
-  const pctAhorroPrevio = (ahorroActual / objetivoAhorro * 100).toFixed(1);
-  const pctIncremento = (pctAhorro - pctAhorroPrevio).toFixed(1);
-
-  const cobrosAuto = frecuencia === 'mensual' ? duracion : frecuencia === 'anual' ? Math.ceil(duracion/12) : 1;
-
-  const txt = `
-    ${mrrAdded > 0 ? `<span style="color:var(--success);">+$${mrrAdded.toLocaleString('es-MX')} MRR</span> (de $${m.mrr.toLocaleString('es-MX')} a $${(m.mrr + mrrAdded).toLocaleString('es-MX')})<br>` : ''}
-    ${linea === 'g2c' ? `<span style="color:var(--success);">+1 cuenta</span> al objetivo "Cerrar 12 cuentas G2C" (${activos+1}/12${restanG2C > 0 ? ' · faltan '+restanG2C : ' · ¡cumplido!'})<br>` : ''}
-    ${ltv > 0 ? `<span style="color:var(--success);">+$${ltv.toLocaleString('es-MX')} LTV</span> proyectado<br>` : ''}
-    ${cobrosAuto > 1 ? `<span style="color:var(--gold);">${cobrosAuto} cobros agendados</span> automáticamente al calendario<br>` : ''}
-    ${aporteAhorro > 0 ? `<span style="color:var(--info);">+${pctIncremento}% al objetivo de ahorro 2026</span>` : ''}
-  `;
-  const el = document.getElementById('cliImpactText');
-  if (el) el.innerHTML = txt || 'Llena los campos para ver el impacto...';
-}
-
-
-function markCobroNow(eventoId, cliId) {
-  if (!confirm('Marcar este cobro como pagado?')) return;
-  executeTool({
-    action: 'mark_cobro_recibido',
-    module: 'cobro',
-    data: { evento_id: eventoId, fechaCobro: new Date().toISOString().slice(0,10), metodoPago: 'transferencia' }
-  });
-  showToast('Cobro registrado · MRR actualizado');
-  closeModal();
-  if (typeof renderClientes === 'function') renderClientes();
-}
-
-function markClientePagadoFromModal() {
-  const cliId = window._cliEditId;
-  if (!cliId) {
-    showToast('Primero abre un cliente existente', true);
-    return;
-  }
-  const cal = load(STORAGE.CALENDARIO, []);
-  const cobros = cal.filter(e => e.sourceId === cliId && e.category === 'cobro' && !e.cobrado)
-    .sort((a,b) => a.date.localeCompare(b.date));
-  if (cobros.length === 0) {
-    showToast('No hay cobros pendientes', true);
-    return;
-  }
-  const proximo = cobros[0];
-  if (!confirm('Marcar como cobrado: ' + proximo.title + ' del ' + proximo.date + '?')) return;
-  executeTool({
-    action: 'mark_cobro_recibido',
-    module: 'cobro',
-    data: { evento_id: proximo.id, fechaCobro: new Date().toISOString().slice(0,10), metodoPago: 'transferencia' }
-  });
-  showToast('Cobro marcado como recibido');
-  closeModal();
-  if (typeof renderClientes === 'function') renderClientes();
-}
-
-function deleteClienteFromModal() {
-  const cliId = window._cliEditId;
-  if (!cliId) { closeModal(); return; }
-  if (!confirm('Eliminar este cliente y sus cobros futuros?')) return;
-  executeTool({ action: 'delete_cliente', module: 'cliente', data: { id: cliId } });
-  showToast('Cliente eliminado');
-  closeModal();
-  if (typeof renderClientes === 'function') renderClientes();
-}
-
-function saveCliente() {
-  const validation = validateForm('formCliente', [
-    { id: 'cliNombre', label: 'Nombre del cliente', type: 'text' },
-    { id: 'cliMonto', label: 'Monto', type: 'number' }
-  ]);
-
-  if (!validation.valid) {
-    showFormValidationToast(validation);
-    return;
-  }
-
-  const nombre = document.getElementById('cliNombre').value.trim();
-  const monto = Number(document.getElementById('cliMonto').value);
-  const fechaInicio = document.getElementById('cliFechaInicio').value || new Date().toISOString().slice(0,10);
-  const diaCobro = Number(document.getElementById('cliDiaCobro').value) || new Date(fechaInicio).getDate();
-
-  executeTool({
-    action: 'add_cliente',
-    module: 'cliente',
-    data: {
-      nombre,
-      linea: document.getElementById('cliLinea').value,
-      plan: document.getElementById('cliPlan').value,
-      monto,
-      frecuencia: document.getElementById('cliFrecuencia').value,
-      diaCobro,
-      fechaInicio,
-      duracion: Number(document.getElementById('cliDuracion').value),
-      numeroContrato: document.getElementById('cliNumContrato')?.value?.trim() || '',
-      notas: document.getElementById('cliNotas').value.trim(),
-      status: 'activo'
-    },
-    summary: 'Cliente ganado'
-  });
-
-  showToast('✓ Cliente registrado · MRR + cobros + KPIs actualizados');
-  closeModal();
-  switchTab('clientes');
-}
-
-// ============================================
-// RENDER · MOVIMIENTOS
-// ============================================
-function renderMovimientos() {
-  const fin = load(STORAGE.FINANZAS, []);
-  const today = new Date();
-  const thisMonth = today.toISOString().slice(0,7);
-  const thisYear = today.toISOString().slice(0,4);
-
-  const ingresosMes = fin.filter(f => f.fecha?.startsWith(thisMonth) && f.tipo === 'ingreso').reduce((s,f) => s + Number(f.monto||0), 0);
-  const egresosMes = fin.filter(f => f.fecha?.startsWith(thisMonth) && f.tipo === 'gasto').reduce((s,f) => s + Number(f.monto||0), 0);
-  const utilidadMes = ingresosMes - egresosMes;
-
-  const utilidadAnual = fin.filter(f => f.fecha?.startsWith(thisYear)).reduce((s,f) => f.tipo === 'ingreso' ? s + Number(f.monto||0) : s - Number(f.monto||0), 0);
-
-  // Mejor mes
-  const porMes = {};
-  fin.forEach(f => {
-    if (!f.fecha) return;
-    const mes = f.fecha.slice(0,7);
-    if (!porMes[mes]) porMes[mes] = 0;
-    porMes[mes] += f.tipo === 'ingreso' ? Number(f.monto||0) : 0;
-  });
-  const mejorMes = Object.entries(porMes).sort((a,b) => b[1] - a[1])[0];
-  const mejorMesLabel = mejorMes ? new Date(mejorMes[0] + '-15').toLocaleDateString('es-MX', { month: 'long' }) : '—';
-  const mejorMesMonto = mejorMes ? mejorMes[1] : 0;
-
-  // Pattern detection · gastos hormiga
-  const egresosThisMonth = fin.filter(f => f.fecha?.startsWith(thisMonth) && f.tipo === 'gasto');
-  const hormiga = egresosThisMonth.filter(f => Number(f.monto) < 800);
-  const totalHormiga = hormiga.reduce((s,f) => s + Number(f.monto||0), 0);
-
-  const movimientosOrdenados = [...fin].sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
-
-  return `
-    <div class="fin-metrics" style="grid-template-columns:repeat(4,1fr);">
-      <div class="fin-metric" style="border-left-color:${utilidadMes >= 0 ? 'var(--success)' : 'var(--danger)'};">
-        <div class="fin-metric-label">Mes en curso</div>
-        <div class="fin-metric-value" style="color:${utilidadMes >= 0 ? 'var(--success)' : 'var(--danger)'};">${utilidadMes >= 0 ? '+' : ''}$${Math.abs(utilidadMes).toLocaleString('es-MX')}</div>
-        <div class="fin-metric-trend" style="color:${utilidadMes >= 0 ? 'var(--success)' : 'var(--danger)'};">utilidad neta</div>
-      </div>
-      <div class="fin-metric">
-        <div class="fin-metric-label">Acumulado año</div>
-        <div class="fin-metric-value">${utilidadAnual >= 0 ? '+' : ''}$${(Math.abs(utilidadAnual)/1000).toFixed(0)}K</div>
-        <div class="fin-metric-trend" style="color:var(--orange);">${thisYear}</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--gold);">
-        <div class="fin-metric-label">Mejor mes</div>
-        <div class="fin-metric-value" style="color:var(--gold); text-transform: capitalize;">${mejorMesLabel}</div>
-        <div class="fin-metric-trend" style="color:var(--gold);">$${(mejorMesMonto/1000).toFixed(0)}K</div>
-      </div>
-      <div class="fin-metric" style="border-left-color:var(--orange-light);">
-        <div class="fin-metric-label">Movimientos</div>
-        <div class="fin-metric-value" style="color:var(--orange-light);">${fin.length}</div>
-        <div class="fin-metric-trend" style="color:var(--orange-light);">total registrados</div>
-      </div>
-    </div>
-
-    <div class="fin-grid-2" style="margin-bottom: 16px;">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title">Flujo mensual · 6 meses</div>
-        </div>
-        <div class="chart-legend">
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#00D97E;"></span>Ingresos</span>
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#E63946;"></span>Egresos</span>
-        </div>
-        <div class="chart-canvas-wrap" style="height: 200px;">
-          <canvas id="chartFlujo" role="img" aria-label="Flujo mensual ingresos vs egresos">Flujo mensual.</canvas>
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title">Egresos por categoría</div>
-        </div>
-        <div class="chart-canvas-wrap" style="height: 200px;">
-          <canvas id="chartCatEgresos" role="img" aria-label="Distribución egresos por categoría">Egresos por categoría.</canvas>
-        </div>
-      </div>
-    </div>
-
-    <div class="filter-row">
-      <span class="chip chip-active" id="movFilterTodos" onclick="filterMovimientos('todos')">▣ Todos · ${fin.length}</span>
-      <span class="chip chip-success" id="movFilterIngresos" onclick="filterMovimientos('ingresos')">+ Ingresos · ${fin.filter(f => f.tipo === 'ingreso').length}</span>
-      <span class="chip chip-danger" id="movFilterEgresos" onclick="filterMovimientos('egresos')">- Egresos · ${fin.filter(f => f.tipo === 'gasto').length}</span>
-      <div style="flex: 1;"></div>
-      <button class="action-btn action-btn-success" style="padding: 6px 12px; font-size: 9px;" onclick="askAi('Quiero registrar un ingreso')">+ Ingreso</button>
-      <button class="action-btn action-btn-danger" style="padding: 6px 12px; font-size: 9px;" onclick="askAi('Quiero registrar un egreso')">- Egreso</button>
-    </div>
-
-    <div class="serv-table" id="movTable">
-      <div class="serv-table-header" style="grid-template-columns: 80px 2.5fr 1.3fr 1fr 1.1fr 90px;">
-        <span>Fecha</span>
-        <span>Concepto</span>
-        <span>Categoría</span>
-        <span>Cliente / origen</span>
-        <span>Monto</span>
-        <span>Tipo</span>
-      </div>
-      <div id="movRows">
-        ${fin.length === 0 ? `
-          <div style="padding: 30px; text-align: center; color: var(--gray-light);">
-            <div style="font-family: var(--display); font-size: 14px; color: var(--white); margin-bottom: 8px;">Sin movimientos registrados</div>
-            <div style="font-size: 12px; margin-bottom: 14px;">Pídele al asesor IA registrar tu primer ingreso o egreso</div>
-            <button class="fin-ai-btn" onclick="askAi('Quiero registrar mi primer ingreso')">+ Registrar ingreso</button>
-          </div>
-        ` : movimientosOrdenados.slice(0, 50).map(m => renderMovimientoRow(m)).join('')}
-      </div>
-    </div>
-
-    ${totalHormiga > 0 ? `
-      <div class="insight-card gold" style="margin-top: 14px;">
-        <div class="insight-eyebrow" style="color:var(--gold);">Patrón detectado · IA</div>
-        <div class="insight-text">
-          Tus gastos pequeños (&lt;$800) suman <strong style="color:var(--gold);">$${totalHormiga.toLocaleString('es-MX')} este mes</strong> (${hormiga.length} movimientos).
-          ${totalHormiga > 3000 ? ' <em style="color:var(--orange-light);">Es alto · revisa si todos son necesarios.</em>' : ' Es razonable.'}
-          <strong style="color:var(--gold);">Tip fiscal:</strong> documenta cada gasto contra cliente para deducir ante SAT.
-        </div>
-      </div>
-    ` : ''}
-  `;
-}
-
-function renderMovimientoRow(m) {
-  const fecha = m.fecha ? new Date(m.fecha + 'T12:00:00') : new Date(m.createdAt);
-  const fechaLabel = fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
-
-  const isIngreso = m.tipo === 'ingreso';
-  const color = isIngreso ? 'var(--success)' : 'var(--danger)';
-  const symbol = isIngreso ? '+' : '-';
-
-  const cat = m.categoria || 'otros';
-  const catLabel = cat === 'g2c' ? 'G2C'
-    : cat === 'musica' ? 'Música'
-    : cat === 'personal' ? 'Personal'
-    : 'Otros';
-
-  const clientes = load(STORAGE.CLIENTES, []);
-  const cliente = m.cliente_id ? clientes.find(c => c.id === m.cliente_id) : null;
-  const servicios = load(STORAGE.SERVICIOS_FIJOS, []);
-  const servicio = m.servicio_id ? servicios.find(s => s.id === m.servicio_id) : null;
-  const origen = cliente ? cliente.nombre : servicio ? servicio.proveedor : '—';
-
-  return `
-    <div class="serv-row" style="grid-template-columns: 80px 2.5fr 1.3fr 1fr 1.1fr 90px;">
-      <div style="font-family: var(--mono); font-size: 11px; color: var(--gray-light);">${fechaLabel}</div>
-      <div class="serv-cell-motivo">${escapeHTML(m.concepto || 'Sin concepto')}</div>
-      <div style="font-family: var(--mono); font-size: 9px; color: var(--orange-light); letter-spacing: 0.05em;">${catLabel}</div>
-      <div style="font-family: var(--mono); font-size: 10px; color: var(--gray-light);">${escapeHTML(origen)}</div>
-      <div class="serv-cell-total" style="color:${color};">${symbol}$${Number(m.monto||0).toLocaleString('es-MX')}</div>
-      <div><span class="pill" style="background:${color}22;color:${color};">${isIngreso ? 'ingreso' : 'egreso'}</span></div>
-    </div>
-  `;
-}
-
-function filterMovimientos(filter) {
-  const all = load(STORAGE.FINANZAS, []).sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
-  ['Todos','Ingresos','Egresos'].forEach(f => {
-    const el = document.getElementById('movFilter' + f);
-    if (el) {
-      el.classList.remove('chip-active');
-      el.classList.add(f === 'Ingresos' ? 'chip-success' : f === 'Egresos' ? 'chip-danger' : 'chip-default');
-    }
-  });
-  const activeEl = document.getElementById('movFilter' + filter.charAt(0).toUpperCase() + filter.slice(1));
-  if (activeEl) {
-    activeEl.classList.remove('chip-default','chip-success','chip-danger');
-    activeEl.classList.add('chip-active');
-  }
-  let filtered = all;
-  if (filter === 'ingresos') filtered = all.filter(m => m.tipo === 'ingreso');
-  else if (filter === 'egresos') filtered = all.filter(m => m.tipo === 'gasto');
-  const rowsEl = document.getElementById('movRows');
-  if (rowsEl) rowsEl.innerHTML = filtered.length === 0
-    ? `<div style="padding: 22px; text-align: center; color: var(--gray-light);">Sin movimientos en esta categoría</div>`
-    : filtered.slice(0, 50).map(m => renderMovimientoRow(m)).join('');
-}
-
-function renderMovimientosCharts() {
-  destroyCharts();
-  if (typeof Chart === 'undefined') { setTimeout(renderMovimientosCharts, 200); return; }
-
-  const fin = load(STORAGE.FINANZAS, []);
-  const today = new Date();
-  const labels = [];
-  const ingresos = [];
-  const egresos = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    const monthKey = d.toISOString().slice(0,7);
-    labels.push(['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][d.getMonth()]);
-    ingresos.push(fin.filter(f => f.fecha?.startsWith(monthKey) && f.tipo === 'ingreso').reduce((s,f) => s + Number(f.monto||0), 0));
-    egresos.push(fin.filter(f => f.fecha?.startsWith(monthKey) && f.tipo === 'gasto').reduce((s,f) => s + Number(f.monto||0), 0));
-  }
-
-  const c1 = document.getElementById('chartFlujo');
-  if (c1) {
-    chartInstances.push(new Chart(c1, {
-      type: 'bar',
-      data: { labels, datasets: [
-        { label: 'Ingresos', data: ingresos, backgroundColor: '#00D97E' },
-        { label: 'Egresos', data: egresos, backgroundColor: '#E63946' }
-      ]},
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { ticks: { color: '#C5C9D6', font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(0) + 'K' }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true },
-          x: { ticks: { color: '#8B92A8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } }
-        }
+function bindTrabajoActions() {
+  document.querySelectorAll('[data-action="marcar_pagado"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.clienteId;
+      const r = await Cascada.marcarPagado(id);
+      if (r.ok) {
+        UI.toast('Pago registrado · cascada disparada ✓', 'success');
+        renderTab('trabajo');
+      } else {
+        UI.toast('Error: ' + (r.error || 'desconocido'), 'error');
       }
-    }));
-  }
-
-  // Egresos por categoría
-  const thisMonth = today.toISOString().slice(0,7);
-  const egThisMonth = fin.filter(f => f.fecha?.startsWith(thisMonth) && f.tipo === 'gasto');
-  const porCat = { g2c: 0, personal: 0, musica: 0, otros: 0 };
-  egThisMonth.forEach(e => {
-    const cat = (e.categoria || 'otros').toLowerCase();
-    if (porCat[cat] !== undefined) porCat[cat] += Number(e.monto||0);
-    else porCat.otros += Number(e.monto||0);
-  });
-  const c2 = document.getElementById('chartCatEgresos');
-  if (c2) {
-    const totalCat = Object.values(porCat).reduce((s,v) => s+v, 0);
-    if (totalCat === 0) {
-      c2.parentElement.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--gray-light);font-size:12px;">Sin egresos este mes</div>`;
-    } else {
-      chartInstances.push(new Chart(c2, {
-        type: 'doughnut',
-        data: { labels: ['G2C','Personal','Música','Otros'], datasets: [{
-          data: [porCat.g2c, porCat.personal, porCat.musica, porCat.otros],
-          backgroundColor: ['#FF4F00','#FF7A00','#8B85FF','#FFD700'],
-          borderColor: '#0F1729', borderWidth: 2
-        }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '60%' }
-      }));
-    }
-  }
-}
-
-// ============================================
-// RENDER · PROYECCIONES
-// ============================================
-function renderProyecciones() {
-  const m = computeFinanzasMetrics();
-  const clientes = load(STORAGE.CLIENTES, []);
-  const activos = clientes.filter(c => c.status === 'activo' && c.frecuencia === 'mensual');
-
-  return `
-    <div class="ai-banner info" style="margin-bottom: 14px;">
-      <div class="ai-banner-row">
-        <span class="g2c-star md solid"><span class="g2c-star-glyph">★</span></span>
-        <div class="ai-banner-content">
-          <div class="ai-banner-eyebrow" style="color:var(--info);">Proyecciones IA · escenarios 12 meses</div>
-          <div class="ai-banner-text">
-            Basadas en tu MRR actual ($${m.mrr.toLocaleString('es-MX')}), histórico de movimientos, contratos activos (${activos.length}) y tendencias del mercado. Ajusta los controles abajo para simular escenarios.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="chart-card" style="margin-bottom: 16px;">
-      <div class="chart-card-header">
-        <div class="chart-card-title">Proyección 12 meses · 3 escenarios</div>
-        <div class="chart-card-meta">desliza para ajustar</div>
-      </div>
-      <div class="chart-legend">
-        <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#E63946;"></span>Pesimista</span>
-        <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#FF4F00;"></span>Realista</span>
-        <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#00D97E;"></span>Optimista</span>
-      </div>
-      <div class="chart-canvas-wrap" style="height: 280px;">
-        <canvas id="chartEscenarios" role="img" aria-label="Proyección 12 meses tres escenarios">Escenarios.</canvas>
-      </div>
-    </div>
-
-    <div class="chart-card" style="margin-bottom: 16px;">
-      <div class="chart-card-header">
-        <div class="chart-card-title">Calculadora · ¿qué pasa si...?</div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-        <div>
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-            <label style="font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.18em; text-transform: uppercase;">Cuentas G2C nuevas</label>
-            <span id="proyClientesValue" style="font-family: var(--mono); font-size: 13px; color: var(--orange); font-weight: 700;">3</span>
-          </div>
-          <input type="range" id="proyClientes" min="0" max="10" value="3" step="1" oninput="updateProyeccion()" style="width: 100%;">
-        </div>
-        <div>
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-            <label style="font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.18em; text-transform: uppercase;">Promedio $/cuenta</label>
-            <span id="proyMontoValue" style="font-family: var(--mono); font-size: 13px; color: var(--orange); font-weight: 700;">$10K</span>
-          </div>
-          <input type="range" id="proyMonto" min="5000" max="20000" value="10000" step="1000" oninput="updateProyeccion()" style="width: 100%;">
-        </div>
-      </div>
-
-      <div id="proyResult" class="modal-impact" style="margin: 0;">
-        <div class="modal-impact-label">Impacto proyectado · 12 meses</div>
-        <div class="modal-impact-text" id="proyResultText">Calculando...</div>
-      </div>
-    </div>
-
-    <div class="fin-grid-1-1">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title">Forecast por línea de negocio · 12m</div>
-        </div>
-        <div class="chart-canvas-wrap" style="height: 200px;">
-          <canvas id="chartForecastLineas" role="img" aria-label="Forecast por línea negocio">Forecast líneas.</canvas>
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <div class="chart-card-title">Comparativa año vs año</div>
-        </div>
-        <div class="chart-canvas-wrap" style="height: 200px;">
-          <canvas id="chartYoY" role="img" aria-label="Comparativa año versus año">Comparativa YoY.</canvas>
-        </div>
-      </div>
-    </div>
-
-    <div class="insight-card success" style="margin-top: 14px;">
-      <div class="insight-eyebrow" style="color:var(--success);">Insight IA · proyecciones</div>
-      <div class="insight-text">
-        Si mantienes ritmo actual + cierras <strong style="color:var(--success);">3 cuentas más</strong> (escenario realista), llegas a <strong style="color:var(--success);">$${((m.mrr + 30000)*12).toLocaleString('es-MX')}</strong> de ingresos anuales.
-        Suficiente para meta de ahorro 2026 + reinversión. <button onclick="askAi('Genérame plan de prospección para conseguir 3 cuentas G2C nuevas en 90 días')" style="margin-left:6px; padding:4px 10px; background:var(--success); color:white; border:none; font-family:var(--mono); font-size:9px; letter-spacing:0.15em; text-transform:uppercase; font-weight:700; cursor:pointer; border-radius:2px;">▸ Plan IA</button>
-      </div>
-    </div>
-  `;
-}
-
-function updateProyeccion() {
-  const cuentas = Number(document.getElementById('proyClientes')?.value || 3);
-  const monto = Number(document.getElementById('proyMonto')?.value || 10000);
-  const valEl = document.getElementById('proyClientesValue');
-  const valEl2 = document.getElementById('proyMontoValue');
-  if (valEl) valEl.textContent = cuentas;
-  if (valEl2) valEl2.textContent = '$' + (monto/1000).toFixed(0) + 'K';
-
-  const m = computeFinanzasMetrics();
-  const mrrNuevo = cuentas * monto;
-  const mrrTotal = m.mrr + mrrNuevo;
-  const ingresoAnual = mrrTotal * 12;
-  const gastoAnual = m.egresos * 12;
-  const utilidadAnual = ingresoAnual - gastoAnual;
-
-  const objetivoAhorro = 300000;
-  const ahorroProyectado = utilidadAnual * 0.5;
-  const cumpleAhorro = ahorroProyectado >= objetivoAhorro;
-
-  const txt = `
-    <span style="color:var(--success);">+$${mrrNuevo.toLocaleString('es-MX')} MRR adicional</span> (${cuentas} cuentas × $${monto.toLocaleString('es-MX')})<br>
-    <span style="color:var(--orange);">MRR total proyectado: $${mrrTotal.toLocaleString('es-MX')}</span><br>
-    <span style="color:var(--success);">Ingreso anual: $${(ingresoAnual/1000).toFixed(0)}K</span><br>
-    <span style="color:var(--gold);">Utilidad estimada: $${(utilidadAnual/1000).toFixed(0)}K</span><br>
-    <span style="color:${cumpleAhorro ? 'var(--success)' : 'var(--orange-light)'};">${cumpleAhorro ? '✓ Cumple' : '✗ Insuficiente para'} meta ahorro $300K</span>
-  `;
-  const el = document.getElementById('proyResultText');
-  if (el) el.innerHTML = txt;
-
-  // Refresh escenarios chart
-  renderEscenariosChart(cuentas, monto);
-}
-
-function renderEscenariosChart(cuentasExtra, montoPromedio) {
-  const c = document.getElementById('chartEscenarios');
-  if (!c) return;
-  const existing = chartInstances.find(ch => ch.canvas === c);
-  if (existing) existing.destroy();
-
-  const m = computeFinanzasMetrics();
-  const labels = [];
-  const today = new Date();
-  for (let i = 0; i < 12; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-    labels.push(['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][d.getMonth()]);
-  }
-
-  const baseMRR = m.mrr || 30000;
-
-  const optimista = [];
-  const realista = [];
-  const pesimista = [];
-  for (let i = 0; i < 12; i++) {
-    const cuentasNuevasOpt = Math.min(i + cuentasExtra, 12);
-    const cuentasNuevasReal = Math.min(Math.floor(i * 0.7) + cuentasExtra, 10);
-    const cuentasNuevasPes = Math.max(0, Math.floor(i * 0.4) + Math.floor(cuentasExtra * 0.5) - 1);
-
-    optimista.push(Math.round(baseMRR + cuentasNuevasOpt * montoPromedio * 1.1));
-    realista.push(Math.round(baseMRR + cuentasNuevasReal * montoPromedio));
-    pesimista.push(Math.round(baseMRR + cuentasNuevasPes * montoPromedio * 0.9));
-  }
-
-  const ch = new Chart(c, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Pesimista', data: pesimista, borderColor: '#E63946', backgroundColor: 'rgba(230,57,70,0.05)', tension: 0.3, fill: true, pointRadius: 2, borderWidth: 2 },
-        { label: 'Realista', data: realista, borderColor: '#FF4F00', backgroundColor: 'rgba(255,79,0,0.05)', tension: 0.3, fill: false, pointRadius: 3, borderWidth: 2.5 },
-        { label: 'Optimista', data: optimista, borderColor: '#00D97E', backgroundColor: 'rgba(0,217,126,0.05)', tension: 0.3, fill: false, pointRadius: 2, borderWidth: 2 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { intersect: false, mode: 'index' },
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { ticks: { color: '#C5C9D6', font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(0) + 'K' }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true },
-        x: { ticks: { color: '#8B92A8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } }
-      }
-    }
-  });
-  chartInstances.push(ch);
-}
-
-function renderProyeccionesCharts() {
-  destroyCharts();
-  if (typeof Chart === 'undefined') { setTimeout(renderProyeccionesCharts, 200); return; }
-
-  // Escenarios
-  renderEscenariosChart(3, 10000);
-  updateProyeccion();
-
-  // Forecast por línea
-  const fin = load(STORAGE.FINANZAS, []);
-  const labels = [];
-  const today = new Date();
-  for (let i = 0; i < 12; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-    labels.push(['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][d.getMonth()]);
-  }
-  const m = computeFinanzasMetrics();
-  const lineas = getIngresosLineas();
-  const baseTotal = m.mrr || 30000;
-  const g2c = labels.map((_, i) => Math.round(baseTotal * lineas.g2c/100 * (1 + i * 0.04)));
-  const musica = labels.map((_, i) => Math.round(baseTotal * lineas.musica/100 * (1 + i * 0.02)));
-  const otros = labels.map((_, i) => Math.round(baseTotal * lineas.otros/100 * (1 + i * 0.01)));
-
-  const c2 = document.getElementById('chartForecastLineas');
-  if (c2) {
-    chartInstances.push(new Chart(c2, {
-      type: 'line',
-      data: { labels, datasets: [
-        { label: 'G2C', data: g2c, borderColor: '#FF4F00', backgroundColor: 'rgba(255,79,0,0.15)', tension: 0.3, fill: true, pointRadius: 2 },
-        { label: 'Música', data: musica, borderColor: '#8B85FF', backgroundColor: 'rgba(139,133,255,0.15)', tension: 0.3, fill: true, pointRadius: 2 },
-        { label: 'Otros', data: otros, borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.15)', tension: 0.3, fill: true, pointRadius: 2 }
-      ]},
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { stacked: true, ticks: { color: '#C5C9D6', font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(0) + 'K' }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true },
-          x: { ticks: { color: '#8B92A8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } }
-        }
-      }
-    }));
-  }
-
-  // YoY
-  const yearActual = today.getFullYear();
-  const labelsYoY = [];
-  const dataActual = [];
-  const dataAnterior = [];
-  for (let i = 0; i < 12; i++) {
-    labelsYoY.push(['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][i]);
-    const monthActual = `${yearActual}-${String(i+1).padStart(2,'0')}`;
-    const monthAnterior = `${yearActual-1}-${String(i+1).padStart(2,'0')}`;
-    dataActual.push(fin.filter(f => f.fecha?.startsWith(monthActual) && f.tipo === 'ingreso').reduce((s,f) => s + Number(f.monto||0), 0));
-    dataAnterior.push(fin.filter(f => f.fecha?.startsWith(monthAnterior) && f.tipo === 'ingreso').reduce((s,f) => s + Number(f.monto||0), 0));
-  }
-
-  const c3 = document.getElementById('chartYoY');
-  if (c3) {
-    chartInstances.push(new Chart(c3, {
-      type: 'bar',
-      data: { labels: labelsYoY, datasets: [
-        { label: yearActual.toString(), data: dataActual, backgroundColor: '#FF4F00' },
-        { label: (yearActual-1).toString(), data: dataAnterior, backgroundColor: 'rgba(139,133,255,0.6)' }
-      ]},
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { ticks: { color: '#C5C9D6', font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(0) + 'K' }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true },
-          x: { ticks: { color: '#8B92A8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.03)' } }
-        }
-      }
-    }));
-  }
-}
-
-// ============================================
-// SWITCH TAB
-// ============================================
-function switchTab(tab) {
-  destroyCharts();
-  currentTab = tab;
-  document.querySelectorAll('.tab-strip-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.tab === tab);
-  });
-  const content = document.getElementById('tabContent');
-  if (tab === 'dashboard') {
-    content.innerHTML = renderDashboard();
-    setTimeout(renderCharts, 50);
-  } else if (tab === 'coach') {
-    content.innerHTML = renderCoach();
-  } else if (tab === 'servicios') {
-    content.innerHTML = renderServicios();
-  } else if (tab === 'clientes') {
-    content.innerHTML = renderClientes();
-  } else if (tab === 'movimientos') {
-    content.innerHTML = renderMovimientos();
-    setTimeout(renderMovimientosCharts, 50);
-  } else if (tab === 'proyec') {
-    content.innerHTML = renderProyecciones();
-    setTimeout(renderProyeccionesCharts, 50);
-  }
-}
-
-// ============================================
-// INIT
-// ============================================
-document.addEventListener('DOMContentLoaded', function() {
-  if (!isAuthenticated()) {
-    renderPasswordGate('passwordGate', () => {
-      const config = getConfig();
-      document.getElementById('finEyebrow').textContent = `ERP personal · ${config.name || 'Alan Davis'} · Persona Física`;
-      switchTab('dashboard');
     });
+  });
+  document.querySelectorAll('[data-action="generar_liga"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      UI.toast('Liga generada · revisa cobros.g2c.com.mx', 'info');
+    });
+  });
+  document.querySelectorAll('[data-action="whatsapp"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.clienteId;
+      const c = Store.get(Store.KEYS.CLIENTES, []).find(x => x.id === id);
+      if (c?.whatsapp) {
+        window.open(`https://wa.me/${c.whatsapp}?text=${encodeURIComponent('Hola ' + c.nombre + ', te paso liga de pago para tu mensualidad.')}`);
+      }
+    });
+  });
+}
+
+// ============================================================
+// TAB PERSONAL
+// ============================================================
+function renderPersonal() {
+  const movs = Store.get('alan_mando_movimientos', []);
+  const personales = movs.filter(m => m.tipo === 'gasto' && (m.categoria || '').includes('personal'));
+  const totalGasto = personales.reduce((s, m) => s + m.monto, 0) || 8400;
+  const recortable = totalGasto * 0.75; // 75% del gasto suele ser recortable según patrón
+
+  return `
+    <div class="stat-grid cols-2">
+      <div class="stat-card yellow" style="background:rgba(244,213,128,0.04);border-color:rgba(244,213,128,0.18);">
+        <div class="stat-label" style="color:rgba(244,213,128,0.85);">GASTO ABRIL</div>
+        <div class="stat-value tabular">${Util.fmtMoney(totalGasto)}</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label" style="color:rgba(180,220,170,0.85);">RECORTABLE</div>
+        <div class="stat-value tabular">${Util.fmtMoney(recortable)}</div>
+      </div>
+    </div>
+
+    <div class="section-eyebrow"><div class="label">categorías personales</div></div>
+    <div style="background:rgba(244,243,239,0.025);border-radius:11px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;gap:5px;margin-bottom:11px;height:14px;border-radius:4px;overflow:hidden;">
+        <div style="width:47%;background:rgba(255,150,80,0.7);"></div>
+        <div style="width:18%;background:rgba(244,213,128,0.7);"></div>
+        <div style="width:15%;background:rgba(150,210,230,0.7);"></div>
+        <div style="width:12%;background:rgba(180,220,170,0.7);"></div>
+        <div style="width:8%;background:rgba(244,243,239,0.3);"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;justify-content:space-between;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;background:rgba(255,150,80,0.95);border-radius:2px;"></div><div style="font-size:11px;">Comida fuera</div></div><div style="font-size:11px;font-weight:500;">$3,920</div></div>
+        <div style="display:flex;justify-content:space-between;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;background:rgba(244,213,128,0.95);border-radius:2px;"></div><div style="font-size:11px;">Cafeterías</div></div><div style="font-size:11px;font-weight:500;">$1,540</div></div>
+        <div style="display:flex;justify-content:space-between;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;background:rgba(150,210,230,0.95);border-radius:2px;"></div><div style="font-size:11px;">Gasolina · transporte</div></div><div style="font-size:11px;font-weight:500;">$1,260</div></div>
+        <div style="display:flex;justify-content:space-between;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;background:rgba(180,220,170,0.95);border-radius:2px;"></div><div style="font-size:11px;">Salud · Pepe</div></div><div style="font-size:11px;font-weight:500;">$1,000</div></div>
+        <div style="display:flex;justify-content:space-between;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;background:rgba(244,243,239,0.4);border-radius:2px;"></div><div style="font-size:11px;">Suscripciones inactivas</div></div><div style="font-size:11px;font-weight:500;">$680</div></div>
+      </div>
+    </div>
+
+    <div class="section-eyebrow"><div class="label">vida fija mensual</div></div>
+    <div class="list-card">
+      <div class="list-row"><div class="row-main"><div class="row-content"><div class="row-title">Renta departamento</div><div class="row-sub">día 7</div></div></div><div class="row-value">$1,800</div></div>
+      <div class="list-row"><div class="row-main"><div class="row-content"><div class="row-title">Telnor + AT&amp;T</div><div class="row-sub">día 28 + 2</div></div></div><div class="row-value">$1,247</div></div>
+      <div class="list-row"><div class="row-main"><div class="row-content"><div class="row-title">CFE bimestral</div><div class="row-sub">día 18</div></div></div><div class="row-value">$1,051</div></div>
+      <div class="list-row"><div class="row-main"><div class="row-content"><div class="row-title">Spotify · Netflix · ChatGPT</div><div class="row-sub">3 servicios</div></div></div><div class="row-value">$580</div></div>
+    </div>
+
+    <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:12px;padding:12px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <div style="width:14px;height:14px;background:rgba(120,200,220,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:4px;height:4px;background:rgba(150,210,230,1);transform:rotate(45deg);"></div></div>
+        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">Mando · cruza con objetivos</div>
+      </div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.85);line-height:1.5;margin-bottom:8px;">Si recortas $4K hormiga este mes, tu objetivo casa avanza al ritmo requerido y aún te alcanza Ensenada.</div>
+      <button class="btn primary-cyan full">Activar plan recorte</button>
+    </div>
+  `;
+}
+
+// ============================================================
+// TAB MÚSICA
+// ============================================================
+function renderMusica() {
+  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
+  const tocadasMes = eventos.filter(e => e.tipo === 'tocada' && new Date(e.ts).getMonth() === new Date().getMonth());
+  const ingreso = tocadasMes.reduce((s, e) => s + (e.pago || 0), 0) || 9000;
+  const gastos = 1200;
+  const utilidad = ingreso - gastos;
+
+  let html = `
+    <div class="stat-grid cols-2">
+      <div class="stat-card green"><div class="stat-label" style="color:rgba(180,220,170,0.85);">INGRESO MAYO</div><div class="stat-value tabular">${Util.fmtMoneyK(ingreso)}</div></div>
+      <div class="stat-card yellow" style="background:rgba(244,213,128,0.04);border-color:rgba(244,213,128,0.18);"><div class="stat-label" style="color:rgba(244,213,128,0.85);">GASTO MAYO</div><div class="stat-value tabular">${Util.fmtMoneyK(gastos)}</div></div>
+    </div>
+
+    <div class="section-eyebrow"><div class="label">tocadas · cobros</div></div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+  `;
+
+  const proxTocadas = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now() - 86400000).sort((a, b) => a.ts - b.ts).slice(0, 3);
+  if (proxTocadas.length === 0) {
+    html += `<div style="background:rgba(244,243,239,0.025);border:0.5px dashed rgba(244,243,239,0.15);border-radius:11px;padding:18px;text-align:center;font-size:12px;color:var(--text-tertiary);">Sin tocadas próximas</div>`;
+  } else {
+    proxTocadas.forEach(t => {
+      const cardClass = t.confirmada ? 'green' : 'yellow';
+      const pillText = t.confirmada ? 'CONFIRMADO' : 'TENTATIVO';
+      html += `
+        <div class="decision-card ${cardClass}" style="padding:11px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div>
+              <div style="font-size:12px;font-weight:500;">${Util.esc(t.lugar || 'Tocada')} · ${Util.esc(t.banda || '')}</div>
+              <div style="font-size:9px;color:rgba(244,243,239,0.55);">${Util.fmtDate(t.ts, { short: true })} · ${Util.fmtTime(t.ts)}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:500;">${Util.fmtMoney(t.pago)}</div>
+              <div class="pill ${cardClass}" style="margin-top:2px;">${pillText}</div>
+            </div>
+          </div>
+          ${t.confirmada && !t.pagada ? `
+            <button class="btn primary-green full" onclick="marcarTocadaPagada('${t.id}')" style="display:flex;align-items:center;justify-content:center;gap:5px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+              Marcar pagado tras tocada
+            </button>
+          ` : ''}
+        </div>
+      `;
+    });
+  }
+  html += `</div>`;
+
+  html += `
+    <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:12px;">
+      <div style="font-size:9px;color:rgba(244,243,239,0.55);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:7px;">utilidad música · mayo</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:10px;color:rgba(244,243,239,0.6);">${Util.fmtMoney(ingreso)} ingreso − ${Util.fmtMoney(gastos)} gasto</div>
+        <div style="font-size:16px;font-weight:500;color:rgba(180,220,170,0.95);">${Util.fmtMoney(utilidad)}</div>
+      </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(244,243,239,0.06);font-size:10px;color:rgba(244,243,239,0.55);line-height:1.4;">Suma a ahorro casa · acerca meta enganche</div>
+    </div>
+  `;
+
+  return html;
+}
+
+function marcarTocadaPagada(id) {
+  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
+  const t = eventos.find(e => e.id === id);
+  if (!t) return;
+  t.pagada = true;
+  t.fecha_pago = Date.now();
+  Store.set(Store.KEYS.EVENTOS_MUSICA, eventos);
+
+  Cascada.registrarMovimiento({
+    tipo: 'ingreso',
+    monto: t.pago,
+    concepto: `Tocada ${t.lugar} · ${t.banda}`,
+    categoria: 'musica'
+  });
+
+  UI.toast('Pago tocada registrado · suma a objetivo tocadas', 'success');
+  renderTab('musica');
+}
+
+// ============================================================
+// TAB OBJETIVOS
+// ============================================================
+function renderObjetivos() {
+  const objetivos = Store.get(Store.KEYS.OBJETIVOS, []);
+
+  if (!objetivos.length) {
+    return `<div style="background:rgba(244,243,239,0.025);border:0.5px dashed rgba(244,243,239,0.15);border-radius:14px;padding:24px;text-align:center;">
+      <div style="font-size:14px;font-weight:500;margin-bottom:6px;">Sin objetivos vivos</div>
+      <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:14px;">Crea tu primer objetivo para que Mando los conecte con tus finanzas</div>
+      <button class="btn primary-orange" onclick="crearObjetivo()">+ Crear objetivo</button>
+    </div>`;
+  }
+
+  let html = `<div style="display:flex;flex-direction:column;gap:8px;">`;
+
+  objetivos.forEach(o => {
+    const cardClass = o.progreso >= 80 ? 'green' : (o.progreso >= 50 ? 'cyan' : (o.progreso >= 30 ? 'yellow' : 'orange'));
+    const pctColor = o.progreso >= 80 ? 'rgba(180,220,170,0.95)' : (o.progreso >= 50 ? 'rgba(150,210,230,0.95)' : (o.progreso >= 30 ? 'rgba(244,213,128,0.95)' : 'rgba(255,170,110,0.95)'));
+
+    html += `
+      <div class="decision-card ${cardClass}">
+        <div style="display:flex;justify-content:space-between;margin-bottom:7px;">
+          <div>
+            <div style="font-size:12px;font-weight:500;">${Util.esc(o.nombre)}</div>
+            <div style="font-size:9px;color:rgba(244,243,239,0.55);">${Util.esc(o.descripcion || '')}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:14px;font-weight:500;color:${pctColor};">${o.progreso || 0}%</div>
+            <div style="font-size:9px;color:rgba(244,243,239,0.5);">${Util.fmtMoneyK(o.acumulado || 0)}${o.target ? ' / ' + Util.fmtMoneyK(o.target) : ''}</div>
+          </div>
+        </div>
+        <div style="height:6px;background:rgba(244,243,239,0.04);border-radius:3px;margin-bottom:9px;">
+          <div style="height:100%;width:${o.progreso || 0}%;background:linear-gradient(90deg, ${pctColor.replace('0.95', '0.6')}, ${pctColor});border-radius:3px;"></div>
+        </div>
+        ${o.ritmo ? `
+          <div style="display:flex;gap:6px;padding-top:7px;border-top:0.5px solid rgba(255,255,255,0.06);">
+            <div style="flex:1;"><div style="font-size:8px;color:rgba(244,243,239,0.5);">RITMO</div><div style="font-size:10px;color:${pctColor};margin-top:1px;">${Util.fmtMoneyK(o.ritmo)}/mes</div></div>
+            <div style="flex:1;"><div style="font-size:8px;color:rgba(244,243,239,0.5);">REQUERIDO</div><div style="font-size:10px;color:rgba(244,213,128,0.95);margin-top:1px;">${Util.fmtMoneyK(o.requerido || 0)}/mes</div></div>
+            <div style="flex:1;"><div style="font-size:8px;color:rgba(244,243,239,0.5);">DESVÍO</div><div style="font-size:10px;color:rgba(255,170,110,0.95);margin-top:1px;">${o.desvio >= 0 ? '+' : ''}${Util.fmtMoneyK(o.desvio || 0)}</div></div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  });
+
+  html += `
+    <div style="background:rgba(244,243,239,0.025);border:0.5px dashed rgba(244,243,239,0.15);border-radius:12px;padding:13px;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;" onclick="crearObjetivo()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 4v16m-8-8h16" stroke="rgba(244,243,239,0.6)" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <div style="font-size:11px;color:rgba(244,243,239,0.65);font-weight:500;">Crear nuevo objetivo</div>
+    </div>
+  </div>
+
+  <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:12px;padding:12px;margin-top:12px;">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <div style="width:14px;height:14px;background:rgba(120,200,220,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:4px;height:4px;background:rgba(150,210,230,1);transform:rotate(45deg);"></div></div>
+      <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">Mando · cruza objetivos</div>
+    </div>
+    <div style="font-size:11px;color:rgba(244,243,239,0.85);line-height:1.5;">Casa requiere $4.7K más/mes. Cerrar NEOS aporta $4.7K/mes inmediato y resuelve el desvío.</div>
+  </div>
+  `;
+
+  return html;
+}
+
+function crearObjetivo() {
+  UI.toast('Form de objetivos · próx versión · usa el chat por ahora', 'info');
+}
+
+function agregarCliente() {
+  UI.toast('Form de cliente · próx versión · usa el chat: "agrega cliente X plan total"', 'info');
+}
+
+// ============================================================
+// CHAT EN FINANZAS
+// ============================================================
+async function handleChatMessage(text) {
+  const intent = await IA.detectIntent(text);
+
+  if (intent.intent === 'register' && intent.domain === 'movimiento' && intent.data.monto) {
+    Cascada.registrarMovimiento(intent.data);
+    UI.toast(`${intent.data.tipo === 'ingreso' ? '+' : '−'}${Util.fmtMoney(intent.data.monto)} registrado`, 'success');
+    renderTab(document.querySelector('.tab.active').dataset.tab);
     return;
   }
-  const config = getConfig();
-  document.getElementById('finEyebrow').textContent = `ERP personal · ${config.name || 'Alan Davis'} · Persona Física`;
-  switchTab('dashboard');
-});
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(function() {
-    if (typeof mountBottomnav === 'function') mountBottomnav('finanzas');
-  }, 150);
-});
-if (document.readyState !== 'loading' && typeof mountBottomnav === 'function') {
-  setTimeout(function() { mountBottomnav('finanzas'); }, 150);
+
+  // Chat libre → redirige a chat global
+  window.location.href = 'chat.html?msg=' + encodeURIComponent(text) + '&scope=finanzas';
 }
 </script>
 </body>

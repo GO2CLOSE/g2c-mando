@@ -2,562 +2,297 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>★ Chat IA · Historial · G2C Mando</title>
-<meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#FF4F00">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito+Sans:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F1419">
+<title>Chat · Mando</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
-<style>
-.layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 18px;
-}
-
-.panel {
-  background: var(--dark-2);
-  border: 1px solid rgba(255,79,0,0.15);
-  border-radius: 4px;
-  padding: 18px;
-  min-height: 200px;
-}
-.panel-header {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--orange);
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255,79,0,0.15);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.panel-header .title { display: flex; align-items: center; gap: 8px; }
-.panel-header .title::before { content:'★'; color: var(--orange); }
-.panel-header .count {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--white);
-  background: rgba(255,79,0,0.1);
-  padding: 2px 8px;
-  border-radius: 2px;
-  letter-spacing: 0.1em;
-}
-
-.empty {
-  padding: 32px 16px;
-  text-align: center;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--gray);
-  letter-spacing: 0.15em;
-}
-
-/* Hero · search */
-.hero {
-  background: linear-gradient(135deg, rgba(255,79,0,0.06), var(--dark-2) 50%, rgba(255,122,0,0.04));
-  border: 1px solid rgba(255,79,0,0.2);
-  border-radius: 4px;
-  padding: 20px 22px;
-  margin-bottom: 18px;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.hero-search {
-  flex: 1;
-  min-width: 220px;
-  padding: 12px 16px;
-  background: var(--dark);
-  border: 1px solid rgba(255,79,0,0.2);
-  color: var(--white);
-  font-family: var(--body);
-  font-size: 13px;
-  border-radius: 2px;
-}
-.hero-search:focus { outline: none; border-color: var(--orange); }
-.hero-actions { display: flex; gap: 6px; flex-shrink: 0; }
-
-/* Historial */
-.history-list { display: flex; flex-direction: column; gap: 6px; max-height: 600px; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; scrollbar-color: rgba(255,79,0,0.3) transparent; }
-.history-list::-webkit-scrollbar { width: 4px; }
-.history-list::-webkit-scrollbar-thumb { background: rgba(255,79,0,0.3); border-radius: 2px; }
-.history-item {
-  padding: 10px 12px;
-  background: rgba(0,0,0,0.25);
-  border: 1px solid transparent;
-  border-left: 2px solid rgba(255,79,0,0.4);
-  border-radius: 2px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-}
-.history-item:hover {
-  background: rgba(255,79,0,0.05);
-  border-left-color: var(--orange);
-}
-.history-item-title {
-  font-size: 13px;
-  color: var(--white);
-  line-height: 1.3;
-  margin-bottom: 4px;
-  padding-right: 24px;
-  word-break: break-word;
-}
-.history-item-meta {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--gray);
-  letter-spacing: 0.1em;
-}
-.history-item-delete {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: transparent;
-  border: none;
-  color: var(--gray);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 2px 6px;
-  opacity: 0;
-  transition: all 0.2s;
-}
-.history-item:hover .history-item-delete { opacity: 1; }
-.history-item-delete:hover { color: var(--danger); }
-
-/* Skills · recuerdos */
-.skills-list { display: flex; flex-direction: column; gap: 8px; }
-.skill-item {
-  padding: 12px 14px;
-  background: rgba(0,0,0,0.25);
-  border-left: 2px solid var(--purple);
-  border-radius: 2px;
-  position: relative;
-}
-.skill-item.priority {
-  border-left-color: var(--orange);
-  background: rgba(255,79,0,0.05);
-}
-.skill-text {
-  color: var(--white);
-  font-size: 13px;
-  line-height: 1.5;
-  padding-right: 30px;
-}
-.skill-meta {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--gray);
-  letter-spacing: 0.1em;
-  margin-top: 4px;
-}
-.skill-delete {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: transparent;
-  border: none;
-  color: var(--gray);
-  cursor: pointer;
-  font-size: 14px;
-}
-.skill-delete:hover { color: var(--danger); }
-.skill-add {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.skill-input {
-  flex: 1;
-  padding: 8px 12px;
-  background: var(--dark);
-  border: 1px solid rgba(255,79,0,0.2);
-  color: var(--white);
-  font-family: var(--body);
-  font-size: 12px;
-  border-radius: 2px;
-}
-.skill-input:focus { outline: none; border-color: var(--orange); }
-
-/* Stats grid */
-.stat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.stat-mini {
-  background: rgba(0,0,0,0.3);
-  border: 1px solid rgba(255,79,0,0.1);
-  border-left: 2px solid var(--orange);
-  border-radius: 3px;
-  padding: 10px 12px;
-}
-.stat-mini-label {
-  font-family: var(--mono);
-  font-size: 8px;
-  color: var(--gray);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-.stat-mini-value {
-  font-family: var(--display);
-  font-size: 18px;
-  color: var(--white);
-  line-height: 1;
-}
-.stat-mini-value .accent { color: var(--orange); }
-.stat-mini-trend {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--gray);
-  margin-top: 3px;
-}
-
-.context-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
-}
-.context-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background: rgba(0,0,0,0.25);
-  border-radius: 2px;
-  border-left: 2px solid var(--orange);
-}
-.context-text {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--white);
-  letter-spacing: 0.05em;
-}
-.context-count {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--orange);
-  font-weight: 700;
-}
-
-/* Top words */
-.word-cloud {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
-}
-.word-tag {
-  padding: 6px 12px;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid rgba(255,79,0,0.15);
-  border-radius: 2px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--white);
-  letter-spacing: 0.05em;
-}
-.word-tag .count {
-  color: var(--orange);
-  font-weight: 700;
-  margin-left: 6px;
-}
-
-/* Actions log */
-.actions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 400px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-.action-item {
-  padding: 10px 12px;
-  background: rgba(0,0,0,0.25);
-  border-left: 2px solid var(--orange);
-  border-radius: 2px;
-}
-.action-item.musica { border-left-color: var(--purple); }
-.action-item.calendario { border-left-color: var(--info); }
-.action-item.finanzas { border-left-color: var(--success); }
-.action-item.youtube { border-left-color: var(--danger); }
-.action-time { font-family: var(--mono); font-size: 9px; color: var(--gray); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 3px; }
-.action-text { font-size: 12px; color: var(--white); line-height: 1.4; }
-.action-module { font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.15em; text-transform: uppercase; margin-top: 3px; }
-
-@media (max-width: 1024px) {
-  .layout { grid-template-columns: 1fr; }
-}
-</style>
 </head>
 <body>
-<a href="index.html" id="floatBack" style="position:fixed;top:10px;left:10px;z-index:99999;display:inline-flex;align-items:center;gap:5px;padding:8px 12px;background:var(--orange);color:white;text-decoration:none;font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;border-radius:3px;box-shadow:0 4px 12px rgba(255,79,0,0.4);">
-  <span style="font-size:14px;line-height:1;">‹</span>
-  <span>Mando</span>
-</a>
 
-<main class="container">
-  
-  <!-- Hero acceso rápido -->
-  <div class="hero">
-    <div style="font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:0.25em;text-transform:uppercase;">▸ Volver al chat</div>
-    <input type="text" class="hero-search" id="historySearch" placeholder="Buscar en historial..." oninput="filterHistory()">
-    <div class="hero-actions">
-      <a href="index.html" class="btn btn-primary">+ Nueva conversación</a>
+<div id="status-bar"></div>
+
+<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <a href="index.html" style="width:30px;height:30px;background:rgba(244,243,239,0.04);border:0.5px solid rgba(244,243,239,0.08);border-radius:9px;display:flex;align-items:center;justify-content:center;text-decoration:none;color:white;">←</a>
+    <div class="mando-avatar" style="width:30px;height:30px;">
+      <div class="core">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+      </div>
+      <div class="ring-1"></div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:500;">Mando</div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <div style="width:5px;height:5px;background:rgba(180,220,170,0.95);border-radius:50%;"></div>
+        <div style="font-size:9px;color:rgba(244,243,239,0.55);" id="model-indicator">Sonnet 4.5</div>
+      </div>
     </div>
   </div>
-
-  <div class="layout">
-    <!-- HISTORIAL -->
-    <div class="panel">
-      <div class="panel-header">
-        <div class="title">Historial de chats</div>
-        <span class="count" id="convCount">0</span>
-      </div>
-      <div class="history-list" id="historyList"></div>
-    </div>
-
-    <!-- SKILLS / RECUERDOS -->
-    <div class="panel">
-      <div class="panel-header">
-        <div class="title">Skills · recuerdos guardados</div>
-        <span class="count" id="skillsCount">0</span>
-      </div>
-      <div class="skill-add">
-        <input type="text" class="skill-input" id="newSkill" placeholder="Agregar recuerdo · 'Mi banda toca cumbia los sábados'..." onkeydown="if(event.key==='Enter') addSkill()">
-        <button class="btn btn-primary" onclick="addSkill()" style="padding: 8px 12px;">+ Add</button>
-      </div>
-      <div class="skills-list" id="skillsList"></div>
-    </div>
-
-    <!-- ESTADO + STATS + CONTEXTO -->
-    <div class="panel">
-      <div class="panel-header">
-        <div class="title">Estado del sistema</div>
-      </div>
-      <div class="stat-grid">
-        <div class="stat-mini">
-          <div class="stat-mini-label">Conversaciones</div>
-          <div class="stat-mini-value" id="statConvs"><span class="accent">0</span></div>
-          <div class="stat-mini-trend">total</div>
-        </div>
-        <div class="stat-mini">
-          <div class="stat-mini-label">Mensajes</div>
-          <div class="stat-mini-value" id="statMsgs"><span class="accent">0</span></div>
-          <div class="stat-mini-trend">enviados</div>
-        </div>
-        <div class="stat-mini">
-          <div class="stat-mini-label">Tokens</div>
-          <div class="stat-mini-value" id="statTokens">0</div>
-          <div class="stat-mini-trend" id="statTokensTrend">consumidos</div>
-        </div>
-        <div class="stat-mini">
-          <div class="stat-mini-label">Costo USD</div>
-          <div class="stat-mini-value" id="statCost">$0</div>
-          <div class="stat-mini-trend">acumulado</div>
-        </div>
-      </div>
-
-      <div style="font-family:var(--mono);font-size:9px;color:var(--orange);letter-spacing:0.25em;text-transform:uppercase;margin-top:18px;">▸ Contexto en vivo</div>
-      <div class="context-list" id="contextList"></div>
-
-      <div style="font-family:var(--mono);font-size:9px;color:var(--orange);letter-spacing:0.25em;text-transform:uppercase;margin-top:18px;">▸ Top palabras</div>
-      <div class="word-cloud" id="wordCloud"></div>
-    </div>
+  <div style="display:flex;gap:6px;">
+    <button class="btn" style="padding:6px 10px;font-size:10px;" onclick="clearChat()">Limpiar</button>
   </div>
+</header>
 
-  <div class="panel" style="margin-top: 18px;">
-    <div class="panel-header">
-      <div class="title">Log de acciones IA</div>
-      <span class="count" id="actionsCount">0</span>
-    </div>
-    <div class="actions-list" id="actionsList"></div>
-  </div>
-</main>
+<div id="chat-thread" class="chat-thread" style="margin-bottom:140px;"></div>
+
+<div id="chat-input-host"></div>
+<div id="footer-host" style="display:none;"></div>
+<div id="nav-host"></div>
 
 <script src="shared.js"></script>
 <script>
-(async () => {
-  const ok = await authGuard();
-  if (!ok) return;
+let conversationHistory = [];
+let scope = 'general';
 
+(async function init() {
+  if (!Auth.enforce()) return;
+  document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
+  document.getElementById('chat-input-host').innerHTML = UI.renderChatInput('Escribe tu mensaje...');
+  document.getElementById('nav-host').innerHTML = UI.renderBottomNav('mando');
 
-  let conversations = load(STORAGE.CHAT_CONVERSATIONS, []);
-  let skills = load(STORAGE.SKILLS, []);
-  let actionsLog = load(STORAGE.ACTIONS_LOG, []);
-  let stats = load(STORAGE.CHAT_STATS, { totalTokensIn: 0, totalTokensOut: 0, words: {} });
-
-  function renderHistory() {
-    const search = (document.getElementById('historySearch').value || '').toLowerCase();
-    let filtered = conversations;
-    if (search) {
-      filtered = conversations.filter(c => {
-        if (c.title.toLowerCase().includes(search)) return true;
-        return c.messages.some(m => m.content.toLowerCase().includes(search));
-      });
-    }
-
-    const list = document.getElementById('historyList');
-    if (filtered.length === 0) {
-      list.innerHTML = `<div class="empty">★ Sin conversaciones aún · Empieza desde Mando</div>`;
-    } else {
-      list.innerHTML = filtered.map(c => `
-        <div class="history-item" onclick="openConv('${c.id}')">
-          <div class="history-item-title">${escapeHTML(c.title)}</div>
-          <div class="history-item-meta">${timeAgo(c.updatedAt)} · ${c.messages.length} msj</div>
-          <button class="history-item-delete" onclick="event.stopPropagation(); deleteConv('${c.id}')" title="Eliminar">✕</button>
-        </div>
-      `).join('');
-    }
-    document.getElementById('convCount').textContent = conversations.length;
-  }
-
-  function renderSkills() {
-    const list = document.getElementById('skillsList');
-    if (skills.length === 0) {
-      list.innerHTML = `<div class="empty">★ Agrega recuerdos arriba para que la IA los use<br><br>Ej: "Soy alérgico a la lactosa", "Mi banda toca solo eventos privados", "Manejo Zoho CRM"</div>`;
-    } else {
-      list.innerHTML = skills.map(s => `
-        <div class="skill-item ${s.priority ? 'priority' : ''}">
-          <div class="skill-text">${escapeHTML(s.text)}</div>
-          <div class="skill-meta">${timeAgo(s.createdAt)}${s.priority ? ' · prioritario' : ''}</div>
-          <button class="skill-delete" onclick="deleteSkill('${s.id}')" title="Eliminar">✕</button>
-        </div>
-      `).join('');
-    }
-    document.getElementById('skillsCount').textContent = skills.length;
-  }
-
-  function renderStats() {
-    const totalMsgs = conversations.reduce((s,c) => s + c.messages.filter(m => m.role === 'user').length, 0);
-    const totalTokens = stats.totalTokensIn + stats.totalTokensOut;
-    const totalCost = (stats.totalTokensIn/1000*AI_COST_INPUT) + (stats.totalTokensOut/1000*AI_COST_OUTPUT);
-
-    document.getElementById('statConvs').innerHTML = `<span class="accent">${conversations.length}</span>`;
-    document.getElementById('statMsgs').innerHTML = `<span class="accent">${totalMsgs}</span>`;
-    document.getElementById('statTokens').textContent = totalTokens > 1000 ? (totalTokens/1000).toFixed(1) + 'K' : totalTokens;
-    document.getElementById('statTokensTrend').textContent = `${(stats.totalTokensIn/1000).toFixed(1)}K in · ${(stats.totalTokensOut/1000).toFixed(1)}K out`;
-    document.getElementById('statCost').textContent = '$' + totalCost.toFixed(3);
-
-    // Contexto en vivo
-    const ctx = buildContext();
-    const items = [
-      { text: `${ctx.counts.canciones} canciones`, count: ctx.counts.canciones },
-      { text: `${ctx.counts.eventos} eventos calendario`, count: ctx.counts.eventos },
-      { text: `${ctx.counts.musicaEventos} eventos música`, count: ctx.counts.musicaEventos },
-      { text: `${ctx.tareasGlobales.length} tareas pendientes`, count: ctx.tareasGlobales.length },
-      { text: `${ctx.proxEventos.length} próximos 30d`, count: ctx.proxEventos.length },
-      { text: ctx.ensayo ? `Ensayo: ${ctx.ensayo.fecha}` : 'Sin ensayo', count: ctx.ensayo ? 1 : 0 }
-    ];
-    document.getElementById('contextList').innerHTML = items.map(i => `
-      <div class="context-item">
-        <span class="context-text">${escapeHTML(i.text)}</span>
-        <span class="context-count">${i.count}</span>
-      </div>
-    `).join('');
-
-    // Top palabras
-    const top = Object.entries(stats.words || {}).sort((a,b) => b[1]-a[1]).slice(0, 12);
-    const cloud = document.getElementById('wordCloud');
-    if (top.length === 0) {
-      cloud.innerHTML = `<div class="empty" style="grid-column:1/-1;">Sin datos · Conversa con la IA</div>`;
-    } else {
-      cloud.innerHTML = top.map(([w, c]) => `
-        <div class="word-tag">${escapeHTML(w)}<span class="count">${c}</span></div>
-      `).join('');
-    }
-  }
-
-  function renderActions() {
-    const list = document.getElementById('actionsList');
-    if (actionsLog.length === 0) {
-      list.innerHTML = `<div class="empty">★ Sin acciones registradas</div>`;
-    } else {
-      list.innerHTML = actionsLog.slice(0, 50).map(a => {
-        const cls = a.module.includes('musica') ? 'musica' : a.module.includes('calendario') ? 'calendario' : a.module.includes('finanzas') ? 'finanzas' : a.module.includes('youtube') ? 'youtube' : '';
-        return `
-          <div class="action-item ${cls}">
-            <div class="action-time">${new Date(a.ts).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
-            <div class="action-text">${escapeHTML(a.summary)}</div>
-            <div class="action-module">▸ ${escapeHTML(a.module)}</div>
-          </div>
-        `;
-      }).join('');
-    }
-    document.getElementById('actionsCount').textContent = actionsLog.length;
-  }
-
-  // Public functions
-  window.openConv = function(id) {
-    window.location.href = `/?conv=${id}`;
-  };
-
-  window.deleteConv = function(id) {
-    if (!confirm('¿Eliminar esta conversación? No se puede deshacer.')) return;
-    conversations = conversations.filter(c => c.id !== id);
-    save(STORAGE.CHAT_CONVERSATIONS, conversations);
-    renderHistory();
-    renderStats();
-    showToast('Conversación eliminada');
-  };
-
-  window.addSkill = function() {
-    const input = document.getElementById('newSkill');
-    const text = input.value.trim();
-    if (!text) { showToast('Captura el recuerdo', true); return; }
-    skills.unshift({
-      id: uid('skill'),
-      text: text,
-      priority: false,
-      createdAt: Date.now()
-    });
-    save(STORAGE.SKILLS, skills);
-    input.value = '';
-    renderSkills();
-    showToast('✓ Skill agregada');
-  };
-
-  window.deleteSkill = function(id) {
-    if (!confirm('¿Eliminar esta skill?')) return;
-    skills = skills.filter(s => s.id !== id);
-    save(STORAGE.SKILLS, skills);
-    renderSkills();
-  };
-
-  window.filterHistory = renderHistory;
-
-  // INIT
+  // Recuperar conversación previa
+  conversationHistory = Store.get(Store.KEYS.CHAT_CONV, []);
   renderHistory();
-  renderSkills();
-  renderStats();
-  renderActions();
+
+  // Si vino con mensaje pre-cargado desde otro módulo
+  const params = new URLSearchParams(location.search);
+  const preMsg = params.get('msg');
+  scope = params.get('scope') || 'general';
+
+  UI.bindChatInput(handleSend);
+
+  if (preMsg) {
+    setTimeout(() => handleSend(preMsg), 300);
+  } else if (conversationHistory.length === 0) {
+    showWelcome();
+  }
 })();
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(function() {
-    if (typeof mountBottomnav === 'function') mountBottomnav('mando');
-  }, 150);
-});
-if (document.readyState !== 'loading' && typeof mountBottomnav === 'function') {
-  setTimeout(function() { mountBottomnav('mando'); }, 150);
+
+function showWelcome() {
+  appendAI({
+    text: `Hola Alan. ¿En qué te ayudo?\n\nPuedes pedirme:\n· Registrar un movimiento ("cobré $4.5K Bar Z")\n· Ver clientes vencidos\n· Armar set list para tocada\n· Tips para llegar a meta del mes\n· Cualquier otra cosa de tu sistema`,
+    tone: 'operador'
+  });
+}
+
+function renderHistory() {
+  const thread = document.getElementById('chat-thread');
+  thread.innerHTML = '';
+  conversationHistory.forEach(m => {
+    if (m.role === 'user') appendUser(m.content);
+    else appendAI({ text: m.content, tone: m.tone || 'operador' });
+  });
+}
+
+function appendUser(text) {
+  const thread = document.getElementById('chat-thread');
+  const div = document.createElement('div');
+  div.className = 'msg-user';
+  div.innerHTML = `
+    <div class="user-bubble"><div class="user-text">${Util.esc(text)}</div></div>
+    <div class="user-meta">${Util.fmtTime(Date.now())} ✓</div>
+  `;
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function appendAI({ text, tone = 'operador', card = null, actions = [] }) {
+  const thread = document.getElementById('chat-thread');
+  const div = document.createElement('div');
+  div.className = 'msg-ai' + (tone === 'personal' ? ' personal' : '');
+  div.innerHTML = `
+    <div class="ai-eyebrow">
+      <div class="ai-dot"></div>
+      <div class="ai-label">Mando · ${tone === 'personal' ? 'cálido' : 'Sonnet 4.5'}</div>
+    </div>
+    <div class="ai-bubble">
+      <div class="ai-text">${formatMarkdown(Util.esc(text))}</div>
+    </div>
+  `;
+  thread.appendChild(div);
+
+  if (card) {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'msg-card';
+    cardEl.innerHTML = renderCard(card);
+    thread.appendChild(cardEl);
+  }
+
+  if (actions.length) {
+    const actEl = document.createElement('div');
+    actEl.className = 'msg-actions';
+    actEl.innerHTML = actions.map(a => `<button class="btn ${a.primary ? 'primary-orange' : ''}" data-action="${a.action}" data-payload='${JSON.stringify(a.payload || {})}'>${Util.esc(a.label)}</button>`).join('');
+    thread.appendChild(actEl);
+    actEl.querySelectorAll('[data-action]').forEach(b => {
+      b.addEventListener('click', () => handleAction(b.dataset.action, JSON.parse(b.dataset.payload || '{}')));
+    });
+  }
+
+  thread.scrollTop = thread.scrollHeight;
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function appendTyping() {
+  const thread = document.getElementById('chat-thread');
+  const div = document.createElement('div');
+  div.id = 'typing-indicator';
+  div.className = 'msg-ai';
+  div.innerHTML = `
+    <div class="ai-bubble" style="display:inline-block;">
+      <div class="typing-dots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="typing-label">Mando está pensando</div>
+      </div>
+    </div>
+  `;
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+function formatMarkdown(text) {
+  // Soporte básico: **negrita**, listas con ·, saltos de línea
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n· /g, '<br>· ')
+    .replace(/\n/g, '<br>');
+}
+
+function renderCard(card) {
+  if (card.type === 'desglose') {
+    return `
+      <div style="background:rgba(244,243,239,0.025);border:0.5px solid rgba(255,79,0,0.18);border-radius:11px;padding:11px 13px;">
+        <div style="font-size:9px;color:rgba(255,150,80,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;margin-bottom:7px;">${Util.esc(card.title || '')}</div>
+        ${card.rows.map(r => `
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+            <div style="font-size:11px;color:rgba(244,243,239,0.7);">${Util.esc(r.label)}</div>
+            <div style="font-size:11px;font-weight:500;${r.highlight ? 'color:rgba(255,150,80,0.95);' : ''}">${Util.esc(r.value)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+  return '';
+}
+
+async function handleSend(text) {
+  if (!text || !text.trim()) return;
+
+  appendUser(text);
+  conversationHistory.push({ role: 'user', content: text });
+
+  // 1. Detectar intent (CRUD por voz/texto)
+  appendTyping();
+  const intent = await IA.detectIntent(text);
+
+  // 2. Si es operación CRUD directa, ejecutar
+  if (intent.intent === 'register' && intent.domain === 'movimiento' && intent.data.monto) {
+    removeTyping();
+    Cascada.registrarMovimiento(intent.data);
+    appendAI({
+      text: `Registrado · ${intent.data.tipo === 'ingreso' ? '+' : '−'}${Util.fmtMoney(intent.data.monto)} en ${intent.data.categoria || 'general'}. ¿Algo más?`,
+      tone: 'operador'
+    });
+    saveConversation();
+    return;
+  }
+
+  if (intent.intent === 'delete') {
+    removeTyping();
+    appendAI({
+      text: 'Para eliminar necesito que me confirmes. ¿Qué quieres eliminar exactamente? Esto es destructivo.',
+      tone: 'operador'
+    });
+    return;
+  }
+
+  // 3. Clasificar tono (trabajo vs personal) para responder con la voz adecuada
+  const tone = await IA.classifyTone(text);
+
+  // 4. Llamar a Sonnet con el system prompt completo
+  const systemPrompt = IA.buildSystemPrompt(scope) + `\n\n# TONO DETECTADO: ${tone}\n${tone === 'personal' ? 'Reconoce lo personal ANTES de operar. Tono cálido, escucha primero.' : 'Datos duros + acción concreta. Operativo.'}`;
+
+  // Mantén historial corto (últimos 8 mensajes para no saturar contexto)
+  const recentHistory = conversationHistory.slice(-8).map(m => ({
+    role: m.role,
+    content: m.content
+  }));
+
+  const res = await IA.call({
+    model: G2C.models.sonnet,
+    system: systemPrompt,
+    messages: recentHistory,
+    max_tokens: 800,
+    scope: 'chat_' + scope
+  });
+
+  removeTyping();
+
+  const responseText = res.content?.[0]?.text || 'Hubo un problema. Reintenta.';
+  conversationHistory.push({ role: 'assistant', content: responseText, tone });
+  saveConversation();
+
+  appendAI({ text: responseText, tone });
+
+  // Detectar si la respuesta sugiere acciones y mostrarlas como botones
+  detectAndAddActions(responseText, intent);
+}
+
+function detectAndAddActions(text, intent) {
+  // Si la IA mencionó "marcar pagado" o "generar liga", agrega botones
+  const tl = text.toLowerCase();
+  if (tl.includes('generar liga') || tl.includes('genero liga')) {
+    const thread = document.getElementById('chat-thread');
+    const actEl = document.createElement('div');
+    actEl.className = 'msg-actions';
+    actEl.innerHTML = `
+      <button class="btn primary-orange" onclick="goToCobros()">Ir a sistema cobros</button>
+      <button class="btn" onclick="UI.toast('Ok · sin acción', 'info')">Ahora no</button>
+    `;
+    thread.appendChild(actEl);
+  }
+}
+
+function handleAction(action, payload) {
+  switch (action) {
+    case 'goto_finanzas':
+      location.href = 'finanzas.html';
+      break;
+    case 'goto_calendario':
+      location.href = 'calendario.html';
+      break;
+    case 'goto_musica':
+      location.href = 'musica.html';
+      break;
+    default:
+      UI.toast('Acción ejecutada', 'info');
+  }
+}
+
+function goToCobros() {
+  window.open('https://cobros.g2c.com.mx', '_blank');
+}
+
+function saveConversation() {
+  // Mantener solo últimos 50 mensajes en storage
+  const trimmed = conversationHistory.slice(-50);
+  Store.set(Store.KEYS.CHAT_CONV, trimmed);
+}
+
+function clearChat() {
+  if (confirm('¿Limpiar conversación?')) {
+    conversationHistory = [];
+    Store.set(Store.KEYS.CHAT_CONV, []);
+    document.getElementById('chat-thread').innerHTML = '';
+    showWelcome();
+  }
 }
 </script>
 </body>

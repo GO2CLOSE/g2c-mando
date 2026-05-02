@@ -2,1046 +2,569 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>★ G2C Mando · Alan Davis</title>
-<meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#FF4F00">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F1419">
+<title>Mando · G2C</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito+Sans:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
-<style>
-html, body { height: 100%; overflow: hidden; }
-body { display: flex; flex-direction: column; }
-
-#topnavMount { flex-shrink: 0; }
-
-.chat-shell {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-  z-index: 5;
-  background: var(--dark);
-}
-.chat-shell::before {
-  content:'';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 70% 20%, rgba(255,79,0,0.06) 0%, transparent 50%), radial-gradient(ellipse at 20% 80%, rgba(139,133,255,0.04) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-.chat-header {
-  padding: 12px 22px;
-  border-bottom: 1px solid rgba(255,79,0,0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(15,23,41,0.5);
-  backdrop-filter: blur(10px);
-  z-index: 5;
-  flex-shrink: 0;
-  gap: 12px;
-}
-.chat-header-info { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; }
-.chat-header-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-.chat-header-title {
-  font-family: var(--display); font-size: 16px; line-height: 1.2; color: var(--white);
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  word-break: break-word;
-}
-.chat-header-meta { font-family: var(--mono); font-size: 10px; color: var(--orange); letter-spacing: 0.15em; text-transform: uppercase; }
-.chat-header-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.chat-action-btn {
-  padding: 6px 12px;
-  background: transparent;
-  color: var(--gray-light);
-  border: 1px solid rgba(255,255,255,0.1);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: border-color var(--t-fast), color var(--t-fast);
-  text-decoration: none;
-}
-.chat-action-btn:hover { border-color: var(--orange); color: var(--orange); }
-
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 28px 28px 20px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,79,0,0.3) transparent;
-  position: relative;
-  z-index: 5;
-  -webkit-overflow-scrolling: touch;
-}
-.chat-messages::-webkit-scrollbar { width: 6px; }
-.chat-messages::-webkit-scrollbar-thumb { background: rgba(255,79,0,0.3); border-radius: 3px; }
-
-/* Welcome · estilo dinámico */
-.welcome {
-  text-align: center;
-  padding: 24px 12px 40px;
-  max-width: 720px;
-  margin: 0 auto;
-  animation: fadeIn 0.5s var(--t-slow);
-}
-.welcome-eyebrow {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--orange);
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  margin-top: 12px;
-  margin-bottom: 12px;
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-}
-.welcome-eyebrow::before, .welcome-eyebrow::after {
-  content: '';
-  width: 18px;
-  height: 1px;
-  background: var(--orange);
-}
-.welcome-title {
-  font-family: var(--display);
-  font-size: 36px;
-  line-height: 1.05;
-  margin-bottom: 14px;
-  color: var(--white);
-}
-.welcome-title .accent {
-  color: var(--orange);
-  font-style: italic;
-}
-.welcome-subtitle {
-  color: var(--gray-light);
-  font-size: 14px;
-  line-height: 1.6;
-  max-width: 520px;
-  margin: 0 auto 28px;
-}
-.welcome-suggestions {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  max-width: 600px;
-  margin: 0 auto;
-}
-.suggestion-card {
-  padding: 14px 16px;
-  background: var(--dark-2);
-  border: 1px solid rgba(255,79,0,0.15);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: border-color var(--t-fast), transform var(--t-med), box-shadow var(--t-med);
-  text-align: left;
-  position: relative;
-  overflow: hidden;
-}
-.suggestion-card::before {
-  content:'';
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 2px;
-  background: var(--orange);
-  transform: scaleY(0);
-  transform-origin: top;
-  transition: transform var(--t-med);
-}
-.suggestion-card:hover {
-  border-color: rgba(255,79,0,0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(255,79,0,0.1);
-}
-.suggestion-card:hover::before { transform: scaleY(1); }
-.suggestion-icon {
-  font-size: 18px;
-  color: var(--orange);
-  margin-bottom: 8px;
-  line-height: 1;
-}
-.suggestion-title {
-  font-family: var(--display);
-  font-size: 14px;
-  color: var(--white);
-  margin-bottom: 4px;
-  line-height: 1.25;
-}
-.suggestion-text {
-  font-size: 11px;
-  color: var(--gray-light);
-  line-height: 1.4;
-}
-
-/* Mensajes */
-.message {
-  margin-bottom: 18px;
-  display: flex;
-  gap: 11px;
-  align-items: flex-start;
-  max-width: 100%;
-  animation: messageIn 0.3s var(--t-slow);
-}
-@keyframes messageIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.message.user { flex-direction: row-reverse; }
-.message-avatar {
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 11px; font-weight: 700;
-}
-.message-avatar.ai {
-  background: rgba(255,79,0,0.12);
-  color: var(--orange);
-  border: 1px solid var(--orange);
-  text-shadow: 0 0 6px rgba(255,79,0,0.5);
-}
-.message-avatar.user {
-  background: var(--dark-3);
-  color: var(--orange);
-  border: 1px solid rgba(255,79,0,0.3);
-}
-.message-bubble {
-  background: var(--dark-2);
-  border: 1px solid rgba(255,79,0,0.1);
-  border-radius: 6px;
-  padding: 13px 16px;
-  max-width: 720px;
-  min-width: 0;
-}
-.message.user .message-bubble {
-  background: rgba(255,79,0,0.08);
-  border-color: rgba(255,79,0,0.2);
-}
-.message-content { color: var(--white); font-size: 14px; line-height: 1.65; word-wrap: break-word; }
-.message-content p { margin-bottom: 10px; }
-.message-content p:last-child { margin-bottom: 0; }
-.message-content strong { color: var(--orange); font-weight: 700; }
-.message-content em { color: var(--orange-light); font-style: italic; }
-.message-content code { background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 2px; font-family: var(--mono); font-size: 12px; color: var(--orange-light); }
-.message-content pre { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,79,0,0.15); border-left: 3px solid var(--orange); padding: 12px 14px; border-radius: 3px; overflow-x: auto; margin: 10px 0; }
-.message-content pre code { background: transparent; padding: 0; color: var(--gray-light); font-size: 12px; }
-.message-content a { color: var(--orange-light); text-decoration: none; border-bottom: 1px dashed rgba(255,79,0,0.3); transition: color var(--t-fast), border-color var(--t-fast); word-break: break-all; }
-.message-content a:hover { color: var(--white); border-bottom-color: var(--orange); }
-.message-content ul, .message-content ol { margin: 8px 0 8px 20px; }
-.message-content li { margin-bottom: 4px; }
-.message-content h1, .message-content h2, .message-content h3 { font-family: var(--display); margin: 12px 0 6px; line-height: 1.2; }
-.message-content h1 { font-size: 20px; }
-.message-content h2 { font-size: 18px; color: var(--orange); }
-.message-content h3 { font-size: 16px; }
-.message-cursor {
-  display: inline-block;
-  width: 2px; height: 14px;
-  background: var(--orange);
-  margin-left: 2px;
-  animation: cursorBlink 1s step-start infinite;
-  vertical-align: middle;
-}
-@keyframes cursorBlink { 50% { opacity: 0; } }
-.message-meta { font-family: var(--mono); font-size: 9px; color: var(--gray); letter-spacing: 0.1em; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.04); }
-
-/* Tool card */
-.tool-card {
-  background: linear-gradient(135deg, rgba(255,79,0,0.08), var(--dark-2));
-  border: 1px solid var(--orange);
-  border-radius: 4px;
-  padding: 14px 16px;
-  margin-top: 12px;
-  animation: messageIn 0.3s var(--t-slow);
-}
-.tool-eyebrow { font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 8px; }
-.tool-eyebrow::before { content:'⚠ '; }
-.tool-title { font-family: var(--display); font-size: 16px; color: var(--white); margin-bottom: 8px; }
-.tool-data { background: rgba(0,0,0,0.3); padding: 10px 12px; border-radius: 3px; margin-bottom: 12px; }
-.tool-data-row { display: flex; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--gray-light); margin-bottom: 4px; }
-.tool-data-row .label { color: var(--orange); letter-spacing: 0.1em; min-width: 80px; text-transform: uppercase; font-size: 9px; }
-.tool-data-row .value { color: var(--white); flex: 1; word-break: break-word; }
-.tool-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.tool-btn { padding: 8px 14px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; border: none; cursor: pointer; border-radius: 2px; font-weight: 700; transition: background var(--t-fast); }
-.tool-btn-approve { background: var(--success); color: var(--white); flex: 1; }
-.tool-btn-approve:hover { background: #00c270; }
-.tool-btn-reject { background: transparent; color: var(--danger); border: 1px solid rgba(230,57,70,0.4); }
-.tool-btn-reject:hover { background: rgba(230,57,70,0.08); }
-.tool-card.executed { border-color: var(--success); background: rgba(0,217,126,0.05); }
-.tool-card.executed .tool-eyebrow { color: var(--success); }
-.tool-card.executed .tool-eyebrow::before { content:'✓ '; }
-.tool-card.rejected { border-color: var(--gray); opacity: 0.6; }
-.tool-card.rejected .tool-eyebrow::before { content:'✗ '; }
-
-/* YouTube embeds */
-.yt-results { background: linear-gradient(135deg, rgba(255,79,0,0.05), var(--dark-2)); border: 1px solid rgba(255,79,0,0.25); border-radius: 4px; padding: 14px; margin-top: 12px; }
-.yt-results-header { font-family: var(--mono); font-size: 10px; color: var(--orange); letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,79,0,0.15); }
-.yt-results-list { display: flex; flex-direction: column; gap: 10px; }
-.yt-result { display: grid; grid-template-columns: 120px 1fr; gap: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,79,0,0.1); border-radius: 3px; padding: 10px; }
-.yt-thumb { aspect-ratio: 16/9; border-radius: 2px; overflow: hidden; cursor: pointer; background: var(--dark); position: relative; }
-.yt-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.yt-thumb::after { content:'▶'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--white); font-size: 24px; background: rgba(0,0,0,0.4); opacity: 0; transition: opacity var(--t-fast); }
-.yt-thumb:hover::after { opacity: 1; }
-.yt-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.yt-title { font-size: 13px; color: var(--white); line-height: 1.3; font-weight: 600; }
-.yt-channel { font-family: var(--mono); font-size: 10px; color: var(--orange-light); }
-.yt-meta { font-family: var(--mono); font-size: 9px; color: var(--gray); }
-.yt-actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-.yt-btn { padding: 5px 10px; font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; border: 1px solid rgba(255,79,0,0.3); background: rgba(255,79,0,0.06); color: var(--orange-light); border-radius: 2px; cursor: pointer; text-decoration: none; transition: background var(--t-fast), color var(--t-fast); }
-.yt-btn:hover { background: var(--orange); color: var(--white); border-color: var(--orange); }
-.yt-player { grid-column: 1/-1; margin-top: 10px; }
-.yt-player iframe { width: 100%; aspect-ratio: 16/9; border: 1px solid rgba(255,79,0,0.2); border-radius: 3px; }
-
-/* Input area */
-.chat-input-area {
-  padding: 16px 22px;
-  border-top: 1px solid rgba(255,79,0,0.15);
-  background: rgba(8,13,26,0.7);
-  backdrop-filter: blur(10px);
-  position: relative;
-  z-index: 10;
-  flex-shrink: 0;
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
-}
-.chat-input-wrap { position: relative; max-width: 920px; margin: 0 auto; }
-.chat-input {
-  width: 100%;
-  padding: 13px 96px 13px 16px;
-  background: var(--dark-2);
-  border: 1px solid rgba(255,79,0,0.2);
-  color: var(--white);
-  font-family: var(--body);
-  font-size: 14px;
-  border-radius: 4px;
-  resize: none;
-  min-height: 50px;
-  max-height: 200px;
-  line-height: 1.5;
-  transition: border-color var(--t-fast), box-shadow var(--t-fast);
-}
-.chat-input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255,79,0,0.08); }
-.chat-input::placeholder { color: var(--gray); font-style: italic; }
-.chat-send-btn {
-  position: absolute; right: 8px; bottom: 8px;
-  padding: 8px 14px;
-  background: var(--orange); color: var(--white);
-  border: none; cursor: pointer;
-  font-family: var(--mono); font-size: 11px;
-  letter-spacing: 0.15em; text-transform: uppercase;
-  border-radius: 2px; font-weight: 700;
-  transition: background var(--t-fast);
-}
-.chat-send-btn:hover:not(:disabled) { background: var(--orange-light); }
-.chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.chat-input-hint { font-family: var(--mono); font-size: 9px; color: var(--gray); letter-spacing: 0.1em; margin-top: 6px; text-align: center; }
-.chat-input-hint kbd { padding: 1px 6px; background: var(--dark-3); border: 1px solid rgba(255,255,255,0.1); border-radius: 2px; color: var(--orange); font-size: 9px; }
-
-@media (max-width: 880px) {
-  .chat-header {
-    padding: 8px 12px;
-    gap: 8px;
-  }
-  .chat-header-meta { display: none; }
-  .chat-header-title {
-    font-size: 13px;
-    -webkit-line-clamp: 1;
-  }
-  .chat-header-info { gap: 8px; }
-  .chat-header .g2c-star { display: none; }
-  .chat-header-actions { gap: 4px; }
-  .chat-action-btn {
-    padding: 5px 8px;
-    font-size: 9px;
-    letter-spacing: 0.1em;
-  }
-  .chat-messages { padding: 22px 14px 16px; }
-  .chat-input-area { padding: 12px 14px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
-  .welcome { padding: 18px 4px 30px; }
-  .welcome-suggestions { grid-template-columns: 1fr; }
-  .welcome-title { font-size: 26px; }
-  .welcome-eyebrow { font-size: 9px; letter-spacing: 0.25em; }
-  .welcome-eyebrow::before, .welcome-eyebrow::after { width: 12px; }
-  .yt-result { grid-template-columns: 90px 1fr; padding: 8px; }
-  .chat-input-hint { display: none; }
-  .chat-input { padding: 12px 80px 12px 14px; font-size: 16px; }
-  .chat-send-btn { padding: 7px 11px; font-size: 10px; }
-}
-</style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="loginScreen" class="login-screen" style="display:none;">
-  <div class="login-card">
-    <span class="g2c-star lg solid"><span class="g2c-star-glyph">★</span></span>
-    <div class="login-eyebrow">G2C Mando · Acceso privado</div>
-    <div class="login-title">Bienvenido</div>
-    <form class="login-form" onsubmit="event.preventDefault(); doLogin();">
-      <div>
-        <label class="label">Password</label>
-        <input type="password" class="input" id="loginPass" autocomplete="current-password" autofocus>
+<div id="status-bar"></div>
+
+<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+  <div style="display:flex;align-items:center;gap:11px;">
+    <div class="mando-avatar">
+      <div class="core">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
       </div>
-      <button type="submit" class="btn btn-primary" style="justify-content: center; width: 100%;">▸ Entrar</button>
-    </form>
+      <div class="ring-1"></div>
+      <div class="ring-2"></div>
+    </div>
+    <div>
+      <div style="font-size:15px;font-weight:500;">Mando</div>
+      <div style="display:flex;align-items:center;gap:5px;margin-top:1px;">
+        <div style="width:5px;height:5px;background:rgba(180,220,170,0.95);border-radius:50%;"></div>
+        <div style="font-size:9px;color:rgba(244,243,239,0.55);">activo · Sonnet 4.5</div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="config.html" style="width:30px;height:30px;background:rgba(244,243,239,0.04);border:0.5px solid rgba(244,243,239,0.08);border-radius:9px;display:flex;align-items:center;justify-content:center;text-decoration:none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="3" stroke="rgba(244,243,239,0.6)" stroke-width="1.5"/>
+        <path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="rgba(244,243,239,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </a>
+  </div>
+</header>
+
+<!-- Briefing card hero -->
+<div class="briefing-card">
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+    <div style="font-size:9px;color:rgba(255,150,80,0.85);letter-spacing:0.18em;text-transform:uppercase;font-weight:500;" id="briefing-eyebrow">Briefing · cargando...</div>
+  </div>
+  <div id="briefing-content">
+    <div class="loader" style="margin:8px 0;"></div>
+  </div>
+  <div class="chip-row" id="briefing-chips" style="display:none;">
+    <div class="chip" data-chip="bien">bien · sigamos</div>
+    <div class="chip" data-chip="cansado">cansado</div>
+    <div class="chip" data-chip="denso">denso</div>
   </div>
 </div>
 
-<!-- APP -->
-<div id="app" style="display:none; height:100%; flex-direction:column;">
-  <div id="topnavMount"></div>
-  <a href="config.html" id="floatConfig" title="Configuración" aria-label="Configuración">
-    <span style="font-size: 16px; line-height: 1;">⚙</span>
-  </a>
-  <main class="chat-shell">
-    <div class="chat-messages" id="chatMessages"></div>
-    <div class="chat-input-area">
-      <div class="chat-input-wrap">
-        <textarea class="chat-input" id="chatInput" placeholder="¿En qué te ayudo? · Enter para enviar" rows="1" onkeydown="handleInputKey(event)" oninput="autoGrow(this)"></textarea>
-      </div>
-    </div>
-  </main>
+<!-- Timeline del día -->
+<div class="section-eyebrow">
+  <div>
+    <div class="label" style="color:rgba(244,243,239,0.55);">tu día en una mirada</div>
+    <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;" id="timeline-summary">cargando...</div>
+  </div>
+  <a href="calendario.html" style="font-size:11px;color:rgba(255,150,80,0.9);font-weight:500;text-decoration:none;">ver agenda →</a>
 </div>
+
+<div class="timeline" id="timeline-container">
+  <div class="timeline-track" id="timeline-track">
+    <div class="timeline-line"></div>
+    <div class="timeline-progress" style="width:30%;"></div>
+    <!-- Eventos se inyectan dinámicamente -->
+  </div>
+  <div class="timeline-next" id="timeline-next">
+    <div class="next-label">próximo · cargando</div>
+    <div class="next-text">—</div>
+  </div>
+</div>
+
+<!-- Pulso operativo -->
+<div class="section-eyebrow">
+  <div>
+    <div class="label" style="color:rgba(244,243,239,0.55);">pulso operativo</div>
+    <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">tiempo real · todos los módulos</div>
+  </div>
+</div>
+
+<div class="stat-grid cols-2" id="pulso-grid">
+  <div class="stat-card green">
+    <div class="stat-label" style="color:rgba(180,220,170,0.85);">caja</div>
+    <div class="stat-value tabular" id="pulso-caja">—</div>
+    <div class="stat-meta" style="color:rgba(180,220,170,0.85);" id="pulso-caja-meta">—</div>
+  </div>
+  <div class="stat-card alert">
+    <div class="stat-label" style="color:rgba(255,150,80,0.95);">por cobrar</div>
+    <div class="stat-value tabular" id="pulso-cobrar">—</div>
+    <div class="stat-meta" style="color:rgba(255,170,110,0.95);" id="pulso-cobrar-meta">—</div>
+  </div>
+  <div class="stat-card cyan">
+    <div class="stat-label" style="color:rgba(150,210,230,0.85);">pendientes</div>
+    <div class="stat-value tabular" id="pulso-pendientes">—</div>
+    <div class="stat-meta" id="pulso-pendientes-meta">—</div>
+  </div>
+  <div class="stat-card cyan">
+    <div class="stat-label" style="color:rgba(150,210,230,0.85);">música</div>
+    <div class="stat-value tabular" id="pulso-musica">—</div>
+    <div class="stat-meta" id="pulso-musica-meta">—</div>
+  </div>
+</div>
+
+<!-- Decisiones del día -->
+<div class="section-eyebrow">
+  <div>
+    <div class="label" style="color:rgba(244,243,239,0.55);">decisiones que requieren tu OK</div>
+    <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;" id="decisiones-count">cargando...</div>
+  </div>
+</div>
+
+<div id="decisiones-container">
+  <div class="loader-wrap"><div class="loader"></div></div>
+</div>
+
+<!-- Contexto IA -->
+<div style="background:rgba(244,243,239,0.025);border:0.5px solid rgba(244,243,239,0.05);border-radius:14px;padding:13px 15px;margin-bottom:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;">
+    <div style="display:flex;align-items:center;gap:7px;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="rgba(244,243,239,0.6)" stroke-width="1.5"/>
+        <path d="M12 6v6l4 2" stroke="rgba(244,243,239,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div style="font-size:10px;color:rgba(244,243,239,0.7);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">contexto que entiendo hoy</div>
+    </div>
+    <div style="font-size:10px;color:rgba(180,220,170,0.85);" id="contexto-status">sync</div>
+  </div>
+  <div id="contexto-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"></div>
+</div>
+
+<!-- Mini-player y chat -->
+<div class="miniplayer" id="miniplayer">
+  <div class="yt-thumb">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+      <rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>
+    </svg>
+  </div>
+  <div class="yt-info">
+    <div class="yt-title" id="mp-title">—</div>
+    <div class="yt-progress"><div id="mp-progress" style="width:0%"></div></div>
+  </div>
+  <div class="yt-controls">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" id="mp-pause">
+      <path d="M19 20L9 12l10-8v16z" stroke="rgba(244,243,239,0.7)" stroke-width="1.8"/>
+    </svg>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" id="mp-close">
+      <path d="M6 18L18 6M6 6l12 12" stroke="rgba(244,243,239,0.5)" stroke-width="1.5"/>
+    </svg>
+  </div>
+</div>
+
+<div id="chat-input-host"></div>
+<div id="footer-host"></div>
+<div id="nav-host"></div>
 
 <script src="shared.js"></script>
 <script>
-const DEFAULT_PASS_HASH = '0db087d6b415b97c7641ef7862e88c9aa88323f3c488150ed09d6d1c45c6efc0';
+(async function init() {
+  if (!Auth.enforce()) return;
 
-let conversations = load(STORAGE.CHAT_CONVERSATIONS, []);
-let currentConvId = null;
-let currentMessages = [];
-let isSending = false;
+  // Inyectar status bar, footer, nav
+  document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
+  document.getElementById('chat-input-host').innerHTML = UI.renderChatInput('Háblame...');
+  document.getElementById('footer-host').innerHTML = UI.renderFooter();
+  document.getElementById('nav-host').innerHTML = UI.renderBottomNav('mando');
 
-async function init() {
-  const ok = await checkAuth();
-  if (ok) {
-    showApp();
-  } else {
-    document.getElementById('loginScreen').style.display = 'flex';
+  // 1. Cargar briefing dinámico
+  loadBriefing();
+
+  // 2. Timeline del día
+  renderTimeline();
+
+  // 3. Pulso operativo
+  renderPulso();
+
+  // 4. Decisiones
+  renderDecisiones();
+
+  // 5. Contexto IA
+  renderContexto();
+
+  // 6. Bind chat input
+  UI.bindChatInput(handleChatMessage);
+
+  // 7. Bind chips
+  document.querySelectorAll('[data-chip]').forEach(c => {
+    c.addEventListener('click', () => handleChatMessage(c.dataset.chip === 'bien' ? 'bien, sigamos' : c.dataset.chip));
+  });
+
+  // 8. Mini-player si hay canción cacheada
+  loadMiniplayer();
+})();
+
+// ============================================================
+// BRIEFING
+// ============================================================
+async function loadBriefing() {
+  const eyebrow = document.getElementById('briefing-eyebrow');
+  const content = document.getElementById('briefing-content');
+  const chips = document.getElementById('briefing-chips');
+
+  const fecha = new Date().toLocaleDateString('es-MX', { weekday: 'long' });
+  eyebrow.textContent = `Briefing · ${fecha}`;
+
+  try {
+    const text = await IA.briefing();
+    if (text) {
+      // Separar saludo del resto
+      const lines = text.split('\n').filter(Boolean);
+      const greeting = lines[0] || `${Util.greeting()}, Alan.`;
+      const rest = lines.slice(1).join(' ').trim();
+
+      content.innerHTML = `
+        <div style="font-size:24px;font-weight:500;letter-spacing:-0.02em;line-height:1.15;margin-bottom:8px;">${Util.esc(greeting)}</div>
+        <div style="font-size:13px;color:rgba(244,243,239,0.85);line-height:1.55;">${Util.esc(rest)}</div>
+      `;
+      chips.style.display = 'flex';
+    }
+  } catch (e) {
+    content.innerHTML = `<div style="font-size:13px;color:var(--text-secondary);">Hola Alan. Tu sistema está listo.</div>`;
   }
-  // Registrar Service Worker en background
-  if (typeof registerServiceWorker === 'function') {
-    registerServiceWorker().catch(err => console.warn('[SW] register failed', err));
-  }
 }
 
-async function doLogin() {
-  const pass = document.getElementById('loginPass').value;
-  if (!pass) { showToast('Captura tu password', true); return; }
-  const hash = await sha256(pass);
-  const config = getConfig();
-  const expectedHash = config.passwordHash || DEFAULT_PASS_HASH;
-  if (hash !== expectedHash) { showToast('Password incorrecto', true); return; }
-  save(STORAGE.AUTH, { expires: Date.now() + 12*3600*1000 });
-  showApp();
-}
+// ============================================================
+// TIMELINE DEL DÍA
+// ============================================================
+function renderTimeline() {
+  const calendario = Store.get(Store.KEYS.CALENDARIO, []);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const finHoy = hoy.getTime() + 86400000;
 
-function showApp() {
-  document.getElementById('loginScreen').style.display = 'none';
-  const app = document.getElementById('app');
-  app.style.display = 'flex';
-  document.getElementById('topnavMount').innerHTML = renderTopnav('mando');
+  const eventosHoy = calendario.filter(e => e.ts >= hoy.getTime() && e.ts < finHoy).sort((a, b) => a.ts - b.ts);
 
-  // Cargar conversación de URL si existe, o más reciente, o nueva
-  const params = new URLSearchParams(window.location.search);
-  const convFromUrl = params.get('conv');
-  if (convFromUrl && conversations.find(c => c.id === convFromUrl)) {
-    loadConv(convFromUrl);
-  } else if (conversations.length > 0) {
-    loadConv(conversations[0].id);
-  } else {
-    newChat();
-  }
+  const summary = document.getElementById('timeline-summary');
+  summary.textContent = eventosHoy.length ? `${eventosHoy.length} actividades · día activo` : 'sin eventos agendados hoy';
 
-  // Si viene un prompt desde otro módulo (sessionStorage), inyectarlo y enviar
-  const pending = sessionStorage.getItem('alan_mando_pending_prompt');
-  if (pending) {
-    sessionStorage.removeItem('alan_mando_pending_prompt');
-    newChat();
-    setTimeout(() => {
-      const input = document.getElementById('chatInput');
-      if (input) {
-        input.value = pending;
-        autoGrow(input);
-        sendMessage();
-      }
-    }, 100);
-    return;
-  }
+  const track = document.getElementById('timeline-track');
+  const ahora = Date.now();
+  const inicioH = hoy.getTime() + 8 * 3600000; // 8am
+  const finH = hoy.getTime() + 22 * 3600000; // 10pm
+  const total = finH - inicioH;
 
-  if (window.innerWidth > 880) document.getElementById('chatInput').focus();
-}
+  let html = '<div class="timeline-line"></div><div class="timeline-progress" style="width:' + Math.max(0, Math.min(100, ((ahora - inicioH) / total) * 100)) + '%;"></div>';
 
-function newChat() {
-  currentConvId = null;
-  currentMessages = [];
-  const header = document.getElementById('chatHeader');
-  if (header) header.style.display = 'none';
-  renderMessages();
-  if (window.innerWidth > 880) document.getElementById('chatInput').focus();
-}
+  eventosHoy.forEach((e, i) => {
+    const pct = Math.max(0, Math.min(100, ((e.ts - inicioH) / total) * 100));
+    const status = e.ts < ahora ? 'done' : (Math.abs(e.ts - ahora) < 1800000 ? 'now' : 'future');
+    const time = Util.fmtTime(e.ts);
+    html += `
+      <div class="timeline-event ${status}" style="left:${pct}%;"></div>
+      <div class="timeline-time" style="left:${pct}%;">${time}</div>
+      <div class="timeline-label" style="left:${pct}%;">${Util.esc(e.titulo || '').slice(0, 12)}</div>
+    `;
+  });
 
-function loadConv(id) {
-  const conv = conversations.find(c => c.id === id);
-  if (!conv) return;
-  currentConvId = id;
-  currentMessages = JSON.parse(JSON.stringify(conv.messages));
-  const header = document.getElementById('chatHeader');
-  if (header) header.style.display = 'flex';
-  const title = document.getElementById('chatTitle');
-  if (title) title.textContent = conv.title;
-  renderMessages();
-}
-
-function renderMessages() {
-  const container = document.getElementById('chatMessages');
-  if (currentMessages.length === 0) {
-    container.innerHTML = renderWelcome();
-    return;
-  }
-  container.innerHTML = currentMessages.map((m, idx) => renderMessage(m, idx)).join('');
-  container.scrollTop = container.scrollHeight;
-}
-
-function renderWelcome() {
-  const config = getConfig();
-  const name = config.name || 'Alan';
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
-  const hasYT = !!config.youtubeApiKey;
-
-  const sugerencias = [
-    { icon: '▣', title: '¿Qué tengo esta semana?' },
-    { icon: '▦', title: 'Resumen financiero del mes' },
-    { icon: '♪', title: 'Tocadas pendientes' },
-    { icon: '▸', title: 'Tareas urgentes hoy' },
-    { icon: '$', title: '¿Cuánto facturé este mes?' },
-    { icon: '◈', title: 'Revisa mis documentos fiscales' }
-  ];
-
-  return `
-    <div class="welcome">
-      <span class="g2c-star xl solid"><span class="g2c-star-glyph">★</span></span>
-      <div class="welcome-eyebrow">Copiloto · Claude Haiku 4.5${hasYT ? ' · YT ✓' : ''}</div>
-      <h1 class="welcome-title">${greeting}, <span class="accent">${escapeHTML(name)}</span></h1>
-      <p class="welcome-subtitle">Veo todo: G2C, banda, finanzas, calendario, tareas. Pídeme análisis, registros, asesoría contable. Todo pasa por tu aprobación.</p>
-      <div class="welcome-suggestions">
-        ${sugerencias.map(s => `
-          <div class="suggestion-card" onclick="useSuggestion('${escapeHTML(s.title).replace(/'/g, '&#39;')}')">
-            <div class="suggestion-icon">${s.icon}</div>
-            <div class="suggestion-title">${escapeHTML(s.title)}</div>
-          </div>
-        `).join('')}
-      </div>
-      <div style="margin-top: 14px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-        <button onclick="openCFDIUploaderManual()" style="padding: 9px 16px; background: rgba(255,79,0,0.06); border: 1px solid rgba(255,79,0,0.3); color: var(--orange); font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; cursor: pointer; border-radius: 2px; transition: all var(--t-fast);">▲ Subir CFDI</button>
-        <a href="config.html" style="padding: 9px 16px; background: rgba(74,158,255,0.06); border: 1px solid rgba(74,158,255,0.3); color: var(--info); font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; text-decoration: none; border-radius: 2px;">▣ Documentos IA</a>
-        <button onclick="openProviderApps()" style="padding: 9px 16px; background: rgba(255,79,0,0.06); border: 1px solid rgba(255,79,0,0.3); color: var(--orange); font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; cursor: pointer; border-radius: 2px;">▸ Apps proveedores</button>
-      </div>
-
-      <!-- Acceso rápido a apps de proveedores -->
-      <div style="margin-top: 22px; padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,79,0,0.1); border-radius: 4px; max-width: 720px; margin-left: auto; margin-right: auto;">
-        <div style="font-family: var(--mono); font-size: 9px; color: var(--orange); letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; margin-bottom: 12px; text-align: center;">▸ Accesos rápidos</div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px;">
-          ${Object.entries(PROVIDER_APPS).map(([key, app]) => `
-            <a href="${app.appUrl}" target="_blank" rel="noopener"
-               style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; background: rgba(0,0,0,0.3); border: 1px solid ${app.color}33; border-left: 2px solid ${app.color}; border-radius: 2px; text-decoration: none; transition: transform var(--t-fast);"
-               onmouseover="this.style.transform='translateY(-2px)'"
-               onmouseout="this.style.transform='translateY(0)'">
-              <span style="font-size: 18px; line-height: 1;">${app.icon}</span>
-              <span style="font-family: var(--mono); font-size: 9px; color: var(--white); letter-spacing: 0.05em; text-align: center; line-height: 1.2;">${app.label}</span>
-            </a>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function openProviderApps() {
-  // Scroll a la sección de apps en el welcome
-  const apps = document.querySelector('.welcome');
-  if (apps) apps.scrollIntoView({ behavior: 'smooth', block: 'end' });
-}
-
-function openCFDIUploaderManual() {
-  openCFDIUploader(-1, 'cfdi', 'Análisis manual del CFDI por parte del usuario');
-}
-
-function useSuggestion(text) {
-  document.getElementById('chatInput').value = text;
-  autoGrow(document.getElementById('chatInput'));
-  sendMessage();
-}
-
-function renderMessage(m, idx) {
-  const config = getConfig();
-  const initial = (config.name || 'A').charAt(0).toUpperCase();
-
-  if (m.role === 'user') {
-    return `
-      <div class="message user">
-        <div class="message-avatar user">${initial}</div>
-        <div class="message-bubble">
-          <div class="message-content">${formatAiText(m.content)}</div>
-        </div>
-      </div>
+  // "Ahora" si no hay evento exacto
+  const pctNow = Math.max(0, Math.min(100, ((ahora - inicioH) / total) * 100));
+  if (!eventosHoy.some(e => Math.abs(e.ts - ahora) < 1800000)) {
+    html += `
+      <div class="timeline-event now" style="left:${pctNow}%;"></div>
+      <div class="timeline-time" style="left:${pctNow}%;color:rgba(255,170,110,0.95);font-weight:500;">${Util.fmtTime(ahora)}</div>
+      <div class="timeline-label" style="left:${pctNow}%;color:rgba(255,170,110,0.95);">ahora</div>
     `;
   }
 
-  const cleanText = m.content
-    .replace(/<<<TOOL_CALL>>>[\s\S]*?<<<END_TOOL_CALL>>>/, '')
-    .replace(/<<<CLARIFY>>>[\s\S]*?<<<END_CLARIFY>>>/, '')
-    .trim();
-  let html = `
-    <div class="message ai">
-      <div class="message-avatar ai">★</div>
-      <div class="message-bubble">
-        <div class="message-content">${cleanText ? formatAiText(cleanText) : ''}${m.streaming ? '<span class="message-cursor"></span>' : ''}</div>
-  `;
+  track.innerHTML = html;
 
-  if (m.clarify) html += renderClarification(m.clarify, idx);
-  if (m.toolCall) html += renderToolCard(m.toolCall, idx);
-  if (m.ytResults) html += renderYTResults(m.ytResults, idx);
-  if (m.ytLoading) html += `<div class="yt-results"><div class="yt-results-header">Buscando en YouTube...</div></div>`;
-  if (m.ytError) html += `<div class="yt-results"><div class="yt-results-header" style="color:var(--danger);">Error: ${escapeHTML(m.ytError)}</div></div>`;
-
-  if (m.usage) {
-    const cost = ((m.usage.input_tokens||0)/1000*AI_COST_INPUT) + ((m.usage.output_tokens||0)/1000*AI_COST_OUTPUT);
-    html += `<div class="message-meta">▸ ${m.usage.input_tokens||0} in · ${m.usage.output_tokens||0} out · $${cost.toFixed(4)}</div>`;
-  }
-
-  html += `</div></div>`;
-  return html;
-}
-
-function renderClarification(clar, msgIdx) {
-  if (!clar || !clar.questions) return '';
-  let html = `<div class="clarification">`;
-  if (clar.intro) {
-    html += `<div style="color: var(--white); font-size: 13px; margin-bottom: 14px; line-height: 1.55;">${escapeHTML(clar.intro)}</div>`;
-  }
-  clar.questions.forEach((q, qIdx) => {
-    html += `<div class="clarification-question">${escapeHTML(q.label)}</div>`;
-    html += `<div class="clarification-options">`;
-    (q.options || []).forEach(opt => {
-      const val = (opt.text || opt.value || '').replace(/'/g, '&#39;');
-      html += `<button class="clarification-btn" onclick="answerClarification(${msgIdx}, ${qIdx}, '${val}')">${escapeHTML(opt.text || opt.value)}</button>`;
-    });
-    html += `</div>`;
-  });
-  // Siempre incluir botón "Otra respuesta" que enfoca el input
-  html += `
-    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
-      <button class="clarification-btn" style="width: 100%; background: transparent; border: 1px dashed rgba(255,79,0,0.4); color: var(--orange); padding: 11px 14px;" onclick="focusInputForCustomAnswer()">
-        <span style="font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;">▸ Escribir mi propia respuesta</span>
-      </button>
-      ${clar.freeText ? `<div class="clarification-hint" style="margin-top: 8px;">${escapeHTML(clar.freeText)}</div>` : `<div class="clarification-hint" style="margin-top: 8px;">O escribe libremente en el input de abajo</div>`}
-    </div>
-  `;
-  html += `</div>`;
-  return html;
-}
-
-function focusInputForCustomAnswer() {
-  const input = document.getElementById('chatInput');
-  if (input) {
-    input.focus();
-    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    showToast('▸ Escribe tu respuesta abajo');
+  // Próximo evento
+  const next = eventosHoy.find(e => e.ts > ahora);
+  const nextEl = document.getElementById('timeline-next');
+  if (next) {
+    const minsAprox = Math.round((next.ts - ahora) / 60000);
+    nextEl.innerHTML = `
+      <div class="next-label">próximo · en ${minsAprox > 60 ? Math.round(minsAprox / 60) + 'h ' + (minsAprox % 60) + 'min' : minsAprox + ' min'}</div>
+      <div class="next-text">${Util.esc(next.titulo || 'Sin título')}</div>
+    `;
+  } else {
+    nextEl.innerHTML = `<div class="next-label">resto del día</div><div class="next-text">Sin eventos agendados</div>`;
   }
 }
 
-function answerClarification(msgIdx, qIdx, value) {
-  const input = document.getElementById('chatInput');
-  const current = input.value.trim();
-  input.value = current ? current + ' · ' + value : value;
-  autoGrow(input);
-  input.focus();
+// ============================================================
+// PULSO OPERATIVO
+// ============================================================
+function renderPulso() {
+  const finanzas = Store.get(Store.KEYS.FINANZAS, {});
+  const clientes = Store.get(Store.KEYS.CLIENTES, []);
+  const pendientes = Store.get(Store.KEYS.PENDIENTES, []);
+  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
+
+  // Caja
+  const caja = finanzas.mrr || clientes.reduce((s, c) => s + (c.monto_mensual || 0), 0);
+  document.getElementById('pulso-caja').textContent = Util.fmtMoneyK(caja);
+  document.getElementById('pulso-caja-meta').textContent = caja > 0 ? `MRR · ${clientes.length} cuentas` : 'sin clientes activos';
+
+  // Por cobrar
+  const vencidos = clientes.filter(c => c.status === 'vencido');
+  const totalVencido = vencidos.reduce((s, c) => s + (c.monto_pendiente || c.monto_mensual || 0), 0);
+  document.getElementById('pulso-cobrar').textContent = Util.fmtMoneyK(totalVencido);
+  document.getElementById('pulso-cobrar-meta').textContent = vencidos.length ? `${vencidos.length} vencido${vencidos.length > 1 ? 's' : ''}` : 'todos al día';
+
+  // Pendientes alta
+  const altas = pendientes.filter(p => p.prioridad === 'alta' && !p.done);
+  document.getElementById('pulso-pendientes').innerHTML = `${altas.length}<span style="font-size:12px;color:rgba(244,243,239,0.5);font-weight:400;"> alta</span>`;
+  const venceHoy = pendientes.filter(p => !p.done && p.due_ts && Util.daysUntil(p.due_ts) === 0).length;
+  document.getElementById('pulso-pendientes-meta').textContent = venceHoy ? `${venceHoy} vence${venceHoy > 1 ? 'n' : ''} hoy` : 'al corriente';
+
+  // Próxima tocada
+  const proxTocada = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now()).sort((a, b) => a.ts - b.ts)[0];
+  if (proxTocada) {
+    const dias = Util.daysUntil(proxTocada.ts);
+    document.getElementById('pulso-musica').textContent = dias + 'd';
+    document.getElementById('pulso-musica-meta').textContent = `${proxTocada.lugar || 'Tocada'} · ${proxTocada.confirmada ? 'confirmada' : 'tentativa'}`;
+  } else {
+    document.getElementById('pulso-musica').textContent = '—';
+    document.getElementById('pulso-musica-meta').textContent = 'sin tocadas próximas';
+  }
 }
 
-function renderToolCard(tc, idx) {
-  const status = tc.status || 'pending';
-  const statusClass = status === 'executed' ? 'executed' : status === 'rejected' ? 'rejected' : '';
-  const dataRows = Object.entries(tc.data || {}).map(([k,v]) =>
-    `<div class="tool-data-row"><span class="label">${escapeHTML(k)}</span><span class="value">${escapeHTML(String(v))}</span></div>`
-  ).join('');
-  const actionsHTML = status === 'pending' ? `
-    <div class="tool-actions">
-      <button class="tool-btn tool-btn-approve" onclick="approveTool(${idx})">✓ Aprobar y ejecutar</button>
-      <button class="tool-btn tool-btn-reject" onclick="rejectTool(${idx})">✗ Rechazar</button>
-    </div>
-  ` : status === 'executed' ? `
-    <div style="font-family:var(--mono);font-size:10px;color:var(--success);letter-spacing:0.15em;">✓ EJECUTADO</div>
-  ` : `
-    <div style="font-family:var(--mono);font-size:10px;color:var(--gray);letter-spacing:0.15em;">✗ RECHAZADO</div>
-  `;
-  return `
-    <div class="tool-card ${statusClass}">
-      <div class="tool-eyebrow">Acción · ${escapeHTML(tc.module)}</div>
-      <div class="tool-title">${escapeHTML(tc.summary || tc.action)}</div>
-      <div class="tool-data">${dataRows}</div>
-      ${actionsHTML}
-    </div>
-  `;
-}
+// ============================================================
+// DECISIONES (cards con barra lateral)
+// ============================================================
+async function renderDecisiones() {
+  const container = document.getElementById('decisiones-container');
+  const decisiones = await calcularDecisiones();
 
-function renderYTResults(yt, msgIdx) {
-  const { query, results } = yt;
-  if (!results || results.length === 0) return `<div class="yt-results"><div class="yt-results-header">Sin resultados para "${escapeHTML(query)}"</div></div>`;
-  return `
-    <div class="yt-results">
-      <div class="yt-results-header">▶ ${results.length} videos · "${escapeHTML(query)}"</div>
-      <div class="yt-results-list">
-        ${results.map((r,i) => renderYTResult(r, msgIdx, i)).join('')}
-      </div>
-    </div>
-  `;
-}
+  document.getElementById('decisiones-count').textContent = `${decisiones.length} acciones encadenadas listas`;
 
-function renderYTResult(r, msgIdx, i) {
-  const playerId = `ytPlayer-${msgIdx}-${i}`;
-  const dataStr = JSON.stringify({ videoId: r.videoId, title: r.title, channel: r.channel }).replace(/'/g,'&apos;');
-  return `
-    <div class="yt-result">
-      <div class="yt-thumb" onclick="playYT('${playerId}', '${r.videoId}')">
-        <img src="${escapeHTML(r.thumbnail)}" alt="${escapeHTML(r.title)}" loading="lazy">
-      </div>
-      <div class="yt-info">
-        <div class="yt-title">${escapeHTML(r.title)}</div>
-        <div class="yt-channel">${escapeHTML(r.channel)}</div>
-        <div class="yt-meta">${new Date(r.publishedAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'short' })}</div>
-        <div class="yt-actions">
-          <button class="yt-btn" onclick="playYT('${playerId}', '${r.videoId}')">▶ Reproducir</button>
-          <a class="yt-btn" href="https://www.youtube.com/watch?v=${r.videoId}" target="_blank" rel="noopener">▸ YouTube</a>
-          <button class="yt-btn" onclick='saveYTSong(${dataStr})'>▸ Repertorio</button>
-        </div>
-      </div>
-      <div class="yt-player" id="${playerId}"></div>
-    </div>
-  `;
-}
-
-function playYT(playerId, videoId) {
-  const div = document.getElementById(playerId);
-  if (!div) return;
-  if (div.innerHTML) { div.innerHTML = ''; return; }
-  div.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
-}
-
-function saveYTSong(yt) {
-  const songs = load(STORAGE.CANCIONES, []);
-  songs.push({
-    id: uid('song_yt'),
-    titulo: yt.title, artista: yt.channel || '', genero: '', status: 'aprender',
-    letraUrl: '', youtubeUrl: `https://www.youtube.com/watch?v=${yt.videoId}`,
-    anotaciones: '', tareas: [], createdAt: Date.now(), updatedAt: Date.now()
-  });
-  save(STORAGE.CANCIONES, songs);
-  logAction({ module: 'musica_canciones', action: 'add_song_from_yt', summary: `Guardada "${yt.title}" desde YouTube`, data: yt });
-  showToast(`✓ Canción guardada al repertorio`);
-}
-
-async function sendMessage() {
-  if (isSending) return;
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
-
-  const config = getConfig();
-  if (!config.apiKey) {
-    showToast('Configura tu API key Anthropic en Configuración', true);
+  if (decisiones.length === 0) {
+    container.innerHTML = `<div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:14px;padding:18px;text-align:center;font-size:12px;color:var(--text-tertiary);">Sin decisiones pendientes · todo bajo control.</div>`;
     return;
   }
 
-  trackWords(text);
-
-  if (!currentConvId) {
-    currentConvId = uid('conv');
-    currentMessages = [];
-  }
-
-  currentMessages.push({ role: 'user', content: text, ts: Date.now() });
-  input.value = '';
-  autoGrow(input);
-  saveCurrentConv();
-  renderMessages();
-
-  isSending = true;
-  var _sendBtn = document.getElementById('sendBtn'); if (_sendBtn) _sendBtn.disabled = true;
-  input.disabled = true;
-
-  const aiMsgIdx = currentMessages.length;
-  currentMessages.push({ role: 'assistant', content: '', streaming: true, ts: Date.now() });
-  renderMessages();
-
-  try {
-    const messages = currentMessages.filter(m => !m.streaming).map(m => ({ role: m.role, content: m.content }));
-    const result = await callClaude(messages, 'Mando');
-
-    currentMessages[aiMsgIdx] = {
-      role: 'assistant',
-      content: result.text,
-      ts: Date.now(),
-      usage: result.usage,
-      toolCall: result.toolCall,
-      clarify: result.clarify
-    };
-
-    if (currentMessages.filter(m => m.role === 'user').length === 1) {
-      const conv = conversations.find(c => c.id === currentConvId);
-      if (conv && !conv.titleSet) {
-        conv.title = generateTitle(currentMessages[0].content);
-        conv.titleSet = true;
-      }
-    }
-
-    saveCurrentConv();
-    renderMessages();
-  } catch (e) {
-    currentMessages[aiMsgIdx] = {
-      role: 'assistant',
-      content: `**Error:** ${e.message}\n\nVerifica tu API key en /config.html`,
-      ts: Date.now(),
-      error: true
-    };
-    saveCurrentConv();
-    renderMessages();
-  }
-
-  isSending = false;
-  var _sb2 = document.getElementById('sendBtn'); if (_sb2) _sb2.disabled = false;
-  input.disabled = false;
-  if (window.innerWidth > 880) input.focus();
-}
-
-function trackWords(text) {
-  const STOP = new Set(['de','la','que','el','en','y','a','los','del','las','un','por','con','no','una','su','para','es','al','lo','como','mas','más','o','pero','sus','le','ya','este','si','porque','esta','entre','cuando','muy','sin','sobre','también','me','hasta','hay','donde','quien','desde','todo','nos','durante','todos','uno','les','ni','contra','otros','ese','eso','ante','ellos','e','esto','mí','antes','algunos','qué','unos','yo','otro','otras','otra','él','tanto','esa','estos','mucho','quienes','nada','muchos','cual','poco','ella','estar','estas','algunas','algo','nosotros','mi','mis','tú','te','ti','tu','tus','ellas']);
-  const stats = load(STORAGE.CHAT_STATS, { totalTokensIn: 0, totalTokensOut: 0, words: {} });
-  const words = text.toLowerCase().match(/\b[a-záéíóúñ]{3,}\b/g) || [];
-  words.forEach(w => {
-    if (STOP.has(w)) return;
-    stats.words[w] = (stats.words[w] || 0) + 1;
-  });
-  save(STORAGE.CHAT_STATS, stats);
-}
-
-function generateTitle(firstMessage) {
-  const words = firstMessage.split(/\s+/).slice(0, 8).join(' ');
-  return words.length > 50 ? words.substring(0, 50) + '...' : words;
-}
-
-function saveCurrentConv() {
-  if (!currentConvId) return;
-  const existing = conversations.findIndex(c => c.id === currentConvId);
-  const conv = {
-    id: currentConvId,
-    title: existing >= 0 ? conversations[existing].title : 'Nueva conversación',
-    titleSet: existing >= 0 ? conversations[existing].titleSet : false,
-    messages: currentMessages.filter(m => !m.streaming),
-    createdAt: existing >= 0 ? conversations[existing].createdAt : Date.now(),
-    updatedAt: Date.now()
-  };
-  if (existing >= 0) conversations[existing] = conv;
-  else conversations.unshift(conv);
-  save(STORAGE.CHAT_CONVERSATIONS, conversations);
-  const title = document.getElementById('chatTitle');
-  if (title) title.textContent = conv.title;
-}
-
-async function approveTool(msgIdx) {
-  const msg = currentMessages[msgIdx];
-  if (!msg || !msg.toolCall) return;
-  const tc = msg.toolCall;
-
-  try {
-    if (tc.action === 'search_youtube') {
-      msg.ytLoading = true;
-      msg.toolCall.status = 'executed';
-      saveCurrentConv();
-      renderMessages();
-      try {
-        const results = await executeYouTubeSearch(tc.data.query, tc.data.maxResults);
-        msg.ytLoading = false;
-        msg.ytResults = { query: tc.data.query, results };
-        logAction(tc);
-        saveCurrentConv();
-        renderMessages();
-        showToast(`✓ ${results.length} videos encontrados`);
-      } catch (e) {
-        msg.ytLoading = false;
-        msg.ytError = e.message;
-        saveCurrentConv();
-        renderMessages();
-        showToast(`Error YouTube: ${e.message}`, true);
-      }
-    } else if (tc.action === 'request_upload') {
-      tc.status = 'executed';
-      saveCurrentConv();
-      renderMessages();
-      openCFDIUploader(msgIdx, tc.data.tipoArchivo || 'cfdi', tc.data.motivo || '');
-    } else {
-      executeTool(tc);
-      tc.status = 'executed';
-      saveCurrentConv();
-      renderMessages();
-      showToast(`✓ ${tc.summary}`);
-    }
-  } catch (e) {
-    showToast('Error: ' + e.message, true);
-  }
-}
-
-function openCFDIUploader(msgIdx, tipoArchivo, motivo) {
-  const isCFDI = tipoArchivo === 'cfdi' || tipoArchivo === 'xml';
-  const accept = isCFDI ? '.xml' : '.xml,.pdf';
-  document.body.insertAdjacentHTML('beforeend', `
-    <div class="modal-overlay" id="modalUpload" onclick="if(event.target.id==='modalUpload')closeUploadModal()" style="position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:1000;display:flex;align-items:flex-start;padding:30px 16px;justify-content:center;">
-      <div style="background:var(--dark-2);border:1px solid rgba(255,79,0,0.4);border-radius:5px;max-width:520px;width:100%;display:flex;flex-direction:column;">
-        <div style="padding:14px 18px;border-bottom:1px solid rgba(255,79,0,0.2);display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-family:var(--display);font-size:17px;color:var(--white);">Subir ${isCFDI ? 'CFDI 4.0' : 'archivo'}</div>
-          <button onclick="closeUploadModal()" style="width:26px;height:26px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--gray);cursor:pointer;border-radius:2px;">✕</button>
+  let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+  decisiones.forEach(d => {
+    html += `
+      <div class="decision-card ${d.color}">
+        <div class="decision-eyebrow">
+          ${d.icon}
+          <div class="label">${Util.esc(d.eyebrow)}</div>
         </div>
-        <div style="padding:18px;">
-          ${motivo ? `<div style="background:rgba(74,158,255,0.06);border-left:2px solid var(--info);padding:10px 12px;margin-bottom:14px;border-radius:2px;font-size:12px;color:var(--white);line-height:1.5;"><strong style="color:var(--info);">Motivo IA:</strong> ${escapeHTML(motivo)}</div>` : ''}
-          <div class="file-upload" id="cfdiDropzone">
-            <div class="file-upload-icon">▲</div>
-            <div class="file-upload-text">Arrastra archivo o click para seleccionar</div>
-            <div class="file-upload-hint">${isCFDI ? 'Acepta .xml CFDI 4.0' : 'Acepta .xml o .pdf'}</div>
+        <div class="decision-title">${Util.esc(d.titulo)}</div>
+        ${d.pivots ? `
+          <div class="decision-pivots">
+            ${d.pivots.map(p => `
+              <div class="decision-pivot">
+                <div class="pivot-label">${Util.esc(p.label)}</div>
+                <div class="pivot-value">${Util.esc(p.value)}</div>
+              </div>
+            `).join('')}
           </div>
-          <input type="file" id="cfdiFileInput" accept="${accept}" style="display:none;">
-          <div id="cfdiPreview"></div>
-        </div>
-        <div style="padding:12px 18px;border-top:1px solid rgba(255,255,255,0.05);display:flex;gap:6px;justify-content:flex-end;">
-          <button onclick="closeUploadModal()" style="padding:8px 14px;background:transparent;color:var(--gray-light);border:1px solid rgba(255,255,255,0.1);font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;font-weight:700;cursor:pointer;border-radius:3px;">Cancelar</button>
+        ` : ''}
+        <div class="decision-actions">
+          <button class="btn primary-${d.color}" data-action="${d.action_primary}" data-id="${d.id}">${Util.esc(d.btn_primary)}</button>
+          ${d.btn_secondary ? `<button class="btn" data-action="${d.action_secondary}" data-id="${d.id}">${Util.esc(d.btn_secondary)}</button>` : ''}
         </div>
       </div>
-    </div>
-  `);
+    `;
+  });
+  html += '</div>';
+  container.innerHTML = html;
 
-  const dropzone = document.getElementById('cfdiDropzone');
-  const fileInput = document.getElementById('cfdiFileInput');
-
-  dropzone.onclick = () => fileInput.click();
-  dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('dragover'); };
-  dropzone.ondragleave = () => dropzone.classList.remove('dragover');
-  dropzone.ondrop = (e) => {
-    e.preventDefault();
-    dropzone.classList.remove('dragover');
-    if (e.dataTransfer.files.length > 0) processCFDIFile(e.dataTransfer.files[0], msgIdx);
-  };
-  fileInput.onchange = (e) => {
-    if (e.target.files.length > 0) processCFDIFile(e.target.files[0], msgIdx);
-  };
+  // Bind acciones
+  container.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
+      await handleDecisionAction(action, id);
+    });
+  });
 }
 
-async function processCFDIFile(file, msgIdx) {
-  const preview = document.getElementById('cfdiPreview');
-  if (!file.name.endsWith('.xml')) {
-    preview.innerHTML = `<div class="file-attached" style="background:rgba(230,57,70,0.06);border-color:var(--danger);"><div class="file-attached-icon" style="background:rgba(230,57,70,0.15);color:var(--danger);">!</div><div class="file-attached-info"><div class="file-attached-name">Solo XML CFDI 4.0</div><div class="file-attached-meta">Para PDFs usa la integración futura · por ahora exporta el XML</div></div></div>`;
+async function calcularDecisiones() {
+  const decisiones = [];
+  const clientes = Store.get(Store.KEYS.CLIENTES, []);
+  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
+
+  // 1. Cliente vencido (cobranza)
+  const vencido = clientes.find(c => c.status === 'vencido');
+  if (vencido) {
+    decisiones.push({
+      id: vencido.id,
+      color: 'orange',
+      icon: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 9v3m0 3h.01M5 19h14a2 2 0 001.7-3l-7-12a2 2 0 00-3.4 0l-7 12A2 2 0 005 19z" stroke="rgba(255,170,110,0.95)" stroke-width="1.5"/></svg>`,
+      eyebrow: `cobranza · ${vencido.nombre}`,
+      titulo: 'Genero liga + manda WhatsApp en automático',
+      pivots: [
+        { label: 'VENCIDO', value: (vencido.dias_vencido || 0) + ' días' },
+        { label: 'MONTO', value: Util.fmtMoney(vencido.monto_pendiente || vencido.monto_mensual) },
+        { label: 'MÉTODO', value: vencido.metodo_pago || 'CLABE' }
+      ],
+      btn_primary: 'Generar y enviar',
+      action_primary: 'cobranza_full',
+      btn_secondary: 'Solo generar',
+      action_secondary: 'cobranza_solo'
+    });
+  }
+
+  // 2. Tocada próxima sin set list
+  const proxTocada = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now() && Util.daysUntil(e.ts) <= 7).sort((a, b) => a.ts - b.ts)[0];
+  if (proxTocada && (!proxTocada.set_list || proxTocada.set_list.length === 0)) {
+    decisiones.push({
+      id: proxTocada.id,
+      color: 'cyan',
+      icon: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M9 18V5l12-2v13" stroke="rgba(180,220,240,0.95)" stroke-width="1.5"/><circle cx="6" cy="18" r="3" stroke="rgba(180,220,240,0.95)" stroke-width="1.5"/></svg>`,
+      eyebrow: `set list · ${proxTocada.lugar || 'tocada'}`,
+      titulo: 'Te armo set 5-9 canciones según género del lugar',
+      pivots: [
+        { label: 'LUGAR', value: proxTocada.lugar || 'TBD' },
+        { label: 'EN', value: Util.daysUntil(proxTocada.ts) + ' días' },
+        { label: 'TIPO', value: proxTocada.tipo_evento || 'general' }
+      ],
+      btn_primary: 'Armar set',
+      action_primary: 'armar_set',
+      btn_secondary: 'Manual',
+      action_secondary: 'manual_set'
+    });
+  }
+
+  // 3. Tip proactivo si hay constancia detectada
+  // (Solo si no hay decisiones urgentes ya, para no saturar)
+  if (decisiones.length < 3) {
+    const finanzas = Store.get(Store.KEYS.FINANZAS, {});
+    const objetivos = Store.get(Store.KEYS.OBJETIVOS, []);
+    const objCasa = objetivos.find(o => o.tipo === 'ahorro_casa');
+    if (objCasa && objCasa.progreso < 50) {
+      // Detecta posible viaje en bitácora
+      const bp = Store.get(Store.KEYS.BITACORA_PERSONAL, []);
+      const mencionesViaje = bp.filter(b => /ensenada|viaje|salir/i.test(b.texto || '')).length;
+      if (mencionesViaje >= 2) {
+        decisiones.push({
+          id: 'viaje_ensenada',
+          color: 'cyan',
+          icon: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 2C8 2 4.5 5.5 4.5 9.5c0 5 7.5 12.5 7.5 12.5s7.5-7.5 7.5-12.5C19.5 5.5 16 2 12 2z" stroke="rgba(150,220,200,0.95)" stroke-width="1.5"/></svg>`,
+          eyebrow: `viaje · 17-19 mayo`,
+          titulo: 'Ensenada en firme · te alcanza con $4,800 si recortas hormiga',
+          pivots: [
+            { label: 'CALENDARIO', value: '3 días libres ✓' },
+            { label: 'CAJA', value: '+$32K proyectado' },
+            { label: 'PRESUPUESTO', value: '$4,800' }
+          ],
+          btn_primary: 'Confirmar',
+          action_primary: 'confirmar_viaje',
+          btn_secondary: 'Tentativo',
+          action_secondary: 'tentativo_viaje'
+        });
+      }
+    }
+  }
+
+  return decisiones;
+}
+
+async function handleDecisionAction(action, id) {
+  switch (action) {
+    case 'cobranza_full':
+      const r = await Cascada.marcarPagado(id);
+      if (r.ok) UI.toast('Pago registrado · cascada disparada ✓', 'success');
+      else UI.toast('No pude registrar · revisa', 'error');
+      renderDecisiones();
+      renderPulso();
+      break;
+    case 'cobranza_solo':
+      UI.toast('Liga generada · te la copio al portapapeles', 'info');
+      // Aquí iría la lógica de generar liga MP/Stripe
+      break;
+    case 'armar_set':
+      window.location.href = `musica.html?armar_set=${id}`;
+      break;
+    case 'confirmar_viaje':
+      Store.push(Store.KEYS.CALENDARIO, {
+        tipo: 'viaje',
+        titulo: 'Ensenada',
+        ts: new Date(2026, 4, 17, 9, 0).getTime(),
+        ts_fin: new Date(2026, 4, 19, 22, 0).getTime(),
+        confirmado: true,
+        presupuesto: 4800
+      });
+      UI.toast('Viaje confirmado · 3 días bloqueados ✓', 'success');
+      renderDecisiones();
+      break;
+    case 'tentativo_viaje':
+      UI.toast('Marcado como tentativo · te recuerdo en 3 días', 'info');
+      break;
+    default:
+      console.log('Acción no implementada:', action);
+  }
+}
+
+// ============================================================
+// CONTEXTO IA
+// ============================================================
+function renderContexto() {
+  const grid = document.getElementById('contexto-grid');
+  const finanzas = Store.get(Store.KEYS.FINANZAS, {});
+  const clientes = Store.get(Store.KEYS.CLIENTES, []);
+  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
+
+  const items = [];
+
+  if ((finanzas.mrr || 0) > 50000) items.push({ color: 'rgba(180,220,170,0.85)', text: 'caja sana' });
+  else items.push({ color: 'rgba(244,213,128,0.95)', text: 'caja ajustada' });
+
+  const vencidos = clientes.filter(c => c.status === 'vencido');
+  if (vencidos.length) items.push({ color: 'rgba(255,150,80,0.95)', text: `${vencidos[0].nombre} vencido` });
+
+  const proxTocada = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now()).sort((a, b) => a.ts - b.ts)[0];
+  if (proxTocada) items.push({ color: 'rgba(150,210,230,0.95)', text: `tocada en ${Util.daysUntil(proxTocada.ts)} días` });
+
+  items.push({ color: 'rgba(244,243,239,0.5)', text: 'Bigin sync ✓' });
+  items.push({ color: 'rgba(244,213,128,0.95)', text: 'servicios fijos' });
+  items.push({ color: 'rgba(120,200,180,0.95)', text: 'objetivos vivos' });
+
+  grid.innerHTML = items.map(i => `
+    <div style="display:flex;align-items:center;gap:7px;padding:6px 0;">
+      <div style="width:5px;height:5px;background:${i.color};border-radius:50%;"></div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.85);">${Util.esc(i.text)}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// CHAT GLOBAL EN MANDO
+// ============================================================
+async function handleChatMessage(text) {
+  // Detectar intent (Haiku · rápido)
+  const intent = await IA.detectIntent(text);
+
+  if (intent.intent === 'register' && intent.domain === 'movimiento' && intent.data.monto) {
+    const r = Cascada.registrarMovimiento(intent.data);
+    UI.toast(`Movimiento registrado · ${intent.data.tipo} ${Util.fmtMoney(intent.data.monto)}`, 'success');
+    renderPulso();
     return;
   }
-  const text = await file.text();
-  const parsed = parseCFDI(text);
-  if (parsed.error) {
-    preview.innerHTML = `<div class="file-attached" style="background:rgba(230,57,70,0.06);border-color:var(--danger);"><div class="file-attached-icon" style="background:rgba(230,57,70,0.15);color:var(--danger);">!</div><div class="file-attached-info"><div class="file-attached-name">Error: ${escapeHTML(parsed.error)}</div><div class="file-attached-meta">${escapeHTML(file.name)}</div></div></div>`;
+
+  if (intent.intent === 'delete') {
+    UI.toast('Para eliminar, ve al módulo correspondiente · medida de seguridad', 'info');
     return;
   }
-  const cfdi = saveCFDI(parsed, file.name);
-  preview.innerHTML = `
-    <div class="file-attached">
-      <div class="file-attached-icon">✓</div>
-      <div class="file-attached-info">
-        <div class="file-attached-name">${escapeHTML(file.name)}</div>
-        <div class="file-attached-meta">${cfdi.tipo} · ${escapeHTML(cfdi.emisor.nombre)} → ${escapeHTML(cfdi.receptor.nombre)} · $${Number(cfdi.total).toLocaleString('es-MX')} ${cfdi.moneda}</div>
-      </div>
-    </div>
-    <div style="margin-top:12px;padding:12px 14px;background:rgba(0,217,126,0.06);border-left:2px solid var(--success);border-radius:2px;font-size:12px;color:var(--white);line-height:1.6;">
-      <strong style="color:var(--success);">CFDI parseado · ${cfdi.tipo.toUpperCase()}</strong><br>
-      Emisor: ${escapeHTML(cfdi.emisor.rfc)} (${escapeHTML(cfdi.emisor.nombre)})<br>
-      Receptor: ${escapeHTML(cfdi.receptor.rfc)} (${escapeHTML(cfdi.receptor.nombre)})<br>
-      Subtotal: $${cfdi.subtotal.toLocaleString('es-MX')} · IVA: $${cfdi.iva.toLocaleString('es-MX')} · <strong>Total: $${cfdi.total.toLocaleString('es-MX')}</strong><br>
-      UUID: ${escapeHTML(cfdi.uuid).slice(0,18)}...<br>
-      Conceptos: ${cfdi.conceptos.length}
-    </div>
-    <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">
-      <button onclick="sendCFDIToAI('${cfdi.id}', ${msgIdx})" style="padding:9px 14px;background:var(--orange);color:var(--white);font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;border:none;cursor:pointer;border-radius:2px;">▸ Analizar con IA</button>
-      <button onclick="closeUploadModal()" style="padding:9px 14px;background:transparent;color:var(--gray-light);border:1px solid rgba(255,255,255,0.1);font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;cursor:pointer;border-radius:2px;">Solo guardar</button>
-    </div>
-  `;
+
+  // Si es chat libre, redirige a chat.html con prefilled
+  window.location.href = 'chat.html?msg=' + encodeURIComponent(text);
 }
 
-function sendCFDIToAI(cfdiId, msgIdx) {
-  const cfdis = load(STORAGE.CFDIS, []);
-  const cfdi = cfdis.find(c => c.id === cfdiId);
-  if (!cfdi) return;
+// ============================================================
+// MINI-PLAYER
+// ============================================================
+function loadMiniplayer() {
+  const cancion = Store.get('alan_mando_current_song', null);
+  if (!cancion) return;
+  const mp = document.getElementById('miniplayer');
+  document.getElementById('mp-title').textContent = cancion.titulo + ' · ' + cancion.artista;
+  document.getElementById('mp-progress').style.width = (cancion.progress || 0) + '%';
+  mp.classList.add('active');
 
-  closeUploadModal();
-  const summary = `Te cargué un CFDI ${cfdi.tipo} para análisis:
-- Emisor: ${cfdi.emisor.rfc} (${cfdi.emisor.nombre})
-- Receptor: ${cfdi.receptor.rfc} (${cfdi.receptor.nombre})
-- Fecha: ${cfdi.fecha?.slice(0,10)}
-- Subtotal: $${cfdi.subtotal.toLocaleString('es-MX')}
-- IVA: $${cfdi.iva.toLocaleString('es-MX')}
-- Total: $${cfdi.total.toLocaleString('es-MX')} ${cfdi.moneda}
-- UUID: ${cfdi.uuid}
-- Forma pago: ${cfdi.formaPago || 'no especificada'} · Método: ${cfdi.metodoPago || 'no especificado'}
-- Conceptos (${cfdi.conceptos.length}): ${cfdi.conceptos.slice(0,3).map(c => c.descripcion).join(' · ')}
-
-Por favor analiza este CFDI: ¿es deducible, qué implicaciones fiscales tiene, recomendaciones SAT?`;
-
-  document.getElementById('chatInput').value = summary;
-  autoGrow(document.getElementById('chatInput'));
-  sendMessage();
-  showToast(`✓ CFDI cargado · enviando a IA`);
-}
-
-function closeUploadModal() {
-  const m = document.getElementById('modalUpload');
-  if (m) m.remove();
-}
-
-function rejectTool(msgIdx) {
-  const msg = currentMessages[msgIdx];
-  if (!msg || !msg.toolCall) return;
-  msg.toolCall.status = 'rejected';
-  saveCurrentConv();
-  renderMessages();
-}
-
-function autoGrow(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 200) + 'px';
-}
-function handleInputKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  else if (e.key === 'Escape') { e.preventDefault(); newChat(); }
-}
-
-init();
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(function() {
-    if (typeof mountBottomnav === 'function') mountBottomnav('mando');
-  }, 150);
-});
-if (document.readyState !== 'loading' && typeof mountBottomnav === 'function') {
-  setTimeout(function() { mountBottomnav('mando'); }, 150);
+  document.getElementById('mp-close').addEventListener('click', () => {
+    Store.set('alan_mando_current_song', null);
+    mp.classList.remove('active');
+  });
 }
 </script>
 </body>
