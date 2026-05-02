@@ -36,6 +36,10 @@ const G2C = {
   },
   auth: {
     hash: '0db087d6b415b97c7641ef7862e88c9aa88323f3c488150ed09d6d1c45c6efc0'
+  },
+  push: {
+    vapid_public: 'BL7J3TfdZEosrdDc5IWs5BBzM6uj0-1PiOPmhNeo0fp08E_NQdrW-VWB8u0b9zANoL5zd2su8gCEcPg8d79fwVM',
+    server: 'https://g2c-mando-push.direccionalom.workers.dev'
   }
 };
 
@@ -421,6 +425,7 @@ ${KB.reglas.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
 # ESTADO ACTUAL DEL ERP DE ALAN (${date})
 ${this.buildStateContext(snap)}
+${typeof Attach !== 'undefined' ? Attach.buildContext() : ''}
 
 # CÓMO RESPONDER
 1. Si Alan menciona algo personal/emocional → reconócelo ANTES de operar. Tono cálido pero no empalagoso.
@@ -969,7 +974,507 @@ const Auth = {
 };
 
 // ============================================================
-// 9 · INICIALIZACIÓN
+// 8 · ATTACHMENTS · documentos persistentes consultables por la IA
+// ============================================================
+
+const Attach = {
+  TYPES: {
+    cedula_fiscal: { label: 'Cédula fiscal · RFC', icon: '◈', accept: 'image/*,application/pdf' },
+    constancia_situacion_fiscal: { label: 'Constancia de Situación Fiscal', icon: '◆', accept: 'application/pdf,image/*' },
+    declaracion_anual: { label: 'Declaración anual', icon: '▣', accept: 'application/pdf' },
+    declaracion_mensual: { label: 'Declaración mensual', icon: '▤', accept: 'application/pdf' },
+    opinion_cumplimiento: { label: 'Opinión cumplimiento SAT', icon: '✓', accept: 'application/pdf,image/*' },
+    identificacion: { label: 'Identificación oficial · INE', icon: '◇', accept: 'image/*,application/pdf' },
+    comprobante_domicilio: { label: 'Comprobante de domicilio', icon: '⌂', accept: 'application/pdf,image/*' },
+    contrato: { label: 'Contrato / acuerdo', icon: '§', accept: 'application/pdf,image/*' },
+    cfdi: { label: 'CFDI · factura', icon: '$', accept: 'application/pdf,application/xml,text/xml' },
+    manual_g2c: { label: 'Manual G2C · uso interno', icon: '★', accept: 'application/pdf,text/markdown,text/plain' },
+    portafolio: { label: 'Portafolio productos G2C', icon: '▦', accept: 'application/pdf,text/markdown' },
+    caso_exito: { label: 'Caso de éxito · cliente', icon: '◉', accept: 'application/pdf,image/*' },
+    otro: { label: 'Otro documento', icon: '·', accept: '*/*' }
+  },
+
+  list() {
+    return Store.get(Store.KEYS.ATTACHMENTS, []);
+  },
+
+  byType(type) {
+    return this.list().filter(a => a.type === type);
+  },
+
+  async save(att) {
+    const all = this.list();
+    if (att.id) {
+      const idx = all.findIndex(a => a.id === att.id);
+      if (idx >= 0) all[idx] = { ...all[idx], ...att, updated_at: Date.now() };
+    } else {
+      att.id = 'att_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      att.created_at = Date.now();
+      att.updated_at = Date.now();
+      all.unshift(att);
+    }
+    Store.set(Store.KEYS.ATTACHMENTS, all);
+    return att;
+  },
+
+  remove(id) {
+    const all = this.list();
+    Store.set(Store.KEYS.ATTACHMENTS, all.filter(a => a.id !== id));
+  },
+
+  fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  },
+
+  /**
+   * Construye el contexto de adjuntos para inyectar al system prompt de la IA.
+   * Esto es lo que permite que Claude consulte tus documentos cuando le preguntas.
+   */
+  buildContext() {
+    const atts = this.list();
+    if (atts.length === 0) return '';
+
+    const grouped = {};
+    atts.forEach(a => {
+      if (!grouped[a.type]) grouped[a.type] = [];
+      grouped[a.type].push(a);
+    });
+
+    let ctx = '\n# DOCUMENTOS DISPONIBLES DE ALAN\nTienes estos documentos cargados que puedes consultar para análisis fiscal, comercial y operativo:\n';
+    Object.entries(grouped).forEach(([type, items]) => {
+      const meta = this.TYPES[type] || { label: type };
+      ctx += `\n## ${meta.label}\n`;
+      items.forEach(a => {
+        ctx += `- ${a.title || a.fileName || 'Sin título'}${a.notes ? ' · ' + a.notes : ''}\n`;
+        if (a.extracted_text) {
+          const preview = a.extracted_text.slice(0, 800);
+          ctx += `  Contenido: ${preview}${a.extracted_text.length > 800 ? '...' : ''}\n`;
+        }
+      });
+    });
+    return ctx;
+  }
+};
+
+// ============================================================
+// 9 · API KEYS · Conexiones que el usuario configura desde UI
+// ============================================================
+
+const ApiKeys = {
+  /**
+   * Definición de las conexiones disponibles. Cada una tiene:
+   * - name: nombre humano
+   * - storage_key: dónde se guarda (cliente vs worker)
+   * - test_url: endpoint para validar conexión
+   * - required: si es indispensable
+   */
+  CONNECTIONS: {
+    anthropic: {
+      name: 'Anthropic Claude API',
+      description: 'Cerebro IA · Sonnet 4.5 + Haiku 4.5',
+      storage: 'worker',
+      test_endpoint: '/health',
+      required: true,
+      doc_url: 'https://console.anthropic.com/settings/keys',
+      placeholder: 'sk-ant-api03-...',
+      hint: 'La key se guarda en el Worker de Cloudflare como Secret · NUNCA en el cliente'
+    },
+    youtube: {
+      name: 'YouTube Data API',
+      description: 'Cache de canciones · letras · videos',
+      storage: 'client',
+      key_name: 'youtube_api_key',
+      required: false,
+      doc_url: 'https://console.cloud.google.com/apis/credentials',
+      placeholder: 'AIzaSy...'
+    },
+    google_maps: {
+      name: 'Google Maps API',
+      description: 'Prospects · venues música · lugares Tijuana',
+      storage: 'worker',
+      test_endpoint: '/api/maps/test',
+      required: false,
+      doc_url: 'https://console.cloud.google.com/google/maps-apis/credentials',
+      placeholder: 'AIzaSy...'
+    },
+    spotify: {
+      name: 'Spotify Web API',
+      description: 'Sincronizar repertorio musical',
+      storage: 'client',
+      key_name: 'spotify_api_key',
+      required: false,
+      doc_url: 'https://developer.spotify.com/dashboard',
+      placeholder: 'client_id:client_secret'
+    },
+    instagram: {
+      name: 'Instagram Graph API',
+      description: 'Engagement + métricas posts',
+      storage: 'client',
+      key_name: 'instagram_token',
+      required: false,
+      doc_url: 'https://developers.facebook.com/apps',
+      placeholder: 'IGQVJX...'
+    },
+    whisper: {
+      name: 'OpenAI Whisper',
+      description: 'Voz a texto · registrar movimientos hablando',
+      storage: 'worker',
+      test_endpoint: '/api/whisper/test',
+      required: false,
+      doc_url: 'https://platform.openai.com/api-keys',
+      placeholder: 'sk-...'
+    },
+    zoho_bigin: {
+      name: 'Zoho Bigin',
+      description: 'Sync leads del Diagnóstico Inteligente',
+      storage: 'worker',
+      test_endpoint: '/api/bigin/test',
+      required: false,
+      doc_url: 'https://www.zoho.com/bigin/developer/docs/',
+      placeholder: '1000.xxx...'
+    },
+    mercadopago: {
+      name: 'MercadoPago',
+      description: 'Cobros · ligas de pago',
+      storage: 'client',
+      key_name: 'mercadopago_token',
+      required: false,
+      doc_url: 'https://www.mercadopago.com.mx/developers',
+      placeholder: 'APP_USR-...'
+    }
+  },
+
+  /**
+   * Get/set keys que viven en el cliente (NO sensibles, OK exponer).
+   */
+  getClient(connection_id) {
+    const config = Store.get(Store.KEYS.CONFIG, {});
+    const conn = this.CONNECTIONS[connection_id];
+    if (!conn || conn.storage !== 'client') return null;
+    return config[conn.key_name] || null;
+  },
+
+  setClient(connection_id, value) {
+    const conn = this.CONNECTIONS[connection_id];
+    if (!conn || conn.storage !== 'client') return false;
+    const config = Store.get(Store.KEYS.CONFIG, {});
+    config[conn.key_name] = value;
+    config[conn.key_name + '_connected_at'] = Date.now();
+    return Store.set(Store.KEYS.CONFIG, config);
+  },
+
+  removeClient(connection_id) {
+    const conn = this.CONNECTIONS[connection_id];
+    if (!conn || conn.storage !== 'client') return false;
+    const config = Store.get(Store.KEYS.CONFIG, {});
+    delete config[conn.key_name];
+    delete config[conn.key_name + '_connected_at'];
+    return Store.set(Store.KEYS.CONFIG, config);
+  },
+
+  /**
+   * Para keys que viven en el Worker · solo enviamos la key al worker para que la guarde.
+   * El cliente NO la persiste.
+   */
+  async setWorker(connection_id, value) {
+    try {
+      const res = await fetch(G2C.api.proxy + '/api/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connection: connection_id, key: value })
+      });
+      if (!res.ok) throw new Error('Worker rechazó la conexión: ' + res.status);
+      const data = await res.json();
+
+      // Marcamos en config local que SÍ está conectado, sin guardar la key
+      const config = Store.get(Store.KEYS.CONFIG, {});
+      config['conn_' + connection_id + '_connected'] = true;
+      config['conn_' + connection_id + '_connected_at'] = Date.now();
+      Store.set(Store.KEYS.CONFIG, config);
+
+      return { success: true, ...data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  async removeWorker(connection_id) {
+    try {
+      await fetch(G2C.api.proxy + '/api/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connection: connection_id })
+      });
+      const config = Store.get(Store.KEYS.CONFIG, {});
+      delete config['conn_' + connection_id + '_connected'];
+      delete config['conn_' + connection_id + '_connected_at'];
+      Store.set(Store.KEYS.CONFIG, config);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  /**
+   * Test de una conexión.
+   */
+  async test(connection_id) {
+    const conn = this.CONNECTIONS[connection_id];
+    if (!conn) return { success: false, error: 'Conexión desconocida' };
+
+    if (connection_id === 'anthropic') {
+      // Test rápido con Haiku
+      try {
+        const res = await fetch(G2C.api.proxy + '/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: G2C.models.haiku,
+            messages: [{ role: 'user', content: 'di OK' }],
+            max_tokens: 10
+          })
+        });
+        const data = await res.json();
+        if (data.content && data.content[0]) {
+          return { success: true, response: data.content[0].text };
+        }
+        return { success: false, error: data.error || 'Sin respuesta' };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+
+    if (connection_id === 'youtube') {
+      const key = this.getClient('youtube');
+      if (!key) return { success: false, error: 'No hay key configurada' };
+      try {
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=test&type=video&maxResults=1&key=${key}`);
+        const data = await res.json();
+        if (data.items) return { success: true, message: 'Conectada' };
+        return { success: false, error: data.error?.message || 'Key inválida' };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+
+    return { success: true, message: 'Test no implementado · marca como conectada manualmente' };
+  },
+
+  /**
+   * Estado de todas las conexiones.
+   */
+  status() {
+    const config = Store.get(Store.KEYS.CONFIG, {});
+    const status = {};
+    Object.keys(this.CONNECTIONS).forEach(id => {
+      const conn = this.CONNECTIONS[id];
+      if (conn.storage === 'client') {
+        status[id] = !!config[conn.key_name];
+      } else {
+        status[id] = !!config['conn_' + id + '_connected'];
+      }
+    });
+    return status;
+  }
+};
+
+// ============================================================
+// 10 · PUSH NOTIFICATIONS · suscripción + test profesional
+// ============================================================
+
+const Push = {
+  support() {
+    return {
+      supported: 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window,
+      service_worker: 'serviceWorker' in navigator,
+      push_manager: 'PushManager' in window,
+      notification: 'Notification' in window,
+      permission: typeof Notification !== 'undefined' ? Notification.permission : 'denied',
+      is_standalone: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true,
+      ios: /iPad|iPhone|iPod/.test(navigator.userAgent),
+      requires_pwa_install: /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true)
+    };
+  },
+
+  urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const arr = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) arr[i] = rawData.charCodeAt(i);
+    return arr;
+  },
+
+  async registerSW() {
+    if (!('serviceWorker' in navigator)) return null;
+    try {
+      return await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    } catch (err) {
+      console.error('[Push] SW registration failed', err);
+      return null;
+    }
+  },
+
+  async requestPermission() {
+    if (!('Notification' in window)) return { granted: false, error: 'Notification API no disponible' };
+    if (Notification.permission === 'granted') return { granted: true };
+    if (Notification.permission === 'denied') return { granted: false, error: 'Permiso denegado · habilítalo manualmente en ajustes del navegador' };
+    try {
+      const result = await Notification.requestPermission();
+      return { granted: result === 'granted' };
+    } catch (err) {
+      return { granted: false, error: err.message };
+    }
+  },
+
+  async subscribe() {
+    const support = this.support();
+    if (!support.supported) return { success: false, error: 'Push no soportado en este navegador' };
+    if (support.requires_pwa_install) return { success: false, error: 'iOS requiere instalar la app a pantalla de inicio · botón compartir → Agregar a pantalla de inicio' };
+
+    const perm = await this.requestPermission();
+    if (!perm.granted) return { success: false, error: perm.error || 'Permiso denegado' };
+
+    const reg = await this.registerSW();
+    if (!reg) return { success: false, error: 'Service Worker no se pudo registrar' };
+
+    await navigator.serviceWorker.ready;
+
+    let subscription = await reg.pushManager.getSubscription();
+    if (!subscription) {
+      try {
+        subscription = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: this.urlBase64ToUint8Array(G2C.push.vapid_public)
+        });
+      } catch (err) {
+        return { success: false, error: 'Error al suscribir: ' + err.message };
+      }
+    }
+
+    const subData = subscription.toJSON();
+    Store.set(Store.KEYS.PUSH_SUB, subData);
+
+    try {
+      const res = await fetch(G2C.push.server + '/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: 'alan-default',
+          subscription: subData,
+          deviceInfo: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            isStandalone: support.is_standalone
+          }
+        })
+      });
+      if (!res.ok) throw new Error('Server returned ' + res.status);
+    } catch (err) {
+      return { success: true, subscription: subData, warning: 'Suscripción local OK · servidor: ' + err.message };
+    }
+
+    return { success: true, subscription: subData };
+  },
+
+  async unsubscribe() {
+    if (!('serviceWorker' in navigator)) return { success: false };
+    const reg = await navigator.serviceWorker.ready;
+    const subscription = await reg.pushManager.getSubscription();
+    if (subscription) {
+      const subData = subscription.toJSON();
+      await subscription.unsubscribe();
+      try {
+        await fetch(G2C.push.server + '/unsubscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: 'alan-default', endpoint: subData.endpoint })
+        });
+      } catch (e) { /* silent */ }
+    }
+    localStorage.removeItem(Store.KEYS.PUSH_SUB);
+    return { success: true };
+  },
+
+  async status() {
+    const support = this.support();
+    if (!support.supported) return { ...support, subscribed: false };
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) return { ...support, subscribed: false };
+      const subscription = await reg.pushManager.getSubscription();
+      return { ...support, subscribed: !!subscription, subscription: subscription ? subscription.toJSON() : null };
+    } catch (err) {
+      return { ...support, subscribed: false, error: err.message };
+    }
+  },
+
+  /**
+   * Test local · muestra notificación inmediata para validar.
+   * Aplica formato profesional: SIN emojis, con prioridad y monto.
+   */
+  async testLocal(opts = {}) {
+    const perm = await this.requestPermission();
+    if (!perm.granted) return { success: false, error: perm.error || 'Sin permiso' };
+
+    await this.registerSW();
+    const reg = await navigator.serviceWorker.ready;
+    if (!reg.active) return { success: false, error: 'Service Worker no activo · espera unos segundos y reintenta' };
+
+    const payload = {
+      priority: opts.priority || 'media',
+      subject: opts.subject || 'Test del sistema',
+      body: opts.body || 'Sistema de notificaciones operativo. Mando puede alertarte de cobros, tocadas y deadlines fiscales.',
+      amount: opts.amount,
+      url: opts.url || '/'
+    };
+
+    reg.active.postMessage({ type: 'TEST_NOTIFICATION', payload });
+    return { success: true };
+  },
+
+  /**
+   * Programa notificación remota vía Worker.
+   * Estructura profesional: priority + subject + amount.
+   */
+  async schedule(opts) {
+    if (!opts.title && !opts.subject) return { success: false, error: 'Falta subject o title' };
+    if (!opts.sendAt) return { success: false, error: 'Falta sendAt (timestamp)' };
+
+    const subData = Store.get(Store.KEYS.PUSH_SUB);
+    if (!subData) return { success: false, error: 'No hay suscripción activa' };
+
+    try {
+      const res = await fetch(G2C.push.server + '/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: 'alan-default',
+          type: opts.type || 'general',
+          title: opts.subject || opts.title,
+          body: opts.body || '',
+          priority: opts.priority || 'media',
+          amount: opts.amount,
+          sendAt: opts.sendAt,
+          url: opts.url || '/',
+          data: opts.data || {}
+        })
+      });
+      if (!res.ok) throw new Error('Server returned ' + res.status);
+      return { success: true, ...(await res.json()) };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+};
+
+// ============================================================
+// 11 · INICIALIZACIÓN
 // ============================================================
 
 window.G2C = G2C;
@@ -980,6 +1485,9 @@ window.IA = IA;
 window.Cascada = Cascada;
 window.UI = UI;
 window.Auth = Auth;
+window.Attach = Attach;
+window.ApiKeys = ApiKeys;
+window.Push = Push;
 
 console.log(`%cG2C Mando v${G2C.version}`, 'color:#FF4F00;font-weight:bold;font-size:14px;');
 console.log('%cCreated by Alan Davis · powered by g2c.com.mx', 'color:rgba(244,243,239,0.5);font-size:11px;');

@@ -7,6 +7,43 @@
 <title>Configuración · Mando</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
+<style>
+.section-block { margin-bottom: 18px; }
+.conn-card { background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 11px; padding: 12px; margin-bottom: 8px; }
+.conn-card.connected { background: rgba(180,220,170,0.04); border-color: rgba(180,220,170,0.2); }
+.conn-card.required-missing { background: rgba(255,79,0,0.04); border-color: rgba(255,79,0,0.25); }
+.conn-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.conn-name { font-size: 12px; font-weight: 500; }
+.conn-desc { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
+.conn-input-row { display: flex; gap: 6px; margin-top: 8px; }
+.conn-input { flex: 1; background: rgba(15,20,25,0.6); border: 0.5px solid var(--border-mid); border-radius: 7px; padding: 8px 10px; font-size: 11px; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; outline: none; }
+.conn-input:focus { border-color: rgba(255,79,0,0.4); }
+.conn-input.has-value { background: rgba(180,220,170,0.05); }
+.conn-btn-small { padding: 7px 11px; font-size: 11px; border-radius: 7px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border-mid); background: transparent; color: var(--text-secondary); white-space: nowrap; }
+.conn-btn-small.primary { background: rgba(255,79,0,0.18); border-color: rgba(255,79,0,0.4); color: rgba(255,170,110,0.95); }
+.conn-btn-small.success { background: rgba(180,220,170,0.18); border-color: rgba(180,220,170,0.4); color: rgba(200,230,200,0.95); }
+.conn-btn-small.danger { background: rgba(255,79,0,0.08); border-color: rgba(255,79,0,0.3); color: rgba(255,170,110,0.95); }
+.conn-meta { font-size: 9px; color: var(--text-mute); margin-top: 6px; }
+.conn-doc-link { font-size: 10px; color: rgba(150,210,230,0.85); text-decoration: none; }
+
+.att-card { background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 11px; padding: 11px; margin-bottom: 6px; display: flex; gap: 10px; align-items: center; }
+.att-icon { width: 32px; height: 32px; background: rgba(255,79,0,0.1); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; color: rgba(255,170,110,0.95); }
+.att-info { flex: 1; min-width: 0; }
+.att-name { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.att-sub { font-size: 9px; color: var(--text-tertiary); margin-top: 1px; }
+.att-actions { display: flex; gap: 4px; }
+.att-btn-mini { background: rgba(244,243,239,0.06); border: 0.5px solid var(--border-mid); border-radius: 5px; padding: 4px 8px; font-size: 10px; color: var(--text-secondary); cursor: pointer; }
+
+.add-att-zone { background: rgba(244,243,239,0.02); border: 0.5px dashed rgba(244,243,239,0.2); border-radius: 11px; padding: 14px; text-align: center; cursor: pointer; transition: all 0.15s; }
+.add-att-zone:hover { background: rgba(255,79,0,0.04); border-color: rgba(255,79,0,0.3); }
+.add-att-zone.dragover { background: rgba(255,79,0,0.08); border-color: rgba(255,79,0,0.5); }
+
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; padding: 18px; }
+.modal-backdrop.active { display: flex; }
+.modal-content { background: var(--g2c-dark-2); border: 0.5px solid var(--border-mid); border-radius: 14px; padding: 18px; width: 100%; max-width: 380px; max-height: 80vh; overflow-y: auto; }
+.modal-title { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+.modal-actions { display: flex; gap: 7px; margin-top: 14px; }
+</style>
 </head>
 <body>
 
@@ -15,231 +52,220 @@
 <header style="display:flex;align-items:center;gap:11px;margin-bottom:18px;">
   <a href="index.html" style="width:30px;height:30px;background:rgba(244,243,239,0.04);border:0.5px solid rgba(244,243,239,0.08);border-radius:9px;display:flex;align-items:center;justify-content:center;text-decoration:none;color:white;">←</a>
   <div>
-    <div class="module-eyebrow">
-      <div class="dot"></div>
-      <div class="label">Configuración</div>
-    </div>
+    <div class="module-eyebrow"><div class="dot"></div><div class="label">Configuración</div></div>
     <div class="module-title">Tu sistema</div>
   </div>
 </header>
 
-<!-- Cerebro dual stats -->
-<div class="section-eyebrow">
-  <div>
-    <div class="label">cerebro IA · uso del mes</div>
-    <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">Sonnet 4.5 (decisiones) + Haiku 4.5 (registros)</div>
+<!-- ============================================================ -->
+<!-- SECCIÓN 1 · CONEXIONES API · te conectas tú · automático -->
+<!-- ============================================================ -->
+<div class="section-block">
+  <div class="section-eyebrow">
+    <div>
+      <div class="label">conexiones API</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">pega tu key · click conectar · Mando hace el puente</div>
+    </div>
+    <div style="font-size:11px;color:rgba(180,220,170,0.85);" id="conn-summary">—</div>
+  </div>
+  <div id="connections-list"></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 2 · DOCUMENTOS · que la IA puede consultar -->
+<!-- ============================================================ -->
+<div class="section-block">
+  <div class="section-eyebrow">
+    <div>
+      <div class="label">documentos · IA los consulta</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">cédulas, declaraciones, manuales · Mando los lee al responder</div>
+    </div>
+    <div style="font-size:11px;color:rgba(150,210,230,0.85);" id="att-count">0 docs</div>
+  </div>
+
+  <div id="attachments-list"></div>
+
+  <div class="add-att-zone" id="att-add-zone" onclick="abrirModalAttachment()">
+    <div style="font-size:18px;color:rgba(255,150,80,0.7);margin-bottom:4px;">+</div>
+    <div style="font-size:11px;color:var(--text-secondary);font-weight:500;">Agregar documento</div>
+    <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">cédula · declaración · CFDI · manual G2C · contrato</div>
   </div>
 </div>
 
-<div class="stat-grid cols-2" style="margin-bottom:14px;">
-  <div class="stat-card cyan">
-    <div class="stat-label" style="color:rgba(150,210,230,0.85);">SONNET 4.5</div>
-    <div class="stat-value tabular" id="sonnet-msgs">—</div>
-    <div class="stat-meta" id="sonnet-cost">—</div>
+<!-- ============================================================ -->
+<!-- SECCIÓN 3 · NOTIFICACIONES PUSH -->
+<!-- ============================================================ -->
+<div class="section-block">
+  <div class="section-eyebrow">
+    <div>
+      <div class="label">notificaciones push</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">cobros · tocadas · deadlines · sin emojis · con monto y prioridad</div>
+    </div>
+    <div style="font-size:11px;" id="push-status-pill">—</div>
   </div>
-  <div class="stat-card green">
-    <div class="stat-label" style="color:rgba(180,220,170,0.85);">HAIKU 4.5</div>
-    <div class="stat-value tabular" id="haiku-msgs">—</div>
-    <div class="stat-meta" id="haiku-cost">—</div>
+
+  <div class="conn-card" id="push-card">
+    <div class="conn-header">
+      <div>
+        <div class="conn-name">Web Push · iOS + Android + Desktop</div>
+        <div class="conn-desc" id="push-desc">verificando soporte...</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;" id="push-actions"></div>
+  </div>
+
+  <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:10px;padding:11px;margin-top:8px;">
+    <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">formato de notificaciones</div>
+    <div style="font-size:10px;color:rgba(244,243,239,0.8);line-height:1.5;">
+      Las notificaciones siguen reglas estrictas:<br>
+      · Sin emojis · solo símbolos limpios<br>
+      · Title con prioridad: ALTA / MEDIA / BAJA<br>
+      · Si es cobro o pago · incluye monto<br>
+      · Body con info relevante al asunto
+    </div>
   </div>
 </div>
 
-<div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:11px 13px;margin-bottom:14px;">
-  <div style="display:flex;justify-content:space-between;align-items:center;">
-    <div style="font-size:11px;color:var(--text-secondary);">Costo total del mes</div>
-    <div style="font-size:14px;font-weight:500;font-variant-numeric:tabular-nums;" id="costo-total">—</div>
-  </div>
-  <div style="font-size:10px;color:var(--text-tertiary);margin-top:4px;">presupuesto: $50 USD/mes · margen seguro</div>
-</div>
-
-<!-- Automatización IA -->
-<div class="section-eyebrow">
-  <div>
-    <div class="label">automatización IA</div>
-    <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">qué decisiones puede tomar Mando solo</div>
-  </div>
-</div>
-
-<div class="list-card">
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-content">
-        <div class="row-title">Auto-agendar huecos libres</div>
-        <div class="row-sub">bloquea pendientes operativos en huecos 2h+</div>
-      </div>
+<!-- ============================================================ -->
+<!-- SECCIÓN 4 · CEREBRO IA STATS -->
+<!-- ============================================================ -->
+<div class="section-block">
+  <div class="section-eyebrow">
+    <div>
+      <div class="label">cerebro IA · uso del mes</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">Sonnet 4.5 (decisiones) + Haiku 4.5 (registros)</div>
     </div>
-    <div class="switch on" data-toggle="auto_agendar"><div></div></div>
   </div>
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-content">
-        <div class="row-title">Detección personal vs trabajo</div>
-        <div class="row-sub">clasifica mensajes automáticamente</div>
-      </div>
+  <div class="stat-grid cols-2" style="margin-bottom:8px;">
+    <div class="stat-card cyan">
+      <div class="stat-label" style="color:rgba(150,210,230,0.85);">SONNET 4.5</div>
+      <div class="stat-value tabular" id="sonnet-msgs">0</div>
+      <div class="stat-meta" id="sonnet-cost">$0 USD</div>
     </div>
-    <div class="switch on" data-toggle="auto_clasificar"><div></div></div>
+    <div class="stat-card green">
+      <div class="stat-label" style="color:rgba(180,220,170,0.85);">HAIKU 4.5</div>
+      <div class="stat-value tabular" id="haiku-msgs">0</div>
+      <div class="stat-meta" id="haiku-cost">$0 USD</div>
+    </div>
   </div>
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-content">
-        <div class="row-title">Briefing 7am · 13:30 · 21:00</div>
-        <div class="row-sub">3 pings/día con resumen contextual</div>
-      </div>
+  <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:11px 13px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:11px;color:var(--text-secondary);">Costo total mes</div>
+      <div style="font-size:14px;font-weight:500;font-variant-numeric:tabular-nums;" id="costo-total">$0 USD</div>
     </div>
-    <div class="switch on" data-toggle="auto_briefing"><div></div></div>
-  </div>
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-content">
-        <div class="row-title">Modo movimiento</div>
-        <div class="row-sub">respuestas más cortas si vas en carretera</div>
-      </div>
-    </div>
-    <div class="switch" data-toggle="auto_movimiento"><div></div></div>
+    <div style="font-size:10px;color:var(--text-tertiary);margin-top:4px;">presupuesto: $50 USD/mes · margen seguro</div>
   </div>
 </div>
 
-<!-- Integraciones -->
-<div class="section-eyebrow">
-  <div>
-    <div class="label">integraciones · 8 conectadas</div>
-    <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">qué APIs usa el cerebro</div>
+<!-- ============================================================ -->
+<!-- SECCIÓN 5 · AUTOMATIZACIÓN IA -->
+<!-- ============================================================ -->
+<div class="section-block">
+  <div class="section-eyebrow">
+    <div>
+      <div class="label">automatización IA</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">qué decisiones puede tomar Mando solo</div>
+    </div>
+  </div>
+  <div class="list-card">
+    <div class="list-row" style="cursor:default;">
+      <div class="row-main"><div class="row-content"><div class="row-title">Auto-agendar huecos libres</div><div class="row-sub">bloquea pendientes operativos en huecos 2h+</div></div></div>
+      <div class="switch on" data-toggle="auto_agendar"><div></div></div>
+    </div>
+    <div class="list-row" style="cursor:default;">
+      <div class="row-main"><div class="row-content"><div class="row-title">Detección personal vs trabajo</div><div class="row-sub">clasifica mensajes automáticamente</div></div></div>
+      <div class="switch on" data-toggle="auto_clasificar"><div></div></div>
+    </div>
+    <div class="list-row" style="cursor:default;">
+      <div class="row-main"><div class="row-content"><div class="row-title">Briefing 7am · 13:30 · 21:00</div><div class="row-sub">3 pings/día con resumen contextual</div></div></div>
+      <div class="switch on" data-toggle="auto_briefing"><div></div></div>
+    </div>
+    <div class="list-row" style="cursor:default;">
+      <div class="row-main"><div class="row-content"><div class="row-title">Modo movimiento</div><div class="row-sub">respuestas más cortas en carretera</div></div></div>
+      <div class="switch" data-toggle="auto_movimiento"><div></div></div>
+    </div>
   </div>
 </div>
 
-<div class="list-card">
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-dot green"></div>
-      <div class="row-content">
-        <div class="row-title">YouTube Data API</div>
-        <div class="row-sub">cache de canciones · letras · IDs</div>
-      </div>
+<!-- ============================================================ -->
+<!-- SECCIÓN 6 · DATOS FISCALES -->
+<!-- ============================================================ -->
+<div class="section-block">
+  <div class="section-eyebrow"><div><div class="label">datos fiscales</div></div></div>
+  <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:11px;color:var(--text-secondary);">RFC</div>
+      <input type="text" class="conn-input" id="fiscal-rfc" style="max-width:180px;text-align:right;" placeholder="DAVA920607XXX">
     </div>
-    <div class="pill green">CONECTADO</div>
-  </div>
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-dot green"></div>
-      <div class="row-content">
-        <div class="row-title">Cloudflare Workers</div>
-        <div class="row-sub">push notifications + proxy IA</div>
-      </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:11px;color:var(--text-secondary);">Régimen</div>
+      <div style="font-size:11px;">Persona Física · Act. Empresarial</div>
     </div>
-    <div class="pill green">CONECTADO</div>
-  </div>
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-dot green"></div>
-      <div class="row-content">
-        <div class="row-title">MercadoPago + Stripe + Banorte</div>
-        <div class="row-sub">cobros.g2c.com.mx · ligas pago</div>
-      </div>
+    <div style="display:flex;justify-content:space-between;">
+      <div style="font-size:11px;color:var(--text-secondary);">IVA</div>
+      <div style="font-size:11px;">16% · No RESICO</div>
     </div>
-    <div class="pill green">CONECTADO</div>
-  </div>
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-dot green"></div>
-      <div class="row-content">
-        <div class="row-title">Zoho Bigin · diagnostico subdominio</div>
-        <div class="row-sub">leads del Diagnóstico Inteligente</div>
-      </div>
-    </div>
-    <div class="pill green">CONECTADO</div>
-  </div>
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-dot orange"></div>
-      <div class="row-content">
-        <div class="row-title">Google Maps API</div>
-        <div class="row-sub">prospectos · venues música · ubicaciones</div>
-      </div>
-    </div>
-    <div class="pill orange">PENDIENTE</div>
-  </div>
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-dot orange"></div>
-      <div class="row-content">
-        <div class="row-title">Whisper API · voz a texto</div>
-        <div class="row-sub">registrar movimientos hablando</div>
-      </div>
-    </div>
-    <div class="pill orange">PENDIENTE</div>
-  </div>
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-dot orange"></div>
-      <div class="row-content">
-        <div class="row-title">Spotify / Apple Music</div>
-        <div class="row-sub">sincronizar repertorio</div>
-      </div>
-    </div>
-    <div class="pill orange">PENDIENTE</div>
-  </div>
-  <div class="list-row" style="cursor:default;">
-    <div class="row-main">
-      <div class="row-dot orange"></div>
-      <div class="row-content">
-        <div class="row-title">Instagram Graph API</div>
-        <div class="row-sub">engagement + métricas posts</div>
-      </div>
-    </div>
-    <div class="pill orange">PENDIENTE</div>
+    <button class="conn-btn-small primary" style="width:100%;margin-top:10px;" onclick="guardarRFC()">Guardar RFC</button>
   </div>
 </div>
 
-<!-- Datos fiscales -->
-<div class="section-eyebrow">
-  <div>
-    <div class="label">datos fiscales</div>
+<!-- ============================================================ -->
+<!-- SECCIÓN 7 · DATOS · backup, import, borrar -->
+<!-- ============================================================ -->
+<div class="section-block">
+  <div class="section-eyebrow"><div><div class="label">tus datos</div></div></div>
+  <div style="display:flex;flex-direction:column;gap:7px;">
+    <button class="btn full" onclick="exportarDatos()" style="text-align:left;padding:11px 13px;">
+      <div style="font-size:11px;font-weight:500;">Exportar todo (JSON)</div>
+      <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">backup completo del sistema</div>
+    </button>
+    <button class="btn full" onclick="importarDatos()" style="text-align:left;padding:11px 13px;">
+      <div style="font-size:11px;font-weight:500;">Importar desde backup</div>
+      <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">restaurar desde JSON</div>
+    </button>
+    <button class="btn full" onclick="borrarTodo()" style="text-align:left;padding:11px 13px;color:rgba(255,170,110,0.95);border-color:rgba(255,79,0,0.25);">
+      <div style="font-size:11px;font-weight:500;">Borrar todos los datos</div>
+      <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">irreversible · solo en emergencias</div>
+    </button>
   </div>
 </div>
 
-<div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;margin-bottom:14px;">
-  <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-    <div style="font-size:11px;color:var(--text-secondary);">RFC</div>
-    <div style="font-size:11px;font-family:'JetBrains Mono',monospace;">DAVA920607XXX</div>
-  </div>
-  <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-    <div style="font-size:11px;color:var(--text-secondary);">Régimen</div>
-    <div style="font-size:11px;">Persona Física · Actividad Empresarial</div>
-  </div>
-  <div style="display:flex;justify-content:space-between;">
-    <div style="font-size:11px;color:var(--text-secondary);">IVA</div>
-    <div style="font-size:11px;">16% · No RESICO</div>
-  </div>
-</div>
-
-<!-- Datos -->
-<div class="section-eyebrow">
-  <div>
-    <div class="label">tus datos</div>
-  </div>
-</div>
-
-<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">
-  <button class="btn full" onclick="exportarDatos()" style="text-align:left;padding:11px 13px;">
-    <div style="font-size:11px;font-weight:500;">Exportar todo (JSON)</div>
-    <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">backup completo de tu sistema</div>
-  </button>
-  <button class="btn full" onclick="importarDatos()" style="text-align:left;padding:11px 13px;">
-    <div style="font-size:11px;font-weight:500;">Importar desde backup</div>
-    <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">restaurar desde JSON</div>
-  </button>
-  <button class="btn full" onclick="borrarTodo()" style="text-align:left;padding:11px 13px;color:rgba(255,170,110,0.95);border-color:rgba(255,79,0,0.25);">
-    <div style="font-size:11px;font-weight:500;">Borrar todos los datos</div>
-    <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">irreversible · solo en emergencias</div>
-  </button>
-</div>
-
-<!-- Versión -->
-<div style="text-align:center;padding:18px 0;font-size:10px;color:var(--text-mute);">
-  Mando v1.0.0 · ${new Date().getFullYear()}
-</div>
+<div style="text-align:center;padding:14px 0;font-size:10px;color:var(--text-mute);">Mando v1.1.0 · 2026</div>
 
 <button class="btn full" onclick="Auth.logout()" style="background:rgba(255,79,0,0.08);border-color:rgba(255,79,0,0.25);color:rgba(255,170,110,0.95);">Cerrar sesión</button>
+
+<!-- Modal para agregar attachment -->
+<div class="modal-backdrop" id="att-modal">
+  <div class="modal-content">
+    <div class="modal-title">Agregar documento</div>
+
+    <div class="form-field">
+      <div class="field-label">TIPO DE DOCUMENTO</div>
+      <select class="field-select" id="att-type"></select>
+    </div>
+
+    <div class="form-field">
+      <div class="field-label">TÍTULO</div>
+      <input type="text" class="field-input" id="att-title" placeholder="Ej: Cédula 2024 · Alan Davis">
+    </div>
+
+    <div class="form-field">
+      <div class="field-label">ARCHIVO</div>
+      <input type="file" class="field-input" id="att-file">
+      <div style="font-size:9px;color:var(--text-tertiary);margin-top:4px;">PDF, imágenes, XML CFDI · max 5MB</div>
+    </div>
+
+    <div class="form-field">
+      <div class="field-label">NOTAS (opcional)</div>
+      <textarea class="field-input field-textarea" id="att-notes" placeholder="Contexto que la IA debe saber sobre este doc..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" style="flex:1;" onclick="cerrarModalAttachment()">Cancelar</button>
+      <button class="btn primary-orange" style="flex:1;" onclick="guardarAttachment()">Guardar</button>
+    </div>
+  </div>
+</div>
 
 <div id="footer-host"></div>
 <div id="nav-host"></div>
@@ -252,36 +278,411 @@
   document.getElementById('footer-host').innerHTML = UI.renderFooter();
   document.getElementById('nav-host').innerHTML = UI.renderBottomNav('mando');
 
+  renderConnections();
+  renderAttachments();
+  await renderPush();
   renderStats();
-
-  // Bind toggles
-  document.querySelectorAll('[data-toggle]').forEach(s => {
-    s.addEventListener('click', () => {
-      s.classList.toggle('on');
-      const config = Store.get(Store.KEYS.CONFIG, {});
-      config[s.dataset.toggle] = s.classList.contains('on');
-      Store.set(Store.KEYS.CONFIG, config);
-      UI.toast(`${s.dataset.toggle.replace('_', ' ')} · ${s.classList.contains('on') ? 'activado' : 'desactivado'}`, 'info', 1500);
-    });
-  });
+  loadFiscalRFC();
+  bindToggles();
+  populateAttachmentTypes();
 })();
 
+// ============================================================
+// CONEXIONES API
+// ============================================================
+function renderConnections() {
+  const status = ApiKeys.status();
+  const total = Object.keys(ApiKeys.CONNECTIONS).length;
+  const connected = Object.values(status).filter(Boolean).length;
+  document.getElementById('conn-summary').textContent = `${connected}/${total} activas`;
+
+  const list = document.getElementById('connections-list');
+  let html = '';
+
+  Object.entries(ApiKeys.CONNECTIONS).forEach(([id, conn]) => {
+    const isConnected = status[id];
+    const isMissing = conn.required && !isConnected;
+    const cardClass = isConnected ? 'connected' : (isMissing ? 'required-missing' : '');
+    const statusPill = isConnected ?
+      `<div class="pill green">CONECTADA</div>` :
+      (isMissing ? `<div class="pill orange">REQUERIDA</div>` : `<div class="pill" style="background:rgba(244,243,239,0.04);border:0.5px solid var(--border-mid);color:var(--text-tertiary);">PENDIENTE</div>`);
+
+    const currentValue = conn.storage === 'client' ? ApiKeys.getClient(id) : null;
+    const maskedValue = currentValue ? currentValue.slice(0, 8) + '•'.repeat(20) + currentValue.slice(-4) : '';
+
+    html += `
+      <div class="conn-card ${cardClass}" data-conn-id="${id}">
+        <div class="conn-header">
+          <div style="flex:1;">
+            <div class="conn-name">${Util.esc(conn.name)}</div>
+            <div class="conn-desc">${Util.esc(conn.description)}</div>
+          </div>
+          ${statusPill}
+        </div>
+
+        <div class="conn-input-row">
+          <input type="password"
+                 class="conn-input ${isConnected ? 'has-value' : ''}"
+                 id="key-${id}"
+                 placeholder="${isConnected ? maskedValue : conn.placeholder}"
+                 autocomplete="off">
+          ${isConnected ? `
+            <button class="conn-btn-small success" onclick="testConnection('${id}')">Test</button>
+            <button class="conn-btn-small danger" onclick="disconnectKey('${id}')">Quitar</button>
+          ` : `
+            <button class="conn-btn-small primary" onclick="connectKey('${id}')">Conectar</button>
+          `}
+        </div>
+
+        <div class="conn-meta">
+          ${conn.hint ? Util.esc(conn.hint) + ' · ' : ''}
+          <a href="${conn.doc_url}" target="_blank" class="conn-doc-link">obtener key →</a>
+        </div>
+      </div>
+    `;
+  });
+
+  list.innerHTML = html;
+}
+
+async function connectKey(id) {
+  const conn = ApiKeys.CONNECTIONS[id];
+  const input = document.getElementById('key-' + id);
+  const value = input.value.trim();
+
+  if (!value) {
+    UI.toast('Pega tu key primero', 'error');
+    input.focus();
+    return;
+  }
+
+  UI.toast('Conectando...', 'info', 1500);
+
+  let result;
+  if (conn.storage === 'client') {
+    ApiKeys.setClient(id, value);
+    result = { success: true };
+  } else {
+    result = await ApiKeys.setWorker(id, value);
+  }
+
+  if (result.success) {
+    UI.toast(`${conn.name} · conectada ✓`, 'success');
+    input.value = '';
+
+    // Test inmediato si es Anthropic
+    if (id === 'anthropic') {
+      const test = await ApiKeys.test('anthropic');
+      if (test.success) {
+        UI.toast('Cerebro IA respondiendo correctamente', 'success');
+      } else {
+        UI.toast('Conectada pero el test falló: ' + test.error, 'error');
+      }
+    }
+
+    renderConnections();
+  } else {
+    UI.toast('Error: ' + (result.error || 'desconocido'), 'error');
+  }
+}
+
+async function testConnection(id) {
+  UI.toast('Probando conexión...', 'info', 1500);
+  const result = await ApiKeys.test(id);
+  if (result.success) {
+    UI.toast(`${ApiKeys.CONNECTIONS[id].name} · OK`, 'success');
+  } else {
+    UI.toast('Error: ' + result.error, 'error');
+  }
+}
+
+async function disconnectKey(id) {
+  if (!confirm(`¿Desconectar ${ApiKeys.CONNECTIONS[id].name}?`)) return;
+  const conn = ApiKeys.CONNECTIONS[id];
+  if (conn.storage === 'client') {
+    ApiKeys.removeClient(id);
+  } else {
+    await ApiKeys.removeWorker(id);
+  }
+  UI.toast('Desconectada', 'info');
+  renderConnections();
+}
+
+// ============================================================
+// ATTACHMENTS · documentos
+// ============================================================
+function populateAttachmentTypes() {
+  const select = document.getElementById('att-type');
+  let html = '';
+  Object.entries(Attach.TYPES).forEach(([id, t]) => {
+    html += `<option value="${id}">${t.icon} ${t.label}</option>`;
+  });
+  select.innerHTML = html;
+}
+
+function renderAttachments() {
+  const atts = Attach.list();
+  document.getElementById('att-count').textContent = `${atts.length} doc${atts.length !== 1 ? 's' : ''}`;
+
+  const list = document.getElementById('attachments-list');
+  if (!atts.length) {
+    list.innerHTML = '';
+    return;
+  }
+
+  list.innerHTML = atts.map(a => {
+    const meta = Attach.TYPES[a.type] || { label: a.type, icon: '·' };
+    const sizeLabel = a.size_kb ? `${a.size_kb} KB · ` : '';
+    const dateLabel = Util.fmtDate(a.created_at, { short: true });
+    return `
+      <div class="att-card">
+        <div class="att-icon">${meta.icon}</div>
+        <div class="att-info">
+          <div class="att-name">${Util.esc(a.title || a.fileName || 'Sin título')}</div>
+          <div class="att-sub">${Util.esc(meta.label)} · ${sizeLabel}${dateLabel}</div>
+        </div>
+        <div class="att-actions">
+          <div class="att-btn-mini" onclick="verAttachment('${a.id}')">ver</div>
+          <div class="att-btn-mini" onclick="eliminarAttachment('${a.id}')" style="color:rgba(255,170,110,0.9);">×</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function abrirModalAttachment() {
+  document.getElementById('att-title').value = '';
+  document.getElementById('att-file').value = '';
+  document.getElementById('att-notes').value = '';
+  document.getElementById('att-modal').classList.add('active');
+}
+
+function cerrarModalAttachment() {
+  document.getElementById('att-modal').classList.remove('active');
+}
+
+async function guardarAttachment() {
+  const type = document.getElementById('att-type').value;
+  const title = document.getElementById('att-title').value.trim();
+  const fileInput = document.getElementById('att-file');
+  const notes = document.getElementById('att-notes').value.trim();
+
+  if (!fileInput.files || !fileInput.files[0]) {
+    UI.toast('Selecciona un archivo', 'error');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  if (file.size > 5 * 1024 * 1024) {
+    UI.toast('Archivo > 5MB · usa uno más pequeño', 'error');
+    return;
+  }
+
+  UI.toast('Guardando...', 'info', 1500);
+
+  try {
+    const base64 = await Attach.fileToBase64(file);
+
+    // Para texto/PDF intentamos extraer texto preview (simple)
+    let extractedText = '';
+    if (file.type === 'text/plain' || file.type === 'text/markdown') {
+      extractedText = await file.text();
+    }
+
+    await Attach.save({
+      type,
+      title: title || file.name,
+      fileName: file.name,
+      fileType: file.type,
+      size_kb: Math.round(file.size / 1024),
+      data_base64: base64,
+      extracted_text: extractedText,
+      notes
+    });
+
+    UI.toast('Documento guardado · IA lo consultará', 'success');
+    cerrarModalAttachment();
+    renderAttachments();
+  } catch (err) {
+    UI.toast('Error: ' + err.message, 'error');
+  }
+}
+
+function verAttachment(id) {
+  const att = Attach.list().find(a => a.id === id);
+  if (!att || !att.data_base64) {
+    UI.toast('Sin datos para mostrar', 'error');
+    return;
+  }
+  // Abre en pestaña nueva
+  const w = window.open();
+  if (att.fileType.startsWith('image/')) {
+    w.document.write(`<img src="${att.data_base64}" style="max-width:100%;">`);
+  } else if (att.fileType === 'application/pdf') {
+    w.document.write(`<embed src="${att.data_base64}" style="width:100%;height:100vh;">`);
+  } else {
+    w.document.write(`<pre>${Util.esc(att.extracted_text || 'No hay preview disponible')}</pre>`);
+  }
+}
+
+function eliminarAttachment(id) {
+  if (!confirm('¿Eliminar este documento?')) return;
+  Attach.remove(id);
+  UI.toast('Eliminado', 'info');
+  renderAttachments();
+}
+
+// ============================================================
+// PUSH NOTIFICATIONS
+// ============================================================
+async function renderPush() {
+  const support = Push.support();
+  const status = await Push.status();
+
+  const desc = document.getElementById('push-desc');
+  const actions = document.getElementById('push-actions');
+  const pill = document.getElementById('push-status-pill');
+  const card = document.getElementById('push-card');
+
+  // Determinar estado
+  if (!support.supported) {
+    desc.textContent = 'Tu navegador no soporta notificaciones push';
+    pill.innerHTML = '<div class="pill" style="background:rgba(244,243,239,0.04);border:0.5px solid var(--border-mid);color:var(--text-tertiary);">NO SOPORTADO</div>';
+    actions.innerHTML = '';
+    return;
+  }
+
+  if (support.requires_pwa_install) {
+    desc.textContent = 'iOS requiere instalar como app antes · botón compartir → Agregar a pantalla de inicio';
+    pill.innerHTML = '<div class="pill orange">REQUIERE PWA</div>';
+    actions.innerHTML = '<button class="conn-btn-small" onclick="alert(\'En Safari: tap botón Compartir (cuadro con flecha) · scroll abajo · Agregar a pantalla de inicio · abre desde el icono nuevo\');">Cómo instalar</button>';
+    card.classList.add('required-missing');
+    return;
+  }
+
+  if (status.subscribed) {
+    desc.textContent = 'Notificaciones activas · listas para recibir alertas reales';
+    pill.innerHTML = '<div class="pill green">ACTIVAS</div>';
+    actions.innerHTML = `
+      <button class="conn-btn-small success" onclick="testPush('media')">Test prioridad MEDIA</button>
+      <button class="conn-btn-small primary" onclick="testPush('alta', 4500)">Test ALTA · cobro $4,500</button>
+      <button class="conn-btn-small danger" onclick="desuscribir()">Desactivar</button>
+    `;
+    card.classList.add('connected');
+  } else if (support.permission === 'denied') {
+    desc.textContent = 'Permiso denegado · habilítalo en ajustes del navegador';
+    pill.innerHTML = '<div class="pill orange">DENEGADO</div>';
+    actions.innerHTML = '<button class="conn-btn-small" onclick="alert(\'Ajustes navegador → Sitio web → alan.g2c.com.mx → Notificaciones → Permitir\');">Cómo habilitar</button>';
+    card.classList.add('required-missing');
+  } else {
+    desc.textContent = 'Click "Activar" para recibir alertas de cobros, tocadas y deadlines';
+    pill.innerHTML = '<div class="pill" style="background:rgba(244,213,128,0.06);border:0.5px solid rgba(244,213,128,0.25);color:rgba(244,213,128,0.95);">PENDIENTE</div>';
+    actions.innerHTML = '<button class="conn-btn-small primary" onclick="suscribir()">Activar notificaciones</button>';
+  }
+}
+
+async function suscribir() {
+  UI.toast('Solicitando permiso...', 'info', 1500);
+  const r = await Push.subscribe();
+  if (r.success) {
+    UI.toast('Notificaciones activadas ✓', 'success');
+    if (r.warning) UI.toast(r.warning, 'info', 3000);
+    setTimeout(renderPush, 500);
+  } else {
+    UI.toast('Error: ' + r.error, 'error');
+  }
+}
+
+async function desuscribir() {
+  if (!confirm('¿Desactivar notificaciones push?')) return;
+  await Push.unsubscribe();
+  UI.toast('Desactivadas', 'info');
+  setTimeout(renderPush, 500);
+}
+
+async function testPush(priority, amount) {
+  const opts = { priority };
+  if (amount) {
+    opts.amount = amount;
+    opts.subject = 'Cobro vencido · NEOS Regenerative';
+    opts.body = 'NEOS Regenerative tiene mensualidad vencida hace 5 días. Te sugiero generar liga de pago y mandar WhatsApp ahora.';
+  } else if (priority === 'alta') {
+    opts.subject = 'Tocada confirmada';
+    opts.body = 'Las Pulgas confirmó tu tocada del viernes 9 mayo · 9pm · pago $1,500. Falta agendar ensayo previo.';
+  } else {
+    opts.subject = 'Briefing del día';
+    opts.body = 'Tienes 3 pendientes alta prioridad y 1 cobro vence hoy. Dale prioridad a NEOS exp · cierre asumido.';
+  }
+
+  const r = await Push.testLocal(opts);
+  if (r.success) {
+    UI.toast('Notificación enviada · revisa tu pantalla', 'success');
+  } else {
+    UI.toast('Error: ' + r.error, 'error');
+  }
+}
+
+// ============================================================
+// STATS · cerebro IA
+// ============================================================
 function renderStats() {
   const stats = Store.get(Store.KEYS.CHAT_STATS, { sonnet: { msgs: 0, in: 0, out: 0 }, haiku: { msgs: 0, in: 0, out: 0 } });
 
-  // Sonnet 4.5 pricing: $3/M input, $15/M output
+  // Pricing real Anthropic
   const sonnetCost = (stats.sonnet.in / 1000000) * 3 + (stats.sonnet.out / 1000000) * 15;
-  // Haiku 4.5 pricing: $1/M input, $5/M output (aprox)
   const haikuCost = (stats.haiku.in / 1000000) * 1 + (stats.haiku.out / 1000000) * 5;
 
   document.getElementById('sonnet-msgs').textContent = stats.sonnet.msgs;
   document.getElementById('sonnet-cost').textContent = `$${sonnetCost.toFixed(2)} USD`;
   document.getElementById('haiku-msgs').textContent = stats.haiku.msgs;
   document.getElementById('haiku-cost').textContent = `$${haikuCost.toFixed(2)} USD`;
-
   document.getElementById('costo-total').textContent = `$${(sonnetCost + haikuCost).toFixed(2)} USD`;
 }
 
+// ============================================================
+// FISCAL
+// ============================================================
+function loadFiscalRFC() {
+  const config = Store.get(Store.KEYS.CONFIG, {});
+  document.getElementById('fiscal-rfc').value = config.rfc || G2C.user.rfc;
+}
+
+function guardarRFC() {
+  const rfc = document.getElementById('fiscal-rfc').value.trim().toUpperCase();
+  if (!/^[A-Z]{4}\d{6}[A-Z0-9]{3}$/.test(rfc)) {
+    UI.toast('RFC inválido · formato: 4 letras + 6 dígitos + 3 caracteres', 'error');
+    return;
+  }
+  const config = Store.get(Store.KEYS.CONFIG, {});
+  config.rfc = rfc;
+  Store.set(Store.KEYS.CONFIG, config);
+  UI.toast('RFC guardado', 'success');
+}
+
+// ============================================================
+// TOGGLES AUTOMATIZACIÓN
+// ============================================================
+function bindToggles() {
+  // Cargar estados guardados
+  const config = Store.get(Store.KEYS.CONFIG, {});
+  document.querySelectorAll('[data-toggle]').forEach(s => {
+    const key = s.dataset.toggle;
+    if (config[key] === false) s.classList.remove('on');
+    if (config[key] === true) s.classList.add('on');
+
+    s.addEventListener('click', () => {
+      s.classList.toggle('on');
+      const config = Store.get(Store.KEYS.CONFIG, {});
+      config[s.dataset.toggle] = s.classList.contains('on');
+      Store.set(Store.KEYS.CONFIG, config);
+      UI.toast(`${s.dataset.toggle.replace('_', ' ')} · ${s.classList.contains('on') ? 'activado' : 'desactivado'}`, 'info', 1200);
+    });
+  });
+}
+
+// ============================================================
+// EXPORT/IMPORT
+// ============================================================
 function exportarDatos() {
   const snap = Store.snapshot();
   snap._meta = { version: G2C.version, exported: Date.now() };
@@ -306,13 +707,18 @@ function importarDatos() {
     try {
       const data = JSON.parse(text);
       if (!confirm('Esto sobrescribe tus datos actuales. ¿Continuar?')) return;
-      for (const [k, v] of Object.entries(data)) {
-        if (k === '_meta') continue;
-        localStorage.setItem('alan_mando_' + k, JSON.stringify(v));
+
+      // Soporte para 2 formatos: nuevo (snapshot directo) y viejo (con .data wrapper)
+      const payload = data.data || data;
+      for (const [k, v] of Object.entries(payload)) {
+        if (k === '_meta' || k === 'version' || k === 'exportedAt') continue;
+        const fullKey = k.startsWith('alan_mando_') ? k : 'alan_mando_' + k;
+        localStorage.setItem(fullKey, JSON.stringify(v));
       }
       UI.toast('Datos importados · refresca la página', 'success');
+      setTimeout(() => location.reload(), 1500);
     } catch (e) {
-      UI.toast('Error: archivo inválido', 'error');
+      UI.toast('Error: archivo inválido · ' + e.message, 'error');
     }
   };
   input.click();
@@ -321,9 +727,7 @@ function importarDatos() {
 function borrarTodo() {
   const c1 = prompt('Escribe BORRAR para confirmar (irreversible):');
   if (c1 !== 'BORRAR') return;
-  for (const k of Object.values(Store.KEYS)) {
-    localStorage.removeItem(k);
-  }
+  for (const k of Object.values(Store.KEYS)) localStorage.removeItem(k);
   localStorage.removeItem('alan_mando_movimientos');
   localStorage.removeItem('alan_mando_current_song');
   UI.toast('Todos los datos borrados', 'info');
