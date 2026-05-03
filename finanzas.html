@@ -31,6 +31,7 @@
   <div class="tab" data-tab="personal">Personal</div>
   <div class="tab" data-tab="musica">Música</div>
   <div class="tab" data-tab="objetivos">Objetivos</div>
+  <div class="tab" data-tab="proyecciones">Proyecciones</div>
 </div>
 
 <div id="tab-content"></div>
@@ -69,6 +70,7 @@ function renderTab(tab) {
     case 'personal': c.innerHTML = renderPersonal(); break;
     case 'musica': c.innerHTML = renderMusica(); break;
     case 'objetivos': c.innerHTML = renderObjetivos(); break;
+    case 'proyecciones': renderProyeccionesAsync(c); break;
   }
 }
 
@@ -1423,6 +1425,436 @@ async function handleChatMessage(text) {
 
   // Chat libre → redirige a chat global
   window.location.href = 'chat.html?msg=' + encodeURIComponent(text) + '&scope=finanzas';
+}
+
+// ============================================================
+// TAB PROYECCIONES · dashboard anual + IA estratégica
+// ============================================================
+function renderProyeccionesAsync(container) {
+  // Render base inmediato + IA en background
+  container.innerHTML = renderProyeccionesBase();
+  bindProyeccionesActions();
+  cargarTipsIA();
+}
+
+function renderProyeccionesBase() {
+  // Cálculo anual de ingresos y egresos basado en TODO el sistema
+  const proyAnual = calcularProyeccionAnual();
+
+  // Resumen alto nivel
+  const cards = `
+    <div class="stat-grid cols-3" style="margin-bottom:14px;">
+      <div class="stat-card green">
+        <div class="stat-label" style="color:rgba(180,220,170,0.85);">INGRESOS 12M</div>
+        <div class="stat-value tabular">${Util.fmtMoneyK(proyAnual.ingresos_anual)}</div>
+        <div class="stat-meta">${proyAnual.fuentes_ingreso.length} fuentes</div>
+      </div>
+      <div class="stat-card alert">
+        <div class="stat-label" style="color:rgba(255,150,80,0.95);">EGRESOS 12M</div>
+        <div class="stat-value tabular">${Util.fmtMoneyK(proyAnual.egresos_anual)}</div>
+        <div class="stat-meta">fijos + variables</div>
+      </div>
+      <div class="stat-card cyan">
+        <div class="stat-label" style="color:rgba(150,210,230,0.95);">UTILIDAD 12M</div>
+        <div class="stat-value tabular ${proyAnual.utilidad_anual < 0 ? '' : ''}" style="${proyAnual.utilidad_anual < 0 ? 'color:rgba(255,170,110,0.95);' : 'color:rgba(180,220,170,0.95);'}">${Util.fmtMoneyK(proyAnual.utilidad_anual)}</div>
+        <div class="stat-meta">${proyAnual.margen_pct}% margen</div>
+      </div>
+    </div>
+  `;
+
+  // Gráfica mensual · barras simples mes a mes
+  const grafica = renderGraficaMensual(proyAnual.meses);
+
+  // Detalle de fuentes y categorías
+  const detalle = `
+    <div class="section-eyebrow">
+      <div><div class="label">desglose anual</div></div>
+    </div>
+
+    <div style="background:rgba(180,220,170,0.04);border:0.5px solid rgba(180,220,170,0.2);border-radius:11px;padding:13px;margin-bottom:8px;">
+      <div style="font-size:9px;color:rgba(200,230,200,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">fuentes de ingreso</div>
+      ${proyAnual.fuentes_ingreso.map(f => `
+        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:11px;">
+          <div style="color:var(--text-secondary);">${Util.esc(f.nombre)}</div>
+          <div style="color:rgba(180,220,170,0.95);font-weight:500;font-family:'JetBrains Mono',monospace;">${Util.fmtMoneyK(f.anual)}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div style="background:rgba(255,79,0,0.04);border:0.5px solid rgba(255,79,0,0.2);border-radius:11px;padding:13px;margin-bottom:14px;">
+      <div style="font-size:9px;color:rgba(255,170,110,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">categorías de egreso</div>
+      ${proyAnual.categorias_egreso.map(c => `
+        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:11px;">
+          <div style="color:var(--text-secondary);">${Util.esc(c.nombre)}</div>
+          <div style="color:rgba(255,170,110,0.95);font-weight:500;font-family:'JetBrains Mono',monospace;">${Util.fmtMoneyK(c.anual)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // Calculadora meta
+  const calculadora = `
+    <div class="section-eyebrow">
+      <div><div class="label">simulador de meta</div></div>
+    </div>
+
+    <div style="background:rgba(244,213,128,0.06);border:0.5px solid rgba(244,213,128,0.25);border-radius:12px;padding:13px;margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:11px;">
+        Pon una meta · Mando cruza tu MRR + tocadas + gastos y te dice cuántos meses tomaría.
+      </div>
+
+      <div class="form-field" style="margin-bottom:10px;">
+        <div class="field-label">META MONETARIA ($)</div>
+        <input type="number" class="field-input" id="proy-meta" placeholder="Ej: 350000" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">¿CUÁNTO YA TIENES AHORRADO?</div>
+        <input type="number" class="field-input" id="proy-actual" placeholder="0" style="font-size:16px !important;">
+      </div>
+
+      <button class="btn primary-orange full" onclick="calcularProyeccionMeta()" style="margin-top:10px;">Calcular proyección</button>
+    </div>
+
+    <div id="proy-meta-output"></div>
+  `;
+
+  // Tips IA placeholder
+  const tipsIA = `
+    <div class="section-eyebrow">
+      <div><div class="label">estrategia · ProactivIA</div></div>
+    </div>
+
+    <div id="tips-ia-output" style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:12px;padding:13px;">
+      <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">analizando tu sistema...</div>
+      <div class="loader-wrap" style="padding:12px 0;"><div class="loader"></div></div>
+    </div>
+  `;
+
+  return cards + grafica + detalle + calculadora + tipsIA;
+}
+
+/**
+ * Calcula proyección anual cruzando todo el sistema:
+ * - Cobros recurrentes (MRR clientes G2C)
+ * - Tocadas agendadas (música)
+ * - Pagos recurrentes (proveedores)
+ * - Gastos personales promedio
+ * - Movimientos históricos
+ */
+function calcularProyeccionAnual() {
+  // INGRESOS
+  let ingresos_anual = 0;
+  const fuentes_ingreso = [];
+
+  // 1. Cobros recurrentes activos
+  const cobros = Recurrentes.cobros().filter(c => c.activo);
+  cobros.forEach(c => {
+    const dias = Recurrentes.FRECUENCIAS[c.frecuencia]?.dias || 30;
+    const ciclos_anuales = 365 / dias;
+    const anual = Math.round(c.monto * ciclos_anuales);
+    ingresos_anual += anual;
+    fuentes_ingreso.push({ nombre: `${c.cliente_nombre} · ${c.frecuencia}`, anual });
+  });
+
+  // 2. Tocadas agendadas + promedio de pagadas
+  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
+  const tocadas12m = eventos.filter(e => e.tipo === 'tocada');
+  const tocadasIngreso = tocadas12m.reduce((s, t) => s + (t.monto || 0), 0);
+  if (tocadasIngreso > 0) {
+    // Si hay tocadas registradas, proyectamos basado en frecuencia histórica
+    const ahora = Date.now();
+    const tocadasUltimos90d = tocadas12m.filter(t => Math.abs(t.ts - ahora) < 90 * 86400000);
+    const promedio_mensual = (tocadasUltimos90d.reduce((s, t) => s + (t.monto || 0), 0)) / 3 || tocadasIngreso / 12;
+    const anual = Math.round(promedio_mensual * 12);
+    ingresos_anual += anual;
+    fuentes_ingreso.push({ nombre: 'Música · tocadas (proyectado)', anual });
+  }
+
+  // 3. Movimientos de ingreso no recurrentes (últimos 90d → proyección)
+  const movs = Store.get('alan_mando_movimientos', []);
+  const ahora = Date.now();
+  const inicio90 = ahora - 90 * 86400000;
+  const ingresosMovsRec = movs.filter(m => m.tipo === 'ingreso' && m.ts >= inicio90 && !m.cobro_recurrente_id);
+  if (ingresosMovsRec.length) {
+    const total90 = ingresosMovsRec.reduce((s, m) => s + (m.monto || 0), 0);
+    const anual = Math.round((total90 / 3) * 12);
+    if (anual > 0) {
+      ingresos_anual += anual;
+      fuentes_ingreso.push({ nombre: 'Otros ingresos (extrapolado)', anual });
+    }
+  }
+
+  // EGRESOS
+  let egresos_anual = 0;
+  const categorias_egreso = [];
+
+  // 1. Pagos recurrentes activos
+  const pagos = Recurrentes.pagos().filter(p => p.activo);
+  let pagosRecAnual = 0;
+  pagos.forEach(p => {
+    const dias = Recurrentes.FRECUENCIAS[p.frecuencia]?.dias || 30;
+    const ciclos = 365 / dias;
+    pagosRecAnual += Math.round(p.monto * ciclos);
+  });
+  if (pagosRecAnual > 0) {
+    egresos_anual += pagosRecAnual;
+    categorias_egreso.push({ nombre: `Pagos recurrentes · ${pagos.length} servicios`, anual: pagosRecAnual });
+  }
+
+  // 2. Gastos variables (últimos 90d → proyección)
+  const gastosVarRec = movs.filter(m => m.tipo === 'gasto' && m.ts >= inicio90);
+  const porCategoria = {};
+  gastosVarRec.forEach(m => {
+    const cat = m.categoria || 'sin_categoria';
+    porCategoria[cat] = (porCategoria[cat] || 0) + (m.monto || 0);
+  });
+  Object.entries(porCategoria).forEach(([cat, total]) => {
+    const anual = Math.round((total / 3) * 12);
+    if (anual > 1000) {
+      egresos_anual += anual;
+      const label = cat.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+      categorias_egreso.push({ nombre: label, anual });
+    }
+  });
+
+  // 3. Presupuestos personales (mota, shopping, gaming)
+  const presup = Presupuesto.get();
+  if (presup.mota_semanal && !porCategoria.ocio_marihuana) {
+    const anual = presup.mota_semanal * 52;
+    egresos_anual += anual;
+    categorias_egreso.push({ nombre: 'Marihuana (estimado por presupuesto)', anual });
+  }
+  if (presup.shopping_mensual && !porCategoria.ocio_shopping) {
+    const anual = presup.shopping_mensual * 12;
+    egresos_anual += anual;
+    categorias_egreso.push({ nombre: 'Shopping (estimado por presupuesto)', anual });
+  }
+
+  // Ordenar
+  fuentes_ingreso.sort((a, b) => b.anual - a.anual);
+  categorias_egreso.sort((a, b) => b.anual - a.anual);
+
+  // Utilidad
+  const utilidad_anual = ingresos_anual - egresos_anual;
+  const margen_pct = ingresos_anual > 0 ? Math.round((utilidad_anual / ingresos_anual) * 100) : 0;
+
+  // Distribución mensual proyectada (12 meses)
+  const meses = [];
+  const hoy = new Date();
+  for (let i = 0; i < 12; i++) {
+    const fecha = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+    meses.push({
+      label: fecha.toLocaleDateString('es-MX', { month: 'short' }),
+      ingresos: Math.round(ingresos_anual / 12),
+      egresos: Math.round(egresos_anual / 12),
+      utilidad: Math.round(utilidad_anual / 12)
+    });
+  }
+
+  return {
+    ingresos_anual,
+    egresos_anual,
+    utilidad_anual,
+    margen_pct,
+    fuentes_ingreso,
+    categorias_egreso,
+    meses,
+    snapshot: { cobros: cobros.length, pagos: pagos.length, tocadas: tocadas12m.length, gastos_90d: gastosVarRec.length }
+  };
+}
+
+/**
+ * Gráfica mensual · barras dobles ingresos vs egresos por mes.
+ */
+function renderGraficaMensual(meses) {
+  const max = Math.max(...meses.map(m => Math.max(m.ingresos, m.egresos)));
+  const ancho = 100 / meses.length;
+
+  const barras = meses.map((m, i) => {
+    const altIng = max > 0 ? (m.ingresos / max) * 100 : 0;
+    const altEgr = max > 0 ? (m.egresos / max) * 100 : 0;
+    return `
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;">
+        <div style="display:flex;gap:2px;align-items:flex-end;height:80px;width:100%;justify-content:center;">
+          <div style="width:38%;background:linear-gradient(to top, rgba(180,220,170,0.3), rgba(180,220,170,0.7));height:${altIng}%;border-radius:2px 2px 0 0;min-height:2px;"></div>
+          <div style="width:38%;background:linear-gradient(to top, rgba(255,150,80,0.3), rgba(255,150,80,0.7));height:${altEgr}%;border-radius:2px 2px 0 0;min-height:2px;"></div>
+        </div>
+        <div style="font-size:8px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;">${m.label}</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:12px;padding:13px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;">
+        <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">proyección 12 meses</div>
+        <div style="display:flex;gap:10px;font-size:9px;">
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;background:rgba(180,220,170,0.7);border-radius:2px;"></div><span style="color:var(--text-tertiary);">ingresos</span></div>
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;background:rgba(255,150,80,0.7);border-radius:2px;"></div><span style="color:var(--text-tertiary);">egresos</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:1px;align-items:flex-end;">${barras}</div>
+    </div>
+  `;
+}
+
+function bindProyeccionesActions() {
+  // Bind dinámicos al botón meta — se hace al click directo, no requiere bind extra
+}
+
+/**
+ * Llama a la IA para que genere tips estratégicos basados en la proyección.
+ */
+async function cargarTipsIA() {
+  const out = document.getElementById('tips-ia-output');
+  if (!out) return;
+
+  const proy = calcularProyeccionAnual();
+
+  const prompt = `Soy Alan Davis, founder GO2CLOSE (G2C). Analiza mi proyección anual y dame 3 tips ESTRATÉGICOS y AGRESIVOS para mejorar.
+
+DATOS REALES:
+- Ingresos anuales proyectados: $${proy.ingresos_anual.toLocaleString()}
+- Egresos anuales proyectados: $${proy.egresos_anual.toLocaleString()}
+- Utilidad anual: $${proy.utilidad_anual.toLocaleString()} (${proy.margen_pct}% margen)
+- ${proy.snapshot.cobros} cobros recurrentes activos
+- ${proy.snapshot.pagos} pagos recurrentes activos
+- ${proy.snapshot.tocadas} tocadas registradas
+
+PRINCIPALES INGRESOS:
+${proy.fuentes_ingreso.slice(0, 3).map(f => `- ${f.nombre}: $${f.anual.toLocaleString()}/año`).join('\n')}
+
+PRINCIPALES EGRESOS:
+${proy.categorias_egreso.slice(0, 3).map(c => `- ${c.nombre}: $${c.anual.toLocaleString()}/año`).join('\n')}
+
+Responde SOLO con 3 tips en formato JSON:
+[
+  {"titulo": "...", "accion": "...", "impacto": "+$X o -$X anual"},
+  {"titulo": "...", "accion": "...", "impacto": "..."},
+  {"titulo": "...", "accion": "...", "impacto": "..."}
+]
+Sin texto extra, solo el JSON. Tips deben ser ESPECÍFICOS a mi data, no genéricos.`;
+
+  try {
+    const res = await IA.call({
+      model: G2C.models.haiku,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 800,
+      tone: 'work',
+      scope: 'finanzas-proyeccion'
+    });
+
+    if (res.error) {
+      out.innerHTML = `
+        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">tips estratégicos</div>
+        <div style="font-size:11px;color:var(--text-tertiary);line-height:1.5;">No pude consultar al cerebro IA · revisa Configuración → Diagnóstico</div>
+      `;
+      return;
+    }
+
+    let tips = [];
+    try {
+      const text = res.content[0].text;
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (jsonMatch) tips = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      tips = [];
+    }
+
+    if (!tips.length) {
+      out.innerHTML = `
+        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">tips estratégicos</div>
+        <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;">${Util.esc(res.content[0].text || 'Sin tips disponibles')}</div>
+      `;
+      return;
+    }
+
+    out.innerHTML = `
+      <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:10px;">⚡ ProactivIA · 3 movimientos clave</div>
+      ${tips.map((t, i) => `
+        <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:9px;padding:11px;margin-bottom:6px;">
+          <div style="display:flex;align-items:flex-start;gap:9px;">
+            <div style="width:20px;height:20px;background:rgba(150,210,230,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(180,220,240,0.95);font-weight:600;flex-shrink:0;">${i + 1}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:500;color:rgba(180,220,240,0.95);">${Util.esc(t.titulo || '')}</div>
+              <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;margin-top:4px;">${Util.esc(t.accion || '')}</div>
+              ${t.impacto ? `<div style="font-size:10px;color:rgba(180,220,170,0.95);margin-top:6px;font-weight:500;font-family:'JetBrains Mono',monospace;">→ ${Util.esc(t.impacto)}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    `;
+  } catch (e) {
+    out.innerHTML = `
+      <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">tips estratégicos</div>
+      <div style="font-size:11px;color:var(--text-tertiary);line-height:1.5;">Error: ${Util.esc(e.message)}</div>
+    `;
+  }
+}
+
+function calcularProyeccionMeta() {
+  const meta = parseFloat(document.getElementById('proy-meta').value) || 0;
+  const actual = parseFloat(document.getElementById('proy-actual').value) || 0;
+
+  if (!meta) return UI.toast('Pon la meta primero', 'error');
+
+  const r = Proyecciones.calcular(meta, { ahorroActual: actual });
+  const out = document.getElementById('proy-meta-output');
+
+  let html = '';
+  if (!r.meses_a_meta || r.meses_a_meta < 0) {
+    html += `
+      <div style="background:rgba(255,79,0,0.08);border:0.5px solid rgba(255,79,0,0.3);border-radius:12px;padding:13px;margin-bottom:14px;">
+        <div style="font-size:9px;color:rgba(255,150,80,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">no factible al ritmo actual</div>
+        <div style="font-size:14px;color:rgba(255,170,110,0.95);font-weight:500;">Tus ingresos netos no permiten ahorrar para esta meta.</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;">Ingresos: ${Util.fmtMoney(r.ingreso_mensual_estimado)}/mes · Gastos: ${Util.fmtMoney(r.gastos_mensuales_estimado)}/mes</div>
+      </div>
+    `;
+  } else {
+    const fechaLabel = r.fecha_estimada ? new Date(r.fecha_estimada).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : '';
+    html += `
+      <div style="background:rgba(255,79,0,0.05);border:0.5px solid rgba(255,79,0,0.25);border-radius:12px;padding:13px;margin-bottom:14px;">
+        <div style="font-size:9px;color:rgba(255,150,80,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">a este ritmo · llegas en</div>
+        <div style="font-size:24px;color:rgba(255,170,110,0.95);font-weight:500;">${r.meses_a_meta} ${r.meses_a_meta === 1 ? 'mes' : 'meses'}</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Aprox: ${fechaLabel}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:0.5px solid rgba(255,79,0,0.15);">
+          <div>
+            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;">ingreso/mes</div>
+            <div style="font-size:13px;color:rgba(180,220,170,0.95);font-weight:500;margin-top:2px;">${Util.fmtMoney(r.ingreso_mensual_estimado)}</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;">ahorro/mes</div>
+            <div style="font-size:13px;color:rgba(150,210,230,0.95);font-weight:500;margin-top:2px;">${Util.fmtMoney(r.ahorro_mensual_disponible)}</div>
+          </div>
+        </div>
+        ${r.tip ? `<div style="background:rgba(244,213,128,0.08);border:0.5px solid rgba(244,213,128,0.25);border-radius:8px;padding:10px;margin-top:12px;font-size:11px;color:rgba(244,213,128,0.95);">⚠ ${Util.esc(r.tip)}</div>` : ''}
+      </div>
+    `;
+
+    if (r.escenarios && r.escenarios.length) {
+      html += `<div class="section-eyebrow"><div><div class="label">escenarios para acelerar</div></div></div>`;
+      r.escenarios.forEach(e => {
+        html += `
+          <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:11px;margin-bottom:5px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:12px;font-weight:500;">${Util.esc(e.nombre)}</div>
+                <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">+${Util.fmtMoney(e.delta_mensual)}/mes</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:13px;font-weight:500;color:rgba(180,220,170,0.95);">${e.meses_resultado} meses</div>
+                <div style="font-size:9px;color:rgba(180,220,170,0.7);">ahorras ${e.ahorro_meses}m</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+  }
+
+  out.innerHTML = html;
+  out.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
 </body>

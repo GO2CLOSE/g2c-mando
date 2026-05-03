@@ -155,36 +155,10 @@
       <div class="label">datos fiscales</div>
       <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">Persona Física · Actividad Empresarial · Régimen General</div>
     </div>
+    <button id="fiscal-edit-btn" onclick="toggleFiscalEdit()" style="background:rgba(120,200,220,0.12);border:0.5px solid rgba(120,200,220,0.3);color:rgba(180,220,240,0.95);padding:5px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-weight:500;">Editar</button>
   </div>
 
-  <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;">
-    <div class="fiscal-row">
-      <div class="fiscal-label">RFC</div>
-      <input type="text" class="fiscal-input" id="fiscal-rfc" placeholder="DAVA920607XXX" maxlength="13" style="text-transform:uppercase;">
-    </div>
-    <div class="fiscal-row">
-      <div class="fiscal-label">CURP</div>
-      <input type="text" class="fiscal-input" id="fiscal-curp" placeholder="DAVA920607HBCXXXX" maxlength="18" style="text-transform:uppercase;">
-    </div>
-    <div class="fiscal-row">
-      <div class="fiscal-label">Nombre fiscal</div>
-      <input type="text" class="fiscal-input" id="fiscal-nombre" placeholder="Alan Davis Smith" style="max-width:220px;font-family:'Inter',sans-serif;">
-    </div>
-    <div class="fiscal-row">
-      <div class="fiscal-label">Régimen</div>
-      <input type="text" class="fiscal-input" id="fiscal-regimen" value="612 · Personas Físicas con Actividades Empresariales y Profesionales" disabled style="max-width:220px;font-family:'Inter',sans-serif;font-size:10px !important;background:rgba(15,20,25,0.3);">
-    </div>
-    <div class="fiscal-row">
-      <div class="fiscal-label">IVA</div>
-      <div class="fiscal-static">16% · No RESICO</div>
-    </div>
-    <div class="fiscal-row">
-      <div class="fiscal-label">Código postal</div>
-      <input type="text" class="fiscal-input" id="fiscal-cp" placeholder="22000" maxlength="5">
-    </div>
-
-    <button class="conn-btn-small primary" style="width:100%;margin-top:12px;padding:10px;" onclick="guardarFiscales()">Guardar datos fiscales</button>
-  </div>
+  <div id="fiscal-host"></div>
 </div>
 
 <!-- ============================================================ -->
@@ -439,7 +413,38 @@ async function ejecutarDiagnostico() {
     lines.push(err('Test IA falló: ' + e.message));
   }
 
-  // 3. Estado local
+  // 3. Verificar modelos configurados contra API real
+  lines.push(info(''));
+  lines.push(info('Modelos configurados:'));
+  lines.push(info(`· Sonnet: ${G2C.models.sonnet}`));
+  lines.push(info(`· Haiku: ${G2C.models.haiku}`));
+
+  try {
+    const rModels = await fetch(G2C.api.proxy + '/api/models');
+    if (rModels.ok) {
+      const dModels = await rModels.json();
+      const ids = (dModels.data || []).map(m => m.id);
+      if (ids.length) {
+        const sonnetOk = ids.includes(G2C.models.sonnet);
+        const haikuOk = ids.includes(G2C.models.haiku);
+        if (sonnetOk) lines.push(ok(`Sonnet vivo en API`));
+        else lines.push(err(`Sonnet "${G2C.models.sonnet}" NO existe en API · DEPRECADO`));
+        if (haikuOk) lines.push(ok(`Haiku vivo en API`));
+        else lines.push(err(`Haiku "${G2C.models.haiku}" NO existe · DEPRECADO`));
+
+        if (!sonnetOk || !haikuOk) {
+          lines.push(info('Modelos disponibles ahora:'));
+          ids.slice(0, 6).forEach(id => lines.push(info(`  · ${id}`)));
+        }
+      }
+    } else {
+      lines.push(info('(Worker viejo · no soporta /api/models · actualiza si quieres validación de modelos)'));
+    }
+  } catch (e) {
+    lines.push(info('No pude validar modelos contra API'));
+  }
+
+  // 4. Estado local
   const status = ApiKeys.status();
   const config = Store.get(Store.KEYS.CONFIG, {});
   if (config.conn_anthropic_connected) {
@@ -1073,11 +1078,106 @@ async function desuscribir() {
 // FISCALES (persistentes)
 // ============================================================
 function loadFiscalData() {
+  renderFiscalHost();
+}
+
+function renderFiscalHost() {
   const config = Store.get(Store.KEYS.CONFIG, {});
-  document.getElementById('fiscal-rfc').value = config.rfc || '';
-  document.getElementById('fiscal-curp').value = config.curp || '';
-  document.getElementById('fiscal-nombre').value = config.nombre_fiscal || '';
-  document.getElementById('fiscal-cp').value = config.codigo_postal || '';
+  const editing = window._fiscalEditing === true;
+  const host = document.getElementById('fiscal-host');
+  if (!host) return;
+
+  // Toggle del botón Editar/Cancelar
+  const editBtn = document.getElementById('fiscal-edit-btn');
+  if (editBtn) {
+    if (editing) {
+      editBtn.textContent = 'Cancelar';
+      editBtn.style.background = 'transparent';
+      editBtn.style.borderColor = 'var(--border-mid)';
+      editBtn.style.color = 'var(--text-secondary)';
+    } else {
+      editBtn.textContent = 'Editar';
+      editBtn.style.background = 'rgba(120,200,220,0.12)';
+      editBtn.style.borderColor = 'rgba(120,200,220,0.3)';
+      editBtn.style.color = 'rgba(180,220,240,0.95)';
+    }
+  }
+
+  if (editing) {
+    host.innerHTML = `
+      <div style="background:rgba(255,79,0,0.025);border:0.5px solid rgba(255,79,0,0.25);border-radius:11px;padding:13px;">
+        <div style="font-size:9px;color:rgba(255,150,80,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:10px;">editando datos fiscales</div>
+
+        <div class="fiscal-row">
+          <div class="fiscal-label">RFC</div>
+          <input type="text" class="fiscal-input" id="fiscal-rfc" value="${Util.esc(config.rfc || '')}" placeholder="DAVA920607XXX" maxlength="13" style="text-transform:uppercase;">
+        </div>
+        <div class="fiscal-row">
+          <div class="fiscal-label">CURP</div>
+          <input type="text" class="fiscal-input" id="fiscal-curp" value="${Util.esc(config.curp || '')}" placeholder="DAVA920607HBCXXXX" maxlength="18" style="text-transform:uppercase;">
+        </div>
+        <div class="fiscal-row">
+          <div class="fiscal-label">Nombre fiscal</div>
+          <input type="text" class="fiscal-input" id="fiscal-nombre" value="${Util.esc(config.nombre_fiscal || '')}" placeholder="Alan Davis Smith" style="max-width:220px;font-family:'Inter',sans-serif;">
+        </div>
+        <div class="fiscal-row">
+          <div class="fiscal-label">Régimen</div>
+          <div class="fiscal-static" style="font-size:10px;">612 · Actividad Empresarial</div>
+        </div>
+        <div class="fiscal-row">
+          <div class="fiscal-label">IVA</div>
+          <div class="fiscal-static">16% · No RESICO</div>
+        </div>
+        <div class="fiscal-row">
+          <div class="fiscal-label">Código postal</div>
+          <input type="text" class="fiscal-input" id="fiscal-cp" value="${Util.esc(config.codigo_postal || '')}" placeholder="22000" maxlength="5">
+        </div>
+
+        <button class="conn-btn-small primary" style="width:100%;margin-top:12px;padding:10px;" onclick="guardarFiscales()">Guardar cambios</button>
+      </div>
+    `;
+  } else {
+    const rfc = config.rfc || '—';
+    const curp = config.curp || '—';
+    const nombre = config.nombre_fiscal || '—';
+    const cp = config.codigo_postal || '—';
+    const fmtFecha = config.fiscal_actualizado ? Util.fmtDate(config.fiscal_actualizado, { short: true }) : null;
+
+    host.innerHTML = `
+      <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;">
+        <div class="fiscal-row">
+          <div class="fiscal-label">RFC</div>
+          <div class="fiscal-static" style="font-family:'JetBrains Mono',monospace;font-weight:500;${rfc === '—' ? 'color:var(--text-tertiary);' : ''}">${Util.esc(rfc)}</div>
+        </div>
+        <div class="fiscal-row">
+          <div class="fiscal-label">CURP</div>
+          <div class="fiscal-static" style="font-family:'JetBrains Mono',monospace;${curp === '—' ? 'color:var(--text-tertiary);' : ''}">${Util.esc(curp)}</div>
+        </div>
+        <div class="fiscal-row">
+          <div class="fiscal-label">Nombre fiscal</div>
+          <div class="fiscal-static" style="${nombre === '—' ? 'color:var(--text-tertiary);' : ''}">${Util.esc(nombre)}</div>
+        </div>
+        <div class="fiscal-row">
+          <div class="fiscal-label">Régimen</div>
+          <div class="fiscal-static" style="font-size:10px;">612 · Actividad Empresarial</div>
+        </div>
+        <div class="fiscal-row">
+          <div class="fiscal-label">IVA</div>
+          <div class="fiscal-static">16% · No RESICO</div>
+        </div>
+        <div class="fiscal-row">
+          <div class="fiscal-label">Código postal</div>
+          <div class="fiscal-static" style="font-family:'JetBrains Mono',monospace;${cp === '—' ? 'color:var(--text-tertiary);' : ''}">${Util.esc(cp)}</div>
+        </div>
+        ${fmtFecha ? `<div style="font-size:9px;color:var(--text-tertiary);margin-top:9px;text-align:center;">actualizado · ${fmtFecha}</div>` : ''}
+      </div>
+    `;
+  }
+}
+
+function toggleFiscalEdit() {
+  window._fiscalEditing = !window._fiscalEditing;
+  renderFiscalHost();
 }
 
 function guardarFiscales() {
@@ -1110,6 +1210,10 @@ function guardarFiscales() {
   Store.set(Store.KEYS.CONFIG, config);
 
   UI.toast('Datos fiscales guardados', 'success');
+
+  // Cerrar modo edición y volver a vista
+  window._fiscalEditing = false;
+  renderFiscalHost();
 
   // Recargar calendario SAT con nuevo RFC
   loadSATCalendar();

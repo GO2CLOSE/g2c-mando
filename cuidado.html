@@ -81,12 +81,11 @@
   <div class="module-subtitle">Perfil físico · ejercicio · dieta · ocio · proyecciones</div>
 </header>
 
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:14px;">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:14px;">
   <div class="tab-pill active" data-tab="perfil">Perfil</div>
   <div class="tab-pill" data-tab="ejercicio">Ejercicio</div>
   <div class="tab-pill" data-tab="dieta">Dieta</div>
   <div class="tab-pill" data-tab="ocio">Ocio</div>
-  <div class="tab-pill" data-tab="proy">Proy</div>
 </div>
 
 <div id="content"></div>
@@ -123,7 +122,6 @@ function renderTab(tab) {
     case 'ejercicio': c.innerHTML = renderEjercicio(); break;
     case 'dieta': c.innerHTML = renderDieta(); break;
     case 'ocio': c.innerHTML = renderOcio(); break;
-    case 'proy': c.innerHTML = renderProy(); break;
   }
 }
 
@@ -136,32 +134,44 @@ function renderPerfil() {
   const imc = PerfilFisico.imc();
   const imcCat = PerfilFisico.imcCategoria();
   const diasCumple = PerfilFisico.diasACumple();
+  const editing = window._perfilEditing === true;
 
   // Análisis médicos cargados
   const analisisAtt = Attach.list().filter(a => a.type === 'analisis_medico' || (a.title || '').toLowerCase().includes('análisis') || (a.title || '').toLowerCase().includes('analisis'));
 
-  return `
+  // Helper: formatea cumpleaños tipo "7 jun 1992"
+  const fmtCumple = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso + 'T12:00:00');
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const vistaModo = `
     <div class="dashboard-card">
-      <div class="dash-eyebrow">datos básicos</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="dash-eyebrow" style="margin-bottom:0;">datos básicos</div>
+        <button onclick="togglePerfilEdit()" style="background:rgba(120,200,220,0.12);border:0.5px solid rgba(120,200,220,0.3);color:rgba(180,220,240,0.95);padding:5px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-weight:500;">Editar</button>
+      </div>
+
       <div class="profile-row">
         <div class="profile-label">Nombre</div>
-        <input type="text" class="profile-input" id="perf-nombre" value="${Util.esc(p.nombre || '')}" style="font-family:'Inter',sans-serif;max-width:200px;">
+        <div class="profile-static">${Util.esc(p.nombre || '—')}</div>
       </div>
       <div class="profile-row">
         <div class="profile-label">Cumpleaños</div>
-        <input type="date" class="profile-input" id="perf-cumple" value="${p.fecha_nacimiento || ''}" style="max-width:170px;">
+        <div class="profile-static">${fmtCumple(p.fecha_nacimiento)}</div>
       </div>
       <div class="profile-row">
         <div class="profile-label">Edad</div>
         <div class="profile-static">${edad ? edad + ' años' : '—'}${diasCumple !== null && diasCumple < 30 ? ` · cumple en ${diasCumple}d` : ''}</div>
       </div>
       <div class="profile-row">
-        <div class="profile-label">Estatura (cm)</div>
-        <input type="number" class="profile-input" id="perf-estatura" value="${p.estatura_cm || ''}" placeholder="178">
+        <div class="profile-label">Estatura</div>
+        <div class="profile-static">${p.estatura_cm ? p.estatura_cm + ' cm' : '—'}</div>
       </div>
       <div class="profile-row">
-        <div class="profile-label">Peso (kg)</div>
-        <input type="number" class="profile-input" id="perf-peso" value="${p.peso_kg || ''}" placeholder="--" step="0.1">
+        <div class="profile-label">Peso</div>
+        <div class="profile-static">${p.peso_kg ? p.peso_kg + ' kg' : '—'}</div>
       </div>
       ${imc ? `
         <div class="profile-row">
@@ -171,11 +181,45 @@ function renderPerfil() {
       ` : ''}
       <div class="profile-row">
         <div class="profile-label">Tipo sangre</div>
-        <input type="text" class="profile-input" id="perf-sangre" value="${Util.esc(p.sangre || '')}" placeholder="O+" maxlength="3" style="text-transform:uppercase;max-width:80px;">
+        <div class="profile-static">${Util.esc(p.sangre || '—')}</div>
+      </div>
+    </div>
+  `;
+
+  const editModo = `
+    <div class="dashboard-card" style="border-color:rgba(255,79,0,0.25);background:rgba(255,79,0,0.025);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="dash-eyebrow" style="margin-bottom:0;color:rgba(255,150,80,0.95);">editando datos básicos</div>
+        <button onclick="cancelarEditPerfil()" style="background:transparent;border:0.5px solid var(--border-mid);color:var(--text-secondary);padding:5px 10px;border-radius:6px;font-size:10px;cursor:pointer;">Cancelar</button>
       </div>
 
-      <button class="btn primary-orange full" style="margin-top:12px;" onclick="guardarPerfil()">Guardar perfil</button>
+      <div class="profile-row">
+        <div class="profile-label">Nombre</div>
+        <input type="text" class="profile-input" id="perf-nombre" value="${Util.esc(p.nombre || '')}" style="font-family:'Inter',sans-serif;max-width:200px;font-size:16px !important;">
+      </div>
+      <div class="profile-row">
+        <div class="profile-label">Cumpleaños</div>
+        <input type="date" class="profile-input" id="perf-cumple" value="${p.fecha_nacimiento || ''}" style="max-width:170px;font-size:16px !important;">
+      </div>
+      <div class="profile-row">
+        <div class="profile-label">Estatura (cm)</div>
+        <input type="number" class="profile-input" id="perf-estatura" value="${p.estatura_cm || ''}" placeholder="178" style="font-size:16px !important;">
+      </div>
+      <div class="profile-row">
+        <div class="profile-label">Peso (kg)</div>
+        <input type="number" class="profile-input" id="perf-peso" value="${p.peso_kg || ''}" placeholder="--" step="0.1" style="font-size:16px !important;">
+      </div>
+      <div class="profile-row">
+        <div class="profile-label">Tipo sangre</div>
+        <input type="text" class="profile-input" id="perf-sangre" value="${Util.esc(p.sangre || '')}" placeholder="O+" maxlength="3" style="text-transform:uppercase;max-width:80px;font-size:16px !important;">
+      </div>
+
+      <button class="btn primary-orange full" style="margin-top:12px;" onclick="guardarPerfil()">Guardar cambios</button>
     </div>
+  `;
+
+  return `
+    ${editing ? editModo : vistaModo}
 
     <div class="dashboard-card">
       <div class="dash-eyebrow">condiciones · usadas por toda sugerencia IA</div>
@@ -248,6 +292,16 @@ function renderPerfil() {
   `;
 }
 
+function togglePerfilEdit() {
+  window._perfilEditing = true;
+  renderTab('perfil');
+}
+
+function cancelarEditPerfil() {
+  window._perfilEditing = false;
+  renderTab('perfil');
+}
+
 function guardarPerfil() {
   const nombre = document.getElementById('perf-nombre').value.trim();
   const cumple = document.getElementById('perf-cumple').value;
@@ -264,6 +318,7 @@ function guardarPerfil() {
   });
 
   UI.toast('Perfil guardado', 'success');
+  window._perfilEditing = false;
   renderTab('perfil');
 }
 
@@ -903,98 +958,6 @@ function guardarPresupuestos() {
   UI.toast('Presupuestos guardados', 'success');
   cerrarModalPresup();
   renderTab('ocio');
-}
-
-// ============================================================
-// PROYECCIONES
-// ============================================================
-function renderProy() {
-  return `
-    <div style="background:rgba(244,213,128,0.06);border:0.5px solid rgba(244,213,128,0.25);border-radius:12px;padding:13px;margin-bottom:14px;">
-      <div style="font-size:9px;color:rgba(244,213,128,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">qué quieres lograr</div>
-      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:11px;">
-        Pon una meta económica · Mando cruza tu MRR + tocadas + gastos y te dice cuántos meses tomaría · qué escenarios la aceleran.
-      </div>
-
-      <div class="form-field" style="margin-bottom:10px;">
-        <div class="field-label">META MONETARIA ($)</div>
-        <input type="number" class="field-input" id="proy-meta" placeholder="Ej: 350000 (Mazda CX-5)" style="font-size:16px !important;">
-      </div>
-
-      <div class="form-field">
-        <div class="field-label">¿CUÁNTO YA TIENES AHORRADO?</div>
-        <input type="number" class="field-input" id="proy-actual" placeholder="0" style="font-size:16px !important;">
-      </div>
-
-      <button class="btn primary-orange full" onclick="calcularProyeccion()" style="margin-top:10px;">Calcular proyección</button>
-    </div>
-
-    <div id="proy-output"></div>
-  `;
-}
-
-function calcularProyeccion() {
-  const meta = parseFloat(document.getElementById('proy-meta').value) || 0;
-  const actual = parseFloat(document.getElementById('proy-actual').value) || 0;
-
-  if (!meta) return UI.toast('Pon la meta primero', 'error');
-
-  const r = Proyecciones.calcular(meta, { ahorroActual: actual });
-  const out = document.getElementById('proy-output');
-
-  let html = '';
-  if (!r.meses_a_meta || r.meses_a_meta < 0) {
-    html += `
-      <div class="dashboard-card" style="background:rgba(255,79,0,0.08);border-color:rgba(255,79,0,0.3);">
-        <div class="dash-eyebrow" style="color:rgba(255,150,80,0.95);">no factible al ritmo actual</div>
-        <div style="font-size:14px;color:rgba(255,170,110,0.95);font-weight:500;margin-top:6px;">Tus ingresos netos no permiten ahorrar para esta meta.</div>
-        <div class="dash-sub">Ingresos: ${Util.fmtMoney(r.ingreso_mensual_estimado)}/mes · Gastos: ${Util.fmtMoney(r.gastos_mensuales_estimado)}/mes</div>
-      </div>
-    `;
-  } else {
-    const fechaLabel = r.fecha_estimada ? new Date(r.fecha_estimada).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : '';
-    html += `
-      <div class="dashboard-card" style="background:rgba(255,79,0,0.05);border-color:rgba(255,79,0,0.25);">
-        <div class="dash-eyebrow" style="color:rgba(255,150,80,0.95);">a este ritmo · llegas en</div>
-        <div class="dash-value" style="color:rgba(255,170,110,0.95);">${r.meses_a_meta} ${r.meses_a_meta === 1 ? 'mes' : 'meses'}</div>
-        <div class="dash-sub">Aprox: ${fechaLabel}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:0.5px solid rgba(255,79,0,0.15);">
-          <div>
-            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;">ingreso/mes</div>
-            <div style="font-size:13px;color:rgba(180,220,170,0.95);font-weight:500;margin-top:2px;">${Util.fmtMoney(r.ingreso_mensual_estimado)}</div>
-          </div>
-          <div>
-            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;">ahorro/mes</div>
-            <div style="font-size:13px;color:rgba(150,210,230,0.95);font-weight:500;margin-top:2px;">${Util.fmtMoney(r.ahorro_mensual_disponible)}</div>
-          </div>
-        </div>
-        ${r.tip ? `<div style="background:rgba(244,213,128,0.08);border:0.5px solid rgba(244,213,128,0.25);border-radius:8px;padding:10px;margin-top:12px;font-size:11px;color:rgba(244,213,128,0.95);">⚠ ${Util.esc(r.tip)}</div>` : ''}
-      </div>
-    `;
-
-    if (r.escenarios.length) {
-      html += `<div class="section-eyebrow"><div><div class="label">escenarios para acelerar</div></div></div>`;
-      r.escenarios.forEach(e => {
-        html += `
-          <div class="dashboard-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div>
-                <div style="font-size:12px;font-weight:500;">${Util.esc(e.nombre)}</div>
-                <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">+${Util.fmtMoney(e.delta_mensual)}/mes</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:13px;font-weight:500;color:rgba(180,220,170,0.95);">${e.meses_resultado} meses</div>
-                <div style="font-size:9px;color:rgba(180,220,170,0.7);">ahorras ${e.ahorro_meses}m</div>
-              </div>
-            </div>
-          </div>
-        `;
-      });
-    }
-  }
-
-  out.innerHTML = html;
-  out.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
 </body>

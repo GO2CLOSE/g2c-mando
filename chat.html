@@ -28,7 +28,7 @@
       <div style="font-size:13px;font-weight:500;">Mando</div>
       <div style="display:flex;align-items:center;gap:4px;">
         <div style="width:5px;height:5px;background:rgba(180,220,170,0.95);border-radius:50%;"></div>
-        <div style="font-size:9px;color:rgba(244,243,239,0.55);" id="model-indicator">Sonnet 4.5</div>
+        <div style="font-size:9px;color:rgba(244,243,239,0.55);" id="model-indicator">Sonnet 4.6</div>
       </div>
     </div>
   </div>
@@ -108,7 +108,7 @@ function appendAI({ text, tone = 'operador', card = null, actions = [] }) {
   div.innerHTML = `
     <div class="ai-eyebrow">
       <div class="ai-dot"></div>
-      <div class="ai-label">Mando · ${tone === 'personal' ? 'cálido' : 'Sonnet 4.5'}</div>
+      <div class="ai-label">Mando · ${tone === 'personal' ? 'cálido' : 'Sonnet 4.6'}</div>
     </div>
     <div class="ai-bubble">
       <div class="ai-text">${formatMarkdown(Util.esc(text))}</div>

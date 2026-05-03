@@ -2,7 +2,7 @@
  * Created by Alan Davis · powered by g2c.com.mx
  *
  * Cerebro inteligente con:
- * - Router Sonnet 4.5 / Haiku 4.5
+ * - Router Sonnet 4.6 / Haiku 4.5
  * - Knowledge base G2C (modelo de negocio + 24 SKUs + 3 personas)
  * - CRUD completo por voz/texto
  * - Cascadas de cobro adoptadas
@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.5.0',
+  version: '1.6.0',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -31,7 +31,7 @@ const G2C = {
     youtube: 'https://www.googleapis.com/youtube/v3'
   },
   models: {
-    sonnet: 'claude-sonnet-4-20250514',
+    sonnet: 'claude-sonnet-4-6',
     haiku: 'claude-haiku-4-5-20251001'
   },
   auth: {
@@ -1379,7 +1379,7 @@ const ApiKeys = {
   CONNECTIONS: {
     anthropic: {
       name: 'Anthropic Claude API',
-      description: 'Cerebro IA · Sonnet 4.5 + Haiku 4.5',
+      description: 'Cerebro IA · Sonnet 4.6 + Haiku 4.5',
       storage: 'worker',
       required: true,
       doc_url: 'https://console.anthropic.com/settings/keys',
