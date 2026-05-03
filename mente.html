@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0F1419">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mando">
+<title>Cuerpo + Mente · Mando</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.food-card {
+  background: rgba(244,243,239,0.025);
+  border: 0.5px solid var(--border-soft);
+  border-radius: 11px;
+  padding: 12px;
+  margin-bottom: 6px;
+}
+.food-name { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
+.food-reason { font-size: 10px; color: var(--text-tertiary); line-height: 1.5; }
+.food-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.food-tag { font-size: 8px; background: rgba(180,220,170,0.1); border: 0.5px solid rgba(180,220,170,0.25); color: rgba(180,220,170,0.95); padding: 2px 6px; border-radius: 3px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+.ejercicio-day {
+  background: rgba(244,243,239,0.025);
+  border: 0.5px solid var(--border-soft);
+  border-radius: 11px;
+  padding: 12px;
+  margin-bottom: 6px;
+  display: flex;
+  gap: 11px;
+}
+.ejercicio-dia-label {
+  width: 48px;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: rgba(255,150,80,0.95);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.ejercicio-foco { font-size: 11px; font-weight: 500; margin-bottom: 3px; }
+.ejercicio-detalle { font-size: 10px; color: var(--text-tertiary); line-height: 1.5; }
+
+.ocio-card {
+  background: rgba(180,220,170,0.04);
+  border: 0.5px solid rgba(180,220,170,0.2);
+  border-radius: 11px;
+  padding: 13px;
+  margin-bottom: 8px;
+}
+.ocio-name { font-size: 13px; font-weight: 500; margin-bottom: 4px; color: rgba(200,230,200,0.95); }
+.ocio-desc { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; }
+
+.proy-result {
+  background: rgba(255,79,0,0.05);
+  border: 0.5px solid rgba(255,79,0,0.25);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 12px 0;
+}
+.proy-meta { font-size: 9px; color: rgba(255,150,80,0.95); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+.proy-value { font-size: 24px; font-weight: 500; color: rgba(255,170,110,0.95); }
+.proy-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+.escenario-card {
+  background: rgba(244,243,239,0.025);
+  border: 0.5px solid var(--border-soft);
+  border-radius: 9px;
+  padding: 11px;
+  margin-bottom: 6px;
+}
+</style>
+</head>
+<body>
+
+<div id="status-bar"></div>
+
+<header class="module-header">
+  <div class="module-eyebrow">
+    <div class="dot" style="background:rgba(180,220,170,1);"></div>
+    <div class="label" style="color:rgba(200,230,200,0.85);">Cuerpo · mente · ocio</div>
+  </div>
+  <div class="module-title">Tu sistema personal</div>
+  <div class="module-subtitle">Alimentos · ejercicio · vicios con enfoque · proyecciones</div>
+</header>
+
+<div class="tab-row">
+  <div class="tab active" data-tab="cuerpo">Cuerpo</div>
+  <div class="tab" data-tab="ejercicio">Ejercicio</div>
+  <div class="tab" data-tab="ocio">Ocio</div>
+  <div class="tab" data-tab="proyecciones">Proyecciones</div>
+</div>
+
+<div id="content" style="margin-top:14px;"></div>
+
+<div id="footer-host"></div>
+<div id="nav-host"></div>
+
+<script src="shared.js"></script>
+<script>
+(async function init() {
+  if (!Auth.enforce()) return;
+  document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
+  document.getElementById('footer-host').innerHTML = UI.renderFooter();
+  document.getElementById('nav-host').innerHTML = UI.renderBottomNav('mando');
+
+  bindTabs();
+  renderTab('cuerpo');
+})();
+
+function bindTabs() {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      renderTab(t.dataset.tab);
+    });
+  });
+}
+
+function renderTab(tab) {
+  const c = document.getElementById('content');
+  switch (tab) {
+    case 'cuerpo': c.innerHTML = renderCuerpo(); break;
+    case 'ejercicio': c.innerHTML = renderEjercicio(); break;
+    case 'ocio': c.innerHTML = renderOcio(); break;
+    case 'proyecciones': c.innerHTML = renderProyecciones(); bindProyecciones(); break;
+  }
+}
+
+// ============================================================
+// CUERPO · alimentos seguros curados
+// ============================================================
+function renderCuerpo() {
+  const profile = Body.PROFILE;
+  const alimentos = Body.ALIMENTOS_SEGUROS;
+
+  let html = `
+    <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:12px;padding:13px;margin-bottom:14px;">
+      <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">tu contexto · usado por toda sugerencia</div>
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">
+        ${profile.condiciones.join(' · ')}<br>
+        Medicación: ${profile.medicacion.join(' · ')}<br>
+        Evitar: ${profile.no_tolera.join(' · ')}
+      </div>
+    </div>
+  `;
+
+  const secciones = [
+    { key: 'desayuno', label: 'desayunos · arrancan bien con Ritalin' },
+    { key: 'comida', label: 'comidas · sin picante, igual de ricas' },
+    { key: 'cena', label: 'cenas · ligeras para dormir bien' },
+    { key: 'snacks', label: 'snacks · evitan picos glucémicos' },
+    { key: 'cafe_alternativas', label: 'café · alternativas que no te crashan' }
+  ];
+
+  secciones.forEach(s => {
+    html += `
+      <div class="section-eyebrow"><div><div class="label">${s.label}</div></div></div>
+      <div style="margin-bottom:14px;">
+        ${alimentos[s.key].map(a => `
+          <div class="food-card">
+            <div class="food-name">${Util.esc(a.nombre)}</div>
+            <div class="food-reason">${Util.esc(a.razon)}</div>
+            <div class="food-tags">${a.tags.map(t => `<div class="food-tag">${t}</div>`).join('')}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  });
+
+  html += `
+    <div style="background:rgba(255,79,0,0.04);border:0.5px solid rgba(255,79,0,0.25);border-radius:12px;padding:13px;margin-top:8px;">
+      <div style="font-size:9px;color:rgba(255,150,80,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">evitar · disparadores conocidos</div>
+      ${alimentos.evitar.map(e => `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:4px;">· ${Util.esc(e)}</div>`).join('')}
+    </div>
+  `;
+
+  return html;
+}
+
+// ============================================================
+// EJERCICIO · rutina con motivación TDAH/TOC
+// ============================================================
+function renderEjercicio() {
+  const ej = Body.EJERCICIO;
+
+  let html = `
+    <div style="background:rgba(180,220,170,0.04);border:0.5px solid rgba(180,220,170,0.2);border-radius:12px;padding:13px;margin-bottom:14px;">
+      <div style="font-size:9px;color:rgba(200,230,200,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">tu plan semanal · gym casa + Pepe + natación</div>
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">
+        Diseñado para tu perfil: 30 min máx por sesión · ritmo TDAH-friendly · usa el TOC a tu favor (rutina rígida = ventaja).
+      </div>
+    </div>
+  `;
+
+  ej.gym_casa_30min.forEach(d => {
+    html += `
+      <div class="ejercicio-day">
+        <div class="ejercicio-dia-label">${d.dia.slice(0, 3)}</div>
+        <div style="flex:1;">
+          <div class="ejercicio-foco">${Util.esc(d.foco)}</div>
+          <div class="ejercicio-detalle">${Util.esc(d.ejercicios)}</div>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `
+    <div class="section-eyebrow" style="margin-top:18px;"><div><div class="label">motivación · cuando no haya ganas</div></div></div>
+    <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:12px;padding:13px;">
+      ${Object.entries(ej.motivacion).map(([k, v]) => `
+        <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:0.5px solid rgba(244,243,239,0.05);">
+          <div style="font-size:9px;color:rgba(255,150,80,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:4px;">${k}</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.55;">${Util.esc(v)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  return html;
+}
+
+// ============================================================
+// OCIO · vicios con enfoque
+// ============================================================
+function renderOcio() {
+  const acts = Ocio.ACTIVIDADES;
+
+  let html = `
+    <div style="background:rgba(180,220,170,0.04);border:0.5px solid rgba(180,220,170,0.2);border-radius:12px;padding:13px;margin-bottom:14px;">
+      <div style="font-size:9px;color:rgba(200,230,200,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">disfrutar · pero con conciencia</div>
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">
+        No son juegos · es darle dirección a lo que ya disfrutas. Trackear gastos en marihuana se hace solo: cualquier movimiento con la palabra "marihuana" se marca con icono verde en el listado.
+      </div>
+    </div>
+  `;
+
+  Object.entries(acts).forEach(([key, act]) => {
+    html += `
+      <div class="ocio-card">
+        <div class="ocio-name">${Util.esc(act.nombre)}</div>
+        <div class="ocio-desc">${Util.esc(act.descripcion)}</div>
+        ${act.sugerencias.map(s => `
+          <div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:5px;">
+            <div style="color:rgba(180,220,170,0.7);font-size:14px;line-height:1;flex-shrink:0;">·</div>
+            <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;">${Util.esc(s)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  });
+
+  return html;
+}
+
+// ============================================================
+// PROYECCIONES FINANCIERAS
+// ============================================================
+function renderProyecciones() {
+  return `
+    <div style="background:rgba(244,213,128,0.06);border:0.5px solid rgba(244,213,128,0.25);border-radius:12px;padding:13px;margin-bottom:14px;">
+      <div style="font-size:9px;color:rgba(244,213,128,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">qué quieres lograr</div>
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:11px;">
+        Pon una meta económica · Mando cruza tu MRR + tocadas + gastos y te dice cuántos meses tomaría · qué escenarios la aceleran.
+      </div>
+
+      <div class="form-field" style="margin-bottom:10px;">
+        <div class="field-label">META MONETARIA ($)</div>
+        <input type="number" class="field-input" id="proy-meta" placeholder="Ej: 350000 (para un Mazda CX-5)" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">¿CUÁNTO YA TIENES AHORRADO?</div>
+        <input type="number" class="field-input" id="proy-actual" placeholder="0" style="font-size:16px !important;">
+      </div>
+
+      <button class="btn primary-orange full" onclick="calcularProyeccion()" style="margin-top:10px;">Calcular proyección</button>
+    </div>
+
+    <div id="proy-output"></div>
+  `;
+}
+
+function bindProyecciones() {
+  // ya bindado en HTML
+}
+
+function calcularProyeccion() {
+  const meta = parseFloat(document.getElementById('proy-meta').value) || 0;
+  const actual = parseFloat(document.getElementById('proy-actual').value) || 0;
+
+  if (!meta) {
+    UI.toast('Pon la meta primero', 'error');
+    return;
+  }
+
+  const r = Proyecciones.calcular(meta, { ahorroActual: actual });
+  const out = document.getElementById('proy-output');
+
+  let html = '';
+
+  if (!r.meses_a_meta || r.meses_a_meta < 0) {
+    html += `
+      <div class="proy-result" style="background:rgba(255,79,0,0.08);">
+        <div class="proy-meta">no factible al ritmo actual</div>
+        <div style="font-size:14px;color:rgba(255,170,110,0.95);font-weight:500;">Tus ingresos netos no permiten ahorrar para esta meta.</div>
+        <div class="proy-sub">Ingresos: ${Util.fmtMoney(r.ingreso_mensual_estimado)}/mes · Gastos: ${Util.fmtMoney(r.gastos_mensuales_estimado)}/mes</div>
+        <div class="proy-sub" style="margin-top:8px;">Necesitas reducir gastos o subir ingresos antes de proyectar.</div>
+      </div>
+    `;
+  } else {
+    const fechaLabel = r.fecha_estimada ? new Date(r.fecha_estimada).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : '';
+    html += `
+      <div class="proy-result">
+        <div class="proy-meta">a este ritmo · llegas en</div>
+        <div class="proy-value">${r.meses_a_meta} ${r.meses_a_meta === 1 ? 'mes' : 'meses'}</div>
+        <div class="proy-sub">Aprox: ${fechaLabel}</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:0.5px solid rgba(255,79,0,0.15);">
+          <div>
+            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;">ingreso/mes</div>
+            <div style="font-size:13px;color:rgba(180,220,170,0.95);font-weight:500;margin-top:2px;">${Util.fmtMoney(r.ingreso_mensual_estimado)}</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;">ahorro/mes</div>
+            <div style="font-size:13px;color:rgba(150,210,230,0.95);font-weight:500;margin-top:2px;">${Util.fmtMoney(r.ahorro_mensual_disponible)}</div>
+          </div>
+        </div>
+
+        ${r.tip ? `<div style="background:rgba(255,213,80,0.08);border:0.5px solid rgba(244,213,128,0.25);border-radius:8px;padding:10px;margin-top:12px;font-size:11px;color:rgba(244,213,128,0.95);">⚠ ${Util.esc(r.tip)}</div>` : ''}
+      </div>
+    `;
+
+    if (r.escenarios.length) {
+      html += `
+        <div class="section-eyebrow"><div><div class="label">escenarios para acelerar</div></div></div>
+      `;
+      r.escenarios.forEach(e => {
+        html += `
+          <div class="escenario-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:12px;font-weight:500;">${Util.esc(e.nombre)}</div>
+                <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">+${Util.fmtMoney(e.delta_mensual)}/mes</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:13px;font-weight:500;color:rgba(180,220,170,0.95);">${e.meses_resultado} meses</div>
+                <div style="font-size:9px;color:rgba(180,220,170,0.7);">ahorras ${e.ahorro_meses}m</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+  }
+
+  out.innerHTML = html;
+  out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>

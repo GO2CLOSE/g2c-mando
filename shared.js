@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.0.0',
+  version: '1.3.0',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -751,6 +751,25 @@ const Cascada = {
    */
   registrarMovimiento(mov) {
     const movimientos = Store.get('alan_mando_movimientos', []);
+
+    // Auto-detección de tags especiales (marihuana, café, etc.)
+    const concepto = (mov.concepto || '').toLowerCase();
+    const tags = [];
+    if (/marihuana|mota|mari|cannabis|kush|gota|sativa|indica|hierba|cogollo|joint/i.test(concepto)) {
+      tags.push('marihuana');
+      mov.color = 'green-mota';
+      mov.icono = 'leaf';
+      if (!mov.categoria_personal) mov.categoria_personal = 'ocio_marihuana';
+    }
+    if (/café|cafe|starbucks|tims|cofee|latte|americano|cold brew/i.test(concepto)) {
+      tags.push('cafe');
+      mov.icono = mov.icono || 'coffee';
+    }
+    if (/uber|didi|cabify/i.test(concepto)) {
+      tags.push('transporte');
+    }
+    if (tags.length) mov.tags = (mov.tags || []).concat(tags);
+
     movimientos.push({ id: 'mov_' + Date.now(), ts: Date.now(), ...mov });
     Store.set('alan_mando_movimientos', movimientos);
 
@@ -769,7 +788,7 @@ const Cascada = {
       const objetivos = Store.get(Store.KEYS.OBJETIVOS, []);
       const objCasa = objetivos.find(o => o.tipo === 'ahorro_casa');
       if (objCasa) {
-        const aporte = Math.round(mov.monto * 0.6); // 60% del ingreso al ahorro
+        const aporte = Math.round(mov.monto * 0.6);
         objCasa.acumulado = (objCasa.acumulado || 0) + aporte;
         objCasa.progreso = Math.round((objCasa.acumulado / objCasa.target) * 100);
         Store.set(Store.KEYS.OBJETIVOS, objetivos);
@@ -777,7 +796,7 @@ const Cascada = {
     }
 
     this.recalcularProyeccion();
-    return { ok: true, movimiento: mov };
+    return { ok: true, movimiento: mov, tags };
   },
 
   /**
@@ -1596,7 +1615,474 @@ const Push = {
 };
 
 // ============================================================
-// 12 · INICIALIZACIÓN
+// 12 · BODY · perfil de salud + alimentos sugeridos
+// ============================================================
+
+const Body = {
+  /**
+   * Perfil base de Alan · referencia para sugerencias IA aterrizadas.
+   */
+  PROFILE: {
+    edad: 33,
+    condiciones: ['estrés crónico moderado', 'inflamación gastrointestinal recurrente', 'TDAH', 'TOC'],
+    medicacion: ['Ritalin · 20mg AM'],
+    no_tolera: ['picante (le encanta pero le inflama)'],
+    intereses_alimentos: ['comer rico sin culpa', 'descubrir nuevos restaurantes'],
+    actividad_fisica: ['gimnasio en casa', 'caminar con Pepe (perro)', 'natación'],
+    diversion: ['PlayStation 5', 'ajedrez', 'marihuana recreacional', 'viajes USA shopping'],
+    ubicacion: 'Tijuana/Ensenada, BC'
+  },
+
+  /**
+   * Catálogo curado de alimentos seguros para Alan.
+   * Anti-inflamatorios + sin picante + ricos + soportan TDAH/TOC.
+   * Fuentes: PubMed, Mayo Clinic, dietas anti-inflamatorias clínicas.
+   */
+  ALIMENTOS_SEGUROS: {
+    desayuno: [
+      { nombre: 'Avena con plátano + miel + canela', razon: 'Carbo lento estabiliza dopamina post-Ritalin · canela antiinflamatoria', tags: ['anti-inflamatorio', 'tdah-friendly'] },
+      { nombre: 'Huevos revueltos con espinaca + aguacate', razon: 'Colina + omega-3 + fibra · base sólida sin inflamar', tags: ['anti-inflamatorio', 'sin-picante'] },
+      { nombre: 'Yogurt griego con arándanos + nueces', razon: 'Probióticos para microbiota inflamada · antioxidantes', tags: ['anti-inflamatorio', 'gut-health'] },
+      { nombre: 'Smoothie verde: espinaca, manzana, jengibre, plátano', razon: 'Jengibre antiinflamatorio sin ser picante · energía sostenida', tags: ['anti-inflamatorio', 'gut-health'] }
+    ],
+    comida: [
+      { nombre: 'Salmón al horno con limón + arroz integral + brócoli', razon: 'Omega-3 directo al cerebro · reduce inflamación sistémica', tags: ['anti-inflamatorio', 'tdah-friendly'] },
+      { nombre: 'Pollo asado con camote + ensalada de hojas', razon: 'Proteína magra + carbo complejo · evita picos glucémicos', tags: ['sin-picante', 'estable'] },
+      { nombre: 'Pasta con pesto + pollo + tomate cherry', razon: 'Sabor intenso sin picante · albahaca antioxidante', tags: ['sin-picante', 'satisfactorio'] },
+      { nombre: 'Tacos de pescado con repollo morado + crema (sin salsa picante)', razon: 'Tex-Mex sin disparador · reemplaza picante con cilantro/limón', tags: ['sin-picante', 'mexicano'] },
+      { nombre: 'Bowl de arroz, atún, aguacate, edamame, sésamo', razon: 'Estilo poke · proteína + omega-3 + fibra', tags: ['anti-inflamatorio', 'gut-health'] }
+    ],
+    cena: [
+      { nombre: 'Sopa de lentejas con verduras', razon: 'Triptófano para serotonina · ayuda a dormir con TDAH', tags: ['tdah-friendly', 'cena-ligera'] },
+      { nombre: 'Tostadas de aguacate con huevo pochado', razon: 'Cena ligera + grasa buena · no compite con Ritalin residual', tags: ['cena-ligera', 'estable'] },
+      { nombre: 'Ensalada de quinoa con pollo, manzana, nuez', razon: 'Carbo complejo + proteína · estabiliza glucosa nocturna', tags: ['gut-health', 'estable'] }
+    ],
+    snacks: [
+      { nombre: 'Manzana con almendras', razon: 'Fibra + grasa buena · no spike de azúcar', tags: ['estable'] },
+      { nombre: 'Hummus con zanahorias', razon: 'Garbanzo antiinflamatorio · saciante sin pesar', tags: ['anti-inflamatorio'] },
+      { nombre: 'Yogurt griego con miel', razon: 'Probióticos + dulce natural · alternativa a antojo malo', tags: ['gut-health'] }
+    ],
+    cafe_alternativas: [
+      { nombre: 'Café americano con canela', razon: 'Canela reduce spike adrenalina del café · mejor con Ritalin', tags: ['cafe-friendly'] },
+      { nombre: 'Matcha latte', razon: 'L-teanina balancea cafeína · enfoque sin ansiedad', tags: ['cafe-friendly', 'tdah-friendly'] },
+      { nombre: 'Cold brew con leche de almendra', razon: 'Liberación lenta de cafeína · evita crash de mediodía', tags: ['cafe-friendly'] }
+    ],
+    evitar: [
+      'Picante (chiles, salsas tipo Valentina, aguachile, tajín en exceso) · te encanta pero te inflama',
+      'Café espresso doble en ayunas · choca con Ritalin',
+      'Refresco · spike glucémico empeora TOC',
+      'Ultraprocesados · empeoran inflamación'
+    ]
+  },
+
+  /**
+   * Rutinas de ejercicio adaptadas: gym en casa + caminar con Pepe + natación.
+   */
+  EJERCICIO: {
+    gym_casa_30min: [
+      { dia: 'Lunes', foco: 'Tren superior + core', ejercicios: 'Push-ups 4x12 · plancha 3x45s · curls mancuerna 3x12 · superman 3x15' },
+      { dia: 'Martes', foco: 'Caminata Pepe + movilidad', ejercicios: '40 min caminata zona Cacho/Río · estiramiento cadera 10 min al regresar' },
+      { dia: 'Miércoles', foco: 'Tren inferior', ejercicios: 'Sentadillas 4x15 · zancadas 3x12 · puente glúteo 3x15 · pantorrilla 4x20' },
+      { dia: 'Jueves', foco: 'Cardio bajo impacto', ejercicios: 'Burpees suaves 3x10 · jumping jacks 4x30s · mountain climbers 3x20' },
+      { dia: 'Viernes', foco: 'Caminata + natación si hay tiempo', ejercicios: '45 min caminata + 30 min nadar (alberca local)' },
+      { dia: 'Sábado', foco: 'Activo libre', ejercicios: 'Caminata larga con Pepe (1h+) · explora zona nueva Tijuana' },
+      { dia: 'Domingo', foco: 'Descanso activo', ejercicios: 'Estiramiento 20 min · respiración 5 min para TOC' }
+    ],
+    motivacion: {
+      tdah: 'Hazlo en bloques de 15 min · NO te exijas 1 hora seguida. Tu cerebro responde mejor a sprints.',
+      toc: 'Misma hora cada día · la rutina rígida que te tortura en otras áreas, aquí es tu ventaja.',
+      estres: 'Cardio moderado libera endorfinas · mejor que ansiolítico para tu perfil',
+      energia: 'Si no tienes ganas: solo ponte la ropa deportiva. 80% del tiempo termina haciendo algo.'
+    }
+  }
+};
+
+// ============================================================
+// 13 · OCIO · vicios con enfoque
+// ============================================================
+
+const Ocio = {
+  ACTIVIDADES: {
+    ajedrez: {
+      nombre: 'Ajedrez',
+      descripcion: 'Tu vicio mental favorito',
+      sugerencias: [
+        'chess.com · 1 partida diaria 10 min · mantiene mente ágil',
+        'Lichess.org · gratis · sin distracciones · puzzles diarios',
+        'Estudia 1 apertura por mes · estructura tu TOC en algo productivo'
+      ]
+    },
+    marihuana: {
+      nombre: 'Marihuana',
+      descripcion: 'Vicio recreacional · enfoque consciente',
+      sugerencias: [
+        'Sativa AM productiva · creatividad para diseño/UI',
+        'Indica PM · ayuda a desconectar TOC nocturno',
+        'No mezclar con Ritalin activo · espera 6h post-dosis',
+        'Trackea gasto mensual · mantén bajo $1,500 MXN para no descontrol financiero'
+      ]
+    },
+    ps5: {
+      nombre: 'PlayStation 5',
+      descripcion: 'Tu reset mental nocturno',
+      sugerencias: [
+        'Sesiones max 90 min · TDAH se hiperfijea fácil',
+        'Géneros recomendados: estrategia (XCOM), narrativa (God of War), deportes (FIFA · social)',
+        'Evita después de 11pm · afecta sueño + Ritalin del día siguiente'
+      ]
+    },
+    viajes_usa: {
+      nombre: 'Viajes USA · shopping + dispensaries',
+      descripcion: 'Combinación que te encanta',
+      sugerencias: [
+        'San Diego día completo: Las Americas Outlets + dispensary downtown',
+        'LA fin de semana: Melrose vintage + Venice + dispensaries Hollywood',
+        'Combo eficiente: planea 1 viaje cada 6 semanas · presupuesto $5K-8K',
+        'Cruza temprano viernes (5am) · evita filas largas · regreso domingo PM'
+      ]
+    }
+  }
+};
+
+// ============================================================
+// 14 · LYRICS · letras de canciones para modo escena
+// ============================================================
+
+const Lyrics = {
+  /**
+   * Guarda letras vinculadas a canción.
+   * Soporta texto plano y formato LRC con timestamps [mm:ss.xx].
+   */
+  KEY: 'alan_mando_lyrics',
+
+  list() { return Store.get(this.KEY, []); },
+
+  byCancionId(cancionId) {
+    return this.list().find(l => l.cancion_id === cancionId);
+  },
+
+  save(cancionId, contenido, formato = 'plain') {
+    const all = this.list();
+    const existing = all.findIndex(l => l.cancion_id === cancionId);
+    const obj = {
+      cancion_id: cancionId,
+      contenido,
+      formato, // 'plain' | 'lrc'
+      lineas: this.parse(contenido, formato),
+      updated_at: Date.now()
+    };
+    if (existing >= 0) all[existing] = { ...all[existing], ...obj };
+    else { obj.id = 'lyr_' + Date.now(); obj.created_at = Date.now(); all.unshift(obj); }
+    Store.set(this.KEY, all);
+    return obj;
+  },
+
+  remove(cancionId) {
+    Store.set(this.KEY, this.list().filter(l => l.cancion_id !== cancionId));
+  },
+
+  /**
+   * Parser de letras: detecta si es LRC sincronizado o texto plano.
+   * Devuelve array de {time, text} (time en segundos, null si plain).
+   */
+  parse(contenido, formato) {
+    const lineas = [];
+    const text = (contenido || '').trim();
+    if (!text) return lineas;
+
+    if (formato === 'lrc' || /^\[\d{2}:\d{2}/.test(text)) {
+      // LRC: [00:23.40]línea de letra
+      const lrcRegex = /^\[(\d{2}):(\d{2})(?:\.(\d{1,3}))?\](.*)$/;
+      text.split('\n').forEach(line => {
+        const m = line.match(lrcRegex);
+        if (m) {
+          const min = parseInt(m[1]);
+          const sec = parseInt(m[2]);
+          const ms = m[3] ? parseInt(m[3].padEnd(3, '0')) : 0;
+          lineas.push({
+            time: min * 60 + sec + ms / 1000,
+            text: (m[4] || '').trim()
+          });
+        }
+      });
+    } else {
+      // Texto plano · cada línea sin timestamp
+      text.split('\n').forEach(line => {
+        const t = line.trim();
+        if (t) lineas.push({ time: null, text: t });
+      });
+    }
+    return lineas;
+  }
+};
+
+// ============================================================
+// 15 · PROVEEDORES · gastos del negocio para Estado de Resultados
+// ============================================================
+
+const Proveedores = {
+  KEY: 'alan_mando_proveedores',
+  GASTOS_KEY: 'alan_mando_gastos_negocio',
+
+  CATEGORIAS: {
+    hosting: 'Hosting · dominios · CDN',
+    saas: 'SaaS · suscripciones software',
+    publicidad: 'Publicidad · Meta · Google Ads',
+    contabilidad: 'Contador · servicios fiscales',
+    legal: 'Asesoría legal',
+    diseño: 'Diseño · freelancers',
+    desarrollo: 'Dev · programadores externos',
+    oficina: 'Oficina virtual · coworking',
+    transporte: 'Transporte · gasolina · uber',
+    comidas_negocio: 'Comidas con clientes',
+    capacitacion: 'Cursos · libros',
+    equipo: 'Equipo · hardware · gadgets',
+    otro: 'Otro'
+  },
+
+  list() { return Store.get(this.KEY, []); },
+
+  save(prov) {
+    const all = this.list();
+    if (prov.id) {
+      const idx = all.findIndex(p => p.id === prov.id);
+      if (idx >= 0) all[idx] = { ...all[idx], ...prov, updated_at: Date.now() };
+    } else {
+      prov.id = 'prov_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      prov.created_at = Date.now();
+      all.unshift(prov);
+    }
+    Store.set(this.KEY, all);
+    return prov;
+  },
+
+  remove(id) {
+    Store.set(this.KEY, this.list().filter(p => p.id !== id));
+  },
+
+  // Gastos individuales por proveedor
+  gastos() { return Store.get(this.GASTOS_KEY, []); },
+
+  registrarGasto(g) {
+    const all = this.gastos();
+    g.id = 'gasto_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    g.fecha = g.fecha || Date.now();
+    g.created_at = Date.now();
+    all.unshift(g);
+    Store.set(this.GASTOS_KEY, all);
+
+    // Cascada: también registra en movimientos generales
+    const movimientos = Store.get('alan_mando_movimientos', []);
+    movimientos.push({
+      id: 'mov_' + Date.now(),
+      ts: g.fecha,
+      tipo: 'gasto',
+      monto: g.monto,
+      concepto: g.concepto + ' · ' + g.proveedor_nombre,
+      categoria: 'g2c_' + (g.categoria || 'otro'),
+      proveedor_id: g.proveedor_id,
+      gasto_id: g.id
+    });
+    Store.set('alan_mando_movimientos', movimientos);
+
+    return g;
+  },
+
+  /**
+   * Estado de Resultados para periodo dado.
+   */
+  estadoResultados(desde, hasta) {
+    desde = desde || (Date.now() - 30 * 86400000);
+    hasta = hasta || Date.now();
+
+    // Ingresos: cobros recibidos en el periodo
+    const movs = Store.get('alan_mando_movimientos', []);
+    const ingresos = movs.filter(m =>
+      m.tipo === 'ingreso' && m.ts >= desde && m.ts <= hasta &&
+      (m.categoria || '').startsWith('g2c')
+    );
+
+    // Egresos: gastos a proveedores en el periodo
+    const gastos = this.gastos().filter(g => g.fecha >= desde && g.fecha <= hasta);
+
+    const totalIngresos = ingresos.reduce((s, m) => s + m.monto, 0);
+    const totalEgresos = gastos.reduce((s, g) => s + g.monto, 0);
+
+    // Por categoría
+    const egresosPorCat = {};
+    gastos.forEach(g => {
+      const cat = g.categoria || 'otro';
+      egresosPorCat[cat] = (egresosPorCat[cat] || 0) + g.monto;
+    });
+
+    // Costo por cliente (cuántos gastos asociados a cada cliente)
+    const costoPorCliente = {};
+    gastos.forEach(g => {
+      if (g.cliente_id) {
+        costoPorCliente[g.cliente_id] = (costoPorCliente[g.cliente_id] || 0) + g.monto;
+      }
+    });
+
+    return {
+      periodo: { desde, hasta },
+      ingresos: { total: totalIngresos, count: ingresos.length, items: ingresos },
+      egresos: { total: totalEgresos, count: gastos.length, por_categoria: egresosPorCat, items: gastos },
+      utilidad_bruta: totalIngresos - totalEgresos,
+      margen: totalIngresos > 0 ? ((totalIngresos - totalEgresos) / totalIngresos) : 0,
+      costo_por_cliente: costoPorCliente,
+      roi: totalEgresos > 0 ? (totalIngresos / totalEgresos) : null
+    };
+  }
+};
+
+// ============================================================
+// 16 · PROYECCIONES FINANCIERAS
+// ============================================================
+
+const Proyecciones = {
+  /**
+   * Proyecta cuánto tiempo te toma alcanzar una meta financiera específica
+   * basado en TODO el contexto: MRR, gastos, ahorro actual, ritmo histórico.
+   */
+  calcular(metaMonto, opciones = {}) {
+    const { conMargen = 0.7, ahorroActual = 0 } = opciones;
+
+    const finanzas = Store.get(Store.KEYS.FINANZAS, {});
+    const clientes = Store.get(Store.KEYS.CLIENTES, []);
+    const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
+    const serviciosFijos = Store.get(Store.KEYS.SERVICIOS_FIJOS, []);
+
+    // Ingresos mensuales estimados
+    const mrrG2C = clientes.filter(c => c.status !== 'archivado').reduce((s, c) => s + (c.monto_mensual || 0), 0);
+    const tocadasMes = eventos.filter(e => e.tipo === 'tocada' && e.confirmada).length;
+    const ingMusicaPromedio = tocadasMes * 1500; // promedio TJ
+
+    // Gastos fijos mensuales
+    const gastosFijos = serviciosFijos.reduce((s, x) => s + (x.monto || 0), 0);
+    const gastosVariables = 8400; // estimado del módulo personal
+
+    const ingresoNeto = (mrrG2C + ingMusicaPromedio) - (gastosFijos + gastosVariables);
+    const ahorroMensual = ingresoNeto * conMargen; // 70% del neto va a ahorro/meta
+
+    const faltante = metaMonto - ahorroActual;
+    const meses = ahorroMensual > 0 ? Math.ceil(faltante / ahorroMensual) : null;
+
+    // Escenarios alternativos
+    const escenarios = [];
+
+    if (meses && meses > 6) {
+      // Escenario A: cerrar 1 cliente más
+      const conClienteExtra = ahorroMensual + (12000 * conMargen);
+      escenarios.push({
+        nombre: '+1 cliente Plan Parcial',
+        delta_mensual: 12000,
+        nuevo_ahorro: conClienteExtra,
+        meses_resultado: Math.ceil(faltante / conClienteExtra),
+        ahorro_meses: meses - Math.ceil(faltante / conClienteExtra)
+      });
+
+      // Escenario B: 2 tocadas extras al mes
+      const conTocadasExtra = ahorroMensual + (3000 * conMargen);
+      escenarios.push({
+        nombre: '+2 tocadas/mes',
+        delta_mensual: 3000,
+        nuevo_ahorro: conTocadasExtra,
+        meses_resultado: Math.ceil(faltante / conTocadasExtra),
+        ahorro_meses: meses - Math.ceil(faltante / conTocadasExtra)
+      });
+
+      // Escenario C: recortar $4K hormiga
+      const conRecorte = ahorroMensual + 4000;
+      escenarios.push({
+        nombre: 'Recortar $4K hormiga',
+        delta_mensual: 4000,
+        nuevo_ahorro: conRecorte,
+        meses_resultado: Math.ceil(faltante / conRecorte),
+        ahorro_meses: meses - Math.ceil(faltante / conRecorte)
+      });
+    }
+
+    return {
+      meta: metaMonto,
+      ahorro_actual: ahorroActual,
+      faltante,
+      ingreso_mensual_estimado: mrrG2C + ingMusicaPromedio,
+      gastos_mensuales_estimado: gastosFijos + gastosVariables,
+      ahorro_mensual_disponible: ahorroMensual,
+      meses_a_meta: meses,
+      fecha_estimada: meses ? new Date(Date.now() + meses * 30 * 86400000).toISOString().slice(0, 10) : null,
+      escenarios,
+      mrr_actual: mrrG2C,
+      tip: meses && meses > 12 ? 'Más de 1 año a este ritmo · considera escenarios para acelerar' : null
+    };
+  }
+};
+
+// ============================================================
+// 17 · OBJETIVOS LINK · vincular tareas a objetivos
+// ============================================================
+
+const ObjetivosLink = {
+  /**
+   * Tareas vinculadas a un objetivo.
+   */
+  tareasPorObjetivo(objetivoId) {
+    const pendientes = Store.get(Store.KEYS.PENDIENTES, []);
+    return pendientes.filter(p => p.objetivo_id === objetivoId);
+  },
+
+  /**
+   * Sugiere tareas auto-generadas para un objetivo según su tipo.
+   */
+  sugerirTareas(objetivo) {
+    const sugerencias = [];
+    if (objetivo.tipo === 'ahorro_casa' || (objetivo.nombre || '').toLowerCase().includes('casa')) {
+      sugerencias.push(
+        'Cerrar 1 cliente Plan Parcial este mes',
+        'Agendar 2 tocadas/mes para ingreso paralelo',
+        'Recortar $4K gastos hormiga',
+        'Revisar opciones crédito Infonavit/banca'
+      );
+    } else if (objetivo.tipo === 'mrr' || (objetivo.nombre || '').toLowerCase().includes('mrr')) {
+      sugerencias.push(
+        'Generar 5 propuestas G2C esta semana',
+        'Diagnóstico Inteligente: 8 leads/semana',
+        'Pedir 1 referido a cada cliente activo',
+        'Lanzar webinar mensual privado'
+      );
+    } else if (objetivo.tipo === 'tocadas_mes') {
+      sugerencias.push(
+        'Contactar 3 venues TJ esta semana',
+        'Actualizar set list según género del lugar',
+        'Grabar video promo 60 segundos para venues'
+      );
+    }
+    return sugerencias;
+  },
+
+  /**
+   * Calcula progreso real de un objetivo basado en tareas completadas + ahorro actual.
+   */
+  progresoCompleto(objetivo) {
+    const tareas = this.tareasPorObjetivo(objetivo.id);
+    const completadas = tareas.filter(t => t.done).length;
+    const totalTareas = tareas.length;
+
+    const progresoMonetario = objetivo.target ? (objetivo.acumulado || 0) / objetivo.target : 0;
+    const progresoTareas = totalTareas > 0 ? completadas / totalTareas : 0;
+
+    return {
+      monetario_pct: Math.round(progresoMonetario * 100),
+      tareas_pct: Math.round(progresoTareas * 100),
+      tareas_total: totalTareas,
+      tareas_completadas: completadas,
+      tareas_pendientes: tareas.filter(t => !t.done)
+    };
+  }
+};
+
+// ============================================================
+// 18 · INICIALIZACIÓN
 // ============================================================
 
 window.G2C = G2C;
@@ -1611,6 +2097,12 @@ window.SAT = SAT;
 window.Attach = Attach;
 window.ApiKeys = ApiKeys;
 window.Push = Push;
+window.Body = Body;
+window.Ocio = Ocio;
+window.Lyrics = Lyrics;
+window.Proveedores = Proveedores;
+window.Proyecciones = Proyecciones;
+window.ObjetivosLink = ObjetivosLink;
 
 console.log(`%cG2C Mando v${G2C.version}`, 'color:#FF4F00;font-weight:bold;font-size:14px;');
 console.log('%cCreated by Alan Davis · powered by g2c.com.mx', 'color:rgba(244,243,239,0.5);font-size:11px;');

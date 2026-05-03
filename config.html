@@ -59,6 +59,22 @@
 </header>
 
 <!-- ============================================================ -->
+<!-- 0 · DIAGNÓSTICO DEL SISTEMA -->
+<!-- ============================================================ -->
+<div class="section-block" id="diag-section">
+  <div class="section-eyebrow">
+    <div>
+      <div class="label">diagnóstico</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">estado del cerebro IA + worker en tiempo real</div>
+    </div>
+    <button onclick="ejecutarDiagnostico()" style="font-size:11px;color:rgba(255,150,80,0.9);background:transparent;border:0.5px solid rgba(255,79,0,0.3);border-radius:7px;padding:5px 10px;cursor:pointer;">Re-test</button>
+  </div>
+  <div id="diag-results" style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.7;color:var(--text-secondary);">
+    Presiona "Re-test" para diagnosticar la conexión...
+  </div>
+</div>
+
+<!-- ============================================================ -->
 <!-- 1 · CONEXIONES API -->
 <!-- ============================================================ -->
 <div class="section-block">
@@ -282,7 +298,89 @@
   loadFiscalData();
   loadSATCalendar();
   bindToggles();
+
+  // Diagnóstico automático al cargar
+  ejecutarDiagnostico();
 })();
+
+// ============================================================
+// DIAGNÓSTICO · qué está pasando con el cerebro IA
+// ============================================================
+async function ejecutarDiagnostico() {
+  const out = document.getElementById('diag-results');
+  out.innerHTML = '<div style="color:rgba(244,213,128,0.95);">⏳ Ejecutando diagnóstico...</div>';
+
+  const lines = [];
+  const ok = (txt) => `<div style="color:rgba(180,220,170,0.95);">✓ ${txt}</div>`;
+  const err = (txt) => `<div style="color:rgba(255,170,110,0.95);">✗ ${txt}</div>`;
+  const info = (txt) => `<div style="color:var(--text-secondary);">· ${txt}</div>`;
+
+  // 1. Worker reachable
+  try {
+    const r = await fetch(G2C.api.proxy + '/health');
+    if (r.ok) {
+      const d = await r.json();
+      lines.push(ok(`Worker reachable · v${d.version || '?'}`));
+      if (typeof d.anthropic_configured !== 'undefined') {
+        if (d.anthropic_configured) {
+          lines.push(ok('Worker tiene API key configurada'));
+        } else {
+          lines.push(err('Worker NO tiene API key configurada · este es el problema'));
+          lines.push(info('Solución: pega tu key abajo en "Anthropic Claude API" → Conectar'));
+        }
+      } else {
+        lines.push(err('Worker es versión vieja (sin endpoint /api/check) · necesitas actualizarlo'));
+        lines.push(info('Necesitas hacer deploy del worker v1.3'));
+      }
+    } else {
+      lines.push(err(`Worker respondió ${r.status}`));
+    }
+  } catch (e) {
+    lines.push(err('Worker no responde: ' + e.message));
+  }
+
+  // 2. Test directo a /api/chat
+  try {
+    const r = await fetch(G2C.api.proxy + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: G2C.models.haiku,
+        messages: [{ role: 'user', content: 'di OK' }],
+        max_tokens: 5
+      })
+    });
+    const d = await r.json();
+    if (r.ok && d.content) {
+      lines.push(ok('Cerebro IA respondiendo · ' + (d.content[0]?.text || 'OK').slice(0, 30)));
+    } else {
+      const errMsg = d.error?.message || d.error || JSON.stringify(d).slice(0, 100);
+      lines.push(err('Cerebro IA: ' + errMsg));
+
+      // Si es problema de no_api_key, dar guía clara
+      if (d.error?.type === 'no_api_key' || (typeof errMsg === 'string' && errMsg.includes('no configurada'))) {
+        lines.push(info(''));
+        lines.push(info('SOLUCIÓN:'));
+        lines.push(info('1. Copia tu API key de console.anthropic.com'));
+        lines.push(info('2. Pégala abajo en "Anthropic Claude API"'));
+        lines.push(info('3. Click "Conectar"'));
+      }
+    }
+  } catch (e) {
+    lines.push(err('Test IA falló: ' + e.message));
+  }
+
+  // 3. Estado local
+  const status = ApiKeys.status();
+  const config = Store.get(Store.KEYS.CONFIG, {});
+  if (config.conn_anthropic_connected) {
+    lines.push(info('Cliente cree que Anthropic está conectado · ' + Util.fmtDate(config.conn_anthropic_connected_at)));
+  } else {
+    lines.push(info('Cliente: Anthropic NO conectada desde Mando'));
+  }
+
+  out.innerHTML = lines.join('');
+}
 
 // ============================================================
 // CONEXIONES API
@@ -549,14 +647,70 @@ function verAttachment(id) {
     UI.toast('Sin datos para mostrar', 'error');
     return;
   }
-  const w = window.open();
+
+  // Modal G2C interno · NO abre pestaña nueva
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-viewer';
+  modal.style.cssText = 'background:rgba(0,0,0,0.92);align-items:stretch;padding:0;';
+
+  let viewerContent = '';
   if (att.fileType?.startsWith('image/')) {
-    w.document.write(`<img src="${att.data_base64}" style="max-width:100%;">`);
+    viewerContent = `<img src="${att.data_base64}" style="max-width:100%;max-height:100%;object-fit:contain;display:block;margin:auto;">`;
   } else if (att.fileType === 'application/pdf') {
-    w.document.write(`<embed src="${att.data_base64}" style="width:100%;height:100vh;">`);
+    // iOS Safari NO renderiza PDFs base64 con <embed> · usar <iframe> con data URI o link directo
+    // Intentamos primero <iframe> · si no funciona, usuario verá botón de abrir nuevo tab
+    viewerContent = `
+      <iframe src="${att.data_base64}#toolbar=0&navpanes=0&view=FitH" style="width:100%;height:100%;border:0;background:white;"></iframe>
+      <div id="ios-pdf-fallback" style="display:none;padding:40px 20px;text-align:center;color:white;">
+        <div style="font-size:14px;margin-bottom:14px;">Tu navegador no muestra PDFs embebidos directamente.</div>
+        <a href="${att.data_base64}" download="${Util.esc(att.fileName)}" style="display:inline-block;background:rgba(255,79,0,0.2);border:0.5px solid rgba(255,79,0,0.5);color:rgba(255,170,110,0.95);padding:12px 24px;border-radius:9px;text-decoration:none;font-size:13px;">Descargar PDF</a>
+      </div>
+    `;
+  } else if (att.fileType?.includes('xml')) {
+    viewerContent = `<pre style="background:#0F1419;color:#F4F3EF;padding:20px;font-size:12px;overflow:auto;height:100%;margin:0;">${Util.esc(att.extracted_text || 'XML sin preview · descarga para ver')}</pre>`;
   } else {
-    w.document.write(`<pre>${Util.esc(att.extracted_text || 'No hay preview disponible')}</pre>`);
+    viewerContent = `<pre style="background:#0F1419;color:#F4F3EF;padding:20px;font-size:13px;overflow:auto;height:100%;margin:0;">${Util.esc(att.extracted_text || 'No hay preview disponible para este tipo · ' + att.fileType)}</pre>`;
   }
+
+  modal.innerHTML = `
+    <div style="display:flex;flex-direction:column;width:100%;height:100vh;">
+      <div style="background:rgba(15,20,25,0.95);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid rgba(244,243,239,0.1);">
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:12px;font-weight:500;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Util.esc(att.title || att.fileName)}</div>
+          <div style="font-size:9px;color:rgba(244,243,239,0.5);margin-top:2px;">${Util.esc(att.fileType)} · ${att.size_kb || '?'} KB</div>
+        </div>
+        <button onclick="cerrarVisor()" style="background:rgba(255,79,0,0.18);border:0.5px solid rgba(255,79,0,0.4);color:rgba(255,170,110,0.95);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;flex-shrink:0;margin-left:10px;">×</button>
+      </div>
+      <div style="flex:1;overflow:hidden;background:#1a1a1a;display:flex;align-items:center;justify-content:center;">
+        ${viewerContent}
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+
+  // iOS PDF fallback detection
+  if (att.fileType === 'application/pdf' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+    setTimeout(() => {
+      const iframe = modal.querySelector('iframe');
+      const fallback = modal.querySelector('#ios-pdf-fallback');
+      if (iframe && fallback) {
+        try {
+          const isEmpty = !iframe.contentDocument || !iframe.contentDocument.body;
+          if (isEmpty) { iframe.style.display = 'none'; fallback.style.display = 'block'; }
+        } catch (e) {
+          // Cross-origin error ignorable
+        }
+      }
+    }, 1500);
+  }
+}
+
+function cerrarVisor() {
+  const m = document.getElementById('modal-viewer');
+  if (m) m.remove();
+  document.body.style.overflow = '';
 }
 
 function eliminarAttachment(id) {

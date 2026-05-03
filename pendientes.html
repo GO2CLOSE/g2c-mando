@@ -183,11 +183,20 @@ function renderPendienteCard(p) {
   const colorClass = p.prioridad === 'alta' ? 'orange' : (p.prioridad === 'media' ? 'yellow' : '');
   const dueLabel = p.due_ts ? (Util.daysUntil(p.due_ts) === 0 ? 'vence hoy' : (Util.daysUntil(p.due_ts) < 0 ? `${-Util.daysUntil(p.due_ts)}d atrás` : `en ${Util.daysUntil(p.due_ts)}d`)) : '';
 
+  // Si tiene objetivo vinculado, mostrar referencia
+  let objBadge = '';
+  if (p.objetivo_id) {
+    const obj = Store.get(Store.KEYS.OBJETIVOS, []).find(o => o.id === p.objetivo_id);
+    const nombre = obj?.nombre || p.objetivo_nombre || 'objetivo';
+    objBadge = `<a href="finanzas.html#objetivos" style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,79,0,0.1);border:0.5px solid rgba(255,79,0,0.25);border-radius:4px;padding:2px 6px;font-size:9px;color:rgba(255,170,110,0.95);text-decoration:none;margin-bottom:3px;">→ ${Util.esc(nombre)}</a>`;
+  }
+
   return `
     <div class="decision-card ${colorClass}" style="padding:11px;margin-bottom:6px;">
       <div style="display:flex;align-items:flex-start;gap:9px;">
         <div onclick="completarPendiente('${p.id}')" style="width:18px;height:18px;border:1.5px solid rgba(244,243,239,0.3);border-radius:5px;cursor:pointer;flex-shrink:0;margin-top:1px;"></div>
         <div style="flex:1;min-width:0;">
+          ${objBadge}
           <div style="font-size:12px;font-weight:500;margin-bottom:3px;">${Util.esc(p.titulo)}</div>
           ${p.cliente ? `<div style="font-size:9px;color:rgba(150,210,230,0.85);margin-bottom:3px;">${Util.esc(p.cliente)}</div>` : ''}
           <div style="display:flex;gap:8px;align-items:center;">

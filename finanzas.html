@@ -126,14 +126,39 @@ function renderResumen() {
     html += `<div class="section-eyebrow"><div class="label">últimos movimientos</div></div>`;
     html += `<div class="list-card">`;
     recientes.forEach(m => {
-      const color = m.tipo === 'ingreso' ? 'rgba(180,220,170,0.95)' : 'rgba(244,213,128,0.95)';
-      const sign = m.tipo === 'ingreso' ? '+' : '−';
+      // Detección automática marihuana en concepto
+      const conceptoLower = (m.concepto || '').toLowerCase();
+      const esMota = (m.tags && m.tags.includes('marihuana')) || /marihuana|mota|mari|cannabis|kush|sativa|indica/i.test(conceptoLower);
+      const esCafe = (m.tags && m.tags.includes('cafe')) || /café|cafe|starbucks|latte|americano/i.test(conceptoLower);
+
+      let color, sign, rowStyle, iconHTML;
+      if (esMota) {
+        // Verde marihuana + flor
+        color = 'rgba(120,200,80,1)';
+        sign = m.tipo === 'ingreso' ? '+' : '−';
+        rowStyle = 'background:rgba(120,200,80,0.06);border-left:2px solid rgba(120,200,80,0.5);';
+        iconHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="margin-right:6px;flex-shrink:0;"><path d="M12 2c-1.5 4-1 8 0 10 1-2 1.5-6 0-10zm-7 8c2 1 4 3 5 5-3 0-5-1-6-3 0-1 0-1 1-2zm14 0c-2 1-4 3-5 5 3 0 5-1 6-3 0-1 0-1-1-2zM5 14c2-1 5 0 7 2-2 1-5 1-7-1zm14 0c-2-1-5 0-7 2 2 1 5 1 7-1zm-7 4c-1 2-1 4 0 5 1-1 1-3 0-5z" fill="rgba(120,200,80,1)"/></svg>';
+      } else if (esCafe) {
+        color = 'rgba(180,140,90,1)';
+        sign = m.tipo === 'ingreso' ? '+' : '−';
+        rowStyle = '';
+        iconHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="margin-right:6px;flex-shrink:0;"><path d="M3 8h14v6a4 4 0 01-4 4H7a4 4 0 01-4-4V8zm14 2h2a2 2 0 010 4h-2M6 4v2M10 4v2M14 4v2" stroke="rgba(180,140,90,1)" stroke-width="1.5" fill="none"/></svg>';
+      } else {
+        color = m.tipo === 'ingreso' ? 'rgba(180,220,170,0.95)' : 'rgba(244,213,128,0.95)';
+        sign = m.tipo === 'ingreso' ? '+' : '−';
+        rowStyle = '';
+        iconHTML = '';
+      }
+
       html += `
-        <div class="list-row">
+        <div class="list-row" style="${rowStyle}">
           <div class="row-main">
-            <div class="row-content">
-              <div class="row-title">${Util.esc(m.concepto)}</div>
-              <div class="row-sub">${Util.fmtDate(m.ts, { short: true })} · ${Util.esc(m.categoria || '—')}</div>
+            <div class="row-content" style="display:flex;align-items:center;">
+              ${iconHTML}
+              <div style="min-width:0;flex:1;">
+                <div class="row-title" style="${esMota ? 'color:rgba(140,210,100,0.95);font-weight:500;' : ''}">${Util.esc(m.concepto)}</div>
+                <div class="row-sub">${Util.fmtDate(m.ts, { short: true })} · ${Util.esc(m.categoria || '—')}${esMota ? ' · ocio' : ''}</div>
+              </div>
             </div>
           </div>
           <div class="row-value" style="color:${color};">${sign}${Util.fmtMoney(m.monto)}</div>
@@ -267,7 +292,155 @@ function renderTrabajo() {
     </div>
   `;
 
+  // ============================================================
+  // ESTADO DE RESULTADOS · últimos 30 días
+  // ============================================================
+  const er = Proveedores.estadoResultados();
+  html += `
+    <div class="section-eyebrow" style="margin-top:18px;">
+      <div>
+        <div class="label">estado de resultados · últimos 30 días</div>
+        <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">ingresos vs egresos del negocio</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:12px;padding:13px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid rgba(244,243,239,0.05);">
+        <div style="font-size:11px;color:var(--text-secondary);">Ingresos G2C</div>
+        <div style="font-size:13px;font-weight:500;color:rgba(180,220,170,0.95);font-variant-numeric:tabular-nums;">+${Util.fmtMoney(er.ingresos.total)}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid rgba(244,243,239,0.05);">
+        <div style="font-size:11px;color:var(--text-secondary);">Egresos a proveedores</div>
+        <div style="font-size:13px;font-weight:500;color:rgba(244,213,128,0.95);font-variant-numeric:tabular-nums;">−${Util.fmtMoney(er.egresos.total)}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:9px 0 2px;">
+        <div style="font-size:12px;font-weight:500;">Utilidad bruta</div>
+        <div style="font-size:16px;font-weight:500;color:${er.utilidad_bruta >= 0 ? 'rgba(180,220,170,0.95)' : 'rgba(255,170,110,0.95)'};font-variant-numeric:tabular-nums;">${er.utilidad_bruta >= 0 ? '+' : ''}${Util.fmtMoney(er.utilidad_bruta)}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:2px 0 7px;">
+        <div style="font-size:10px;color:var(--text-tertiary);">Margen</div>
+        <div style="font-size:11px;color:var(--text-tertiary);">${(er.margen * 100).toFixed(1)}%</div>
+      </div>
+      ${er.roi ? `
+        <div style="background:rgba(120,200,220,0.05);border-radius:7px;padding:8px 10px;margin-top:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:10px;color:rgba(150,210,230,0.85);">ROI · ingresos / egresos</div>
+            <div style="font-size:14px;font-weight:500;color:rgba(150,210,230,0.95);font-variant-numeric:tabular-nums;">${er.roi.toFixed(2)}x</div>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+
+    <!-- Balanza por categoría de proveedor -->
+    ${Object.keys(er.egresos.por_categoria).length ? `
+      <div class="section-eyebrow" style="margin-top:14px;">
+        <div><div class="label">balanza · gastos por categoría</div></div>
+      </div>
+      <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:12px;padding:13px;margin-bottom:8px;">
+        ${Object.entries(er.egresos.por_categoria).sort((a,b) => b[1] - a[1]).map(([cat, monto]) => {
+          const pct = ((monto / er.egresos.total) * 100).toFixed(1);
+          const catLabel = (Proveedores.CATEGORIAS[cat] || cat).split(' · ')[0];
+          return `
+            <div style="margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
+                <div style="color:var(--text-secondary);">${Util.esc(catLabel)}</div>
+                <div style="color:var(--text-primary);font-variant-numeric:tabular-nums;">${Util.fmtMoney(monto)} · ${pct}%</div>
+              </div>
+              <div style="height:4px;background:rgba(244,243,239,0.04);border-radius:2px;">
+                <div style="height:100%;width:${pct}%;background:rgba(244,213,128,0.6);border-radius:2px;"></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    ` : `
+      <div style="background:rgba(244,213,128,0.04);border:0.5px solid rgba(244,213,128,0.2);border-radius:12px;padding:13px;margin-top:14px;font-size:11px;color:rgba(244,213,128,0.95);text-align:center;">
+        Sin gastos a proveedores registrados · agrega uno para ver tu balanza
+      </div>
+    `}
+
+    <button class="btn full" onclick="agregarGastoProveedor()" style="margin-top:8px;background:rgba(244,213,128,0.1);border-color:rgba(244,213,128,0.3);color:rgba(244,213,128,0.95);">
+      + Registrar gasto a proveedor
+    </button>
+  `;
+
   return html;
+}
+
+// ============================================================
+// MODAL · gasto a proveedor
+// ============================================================
+function agregarGastoProveedor() {
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-gasto';
+
+  const cats = Object.entries(Proveedores.CATEGORIAS).map(([k, v]) =>
+    `<option value="${k}">${v}</option>`
+  ).join('');
+
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot"></div><div class="label">Gasto del negocio</div></div>
+      <div class="g2c-modal-title">Registrar a proveedor</div>
+
+      <div class="form-field">
+        <div class="field-label">PROVEEDOR</div>
+        <input type="text" class="field-input" id="gasto-prov" placeholder="Ej: Netlify · Cloudflare · contador" style="font-size:16px !important;">
+      </div>
+      <div class="form-field">
+        <div class="field-label">CATEGORÍA</div>
+        <select class="field-select" id="gasto-cat" style="font-size:16px !important;">${cats}</select>
+      </div>
+      <div class="form-field">
+        <div class="field-label">CONCEPTO</div>
+        <input type="text" class="field-input" id="gasto-concepto" placeholder="Hosting mensual" style="font-size:16px !important;">
+      </div>
+      <div class="form-field">
+        <div class="field-label">MONTO ($MXN)</div>
+        <input type="number" class="field-input" id="gasto-monto" placeholder="0" style="font-size:16px !important;">
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalGasto()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarGasto()">Registrar</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalGasto);
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('gasto-prov')?.focus(), 100);
+}
+
+function cerrarModalGasto() {
+  const m = document.getElementById('modal-gasto');
+  if (m) m.remove();
+}
+
+function guardarGasto() {
+  const proveedor = document.getElementById('gasto-prov').value.trim();
+  const categoria = document.getElementById('gasto-cat').value;
+  const concepto = document.getElementById('gasto-concepto').value.trim();
+  const monto = parseFloat(document.getElementById('gasto-monto').value) || 0;
+
+  if (!proveedor || !concepto || !monto) {
+    UI.toast('Completa todos los campos', 'error');
+    return;
+  }
+
+  Proveedores.registrarGasto({
+    proveedor_nombre: proveedor,
+    proveedor_id: 'prov_' + proveedor.toLowerCase().replace(/\s+/g, '_'),
+    categoria,
+    concepto,
+    monto,
+    fecha: Date.now()
+  });
+
+  UI.toast(`−${Util.fmtMoney(monto)} a ${proveedor} registrado`, 'success');
+  cerrarModalGasto();
+  renderTab('trabajo');
 }
 
 function bindTrabajoActions() {
@@ -462,7 +635,7 @@ function renderObjetivos() {
     const pctColor = o.progreso >= 80 ? 'rgba(180,220,170,0.95)' : (o.progreso >= 50 ? 'rgba(150,210,230,0.95)' : (o.progreso >= 30 ? 'rgba(244,213,128,0.95)' : 'rgba(255,170,110,0.95)'));
 
     html += `
-      <div class="decision-card ${cardClass}">
+      <div class="decision-card ${cardClass}" onclick="verDetalleObjetivo('${o.id}')" style="cursor:pointer;">
         <div style="display:flex;justify-content:space-between;margin-bottom:7px;">
           <div>
             <div style="font-size:12px;font-weight:500;">${Util.esc(o.nombre)}</div>
@@ -483,6 +656,7 @@ function renderObjetivos() {
             <div style="flex:1;"><div style="font-size:8px;color:rgba(244,243,239,0.5);">DESVÍO</div><div style="font-size:10px;color:rgba(255,170,110,0.95);margin-top:1px;">${o.desvio >= 0 ? '+' : ''}${Util.fmtMoneyK(o.desvio || 0)}</div></div>
           </div>
         ` : ''}
+        <div style="font-size:9px;color:rgba(244,243,239,0.4);text-align:center;margin-top:8px;padding-top:7px;border-top:0.5px solid rgba(255,255,255,0.04);">tap para ver tareas vinculadas →</div>
       </div>
     `;
   });
@@ -507,7 +681,233 @@ function renderObjetivos() {
 }
 
 function crearObjetivo() {
-  UI.toast('Form de objetivos · próx versión · usa el chat por ahora', 'info');
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-objetivo';
+  let modalState = { tipo: 'monetario' };
+
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot"></div><div class="label">Nuevo objetivo</div></div>
+      <div class="g2c-modal-title">¿Qué quieres lograr?</div>
+
+      <div class="form-field">
+        <div class="field-label">NOMBRE</div>
+        <input type="text" class="field-input" id="obj-nombre" placeholder="Ej: Comprar carro · Casa · MRR $50K" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">TIPO</div>
+        <div class="g2c-quick-grid">
+          <div class="g2c-quick-btn active" data-obj-tipo="monetario"><div class="qb-label">$</div><div class="qb-value">Ahorro</div></div>
+          <div class="g2c-quick-btn" data-obj-tipo="mrr"><div class="qb-label">MRR</div><div class="qb-value">Ingreso recurrente</div></div>
+          <div class="g2c-quick-btn" data-obj-tipo="tocadas_mes"><div class="qb-label">★</div><div class="qb-value">Tocadas/mes</div></div>
+          <div class="g2c-quick-btn" data-obj-tipo="otro"><div class="qb-label">·</div><div class="qb-value">Otro</div></div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">META ($)</div>
+        <input type="number" class="field-input" id="obj-target" placeholder="500000" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">DESCRIPCIÓN (opcional)</div>
+        <input type="text" class="field-input" id="obj-desc" placeholder="Comprar Mazda CX-5 2026" style="font-size:16px !important;">
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalObjetivo()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarObjetivo()">Crear</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalObjetivo);
+  document.body.appendChild(modal);
+  window._objModalState = modalState;
+
+  modal.querySelectorAll('[data-obj-tipo]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-obj-tipo]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._objModalState.tipo = btn.dataset.objTipo;
+    });
+  });
+  setTimeout(() => document.getElementById('obj-nombre')?.focus(), 100);
+}
+
+function cerrarModalObjetivo() {
+  const m = document.getElementById('modal-objetivo');
+  if (m) m.remove();
+  delete window._objModalState;
+}
+
+function guardarObjetivo() {
+  const nombre = document.getElementById('obj-nombre').value.trim();
+  const target = parseFloat(document.getElementById('obj-target').value) || 0;
+  const desc = document.getElementById('obj-desc').value.trim();
+  if (!nombre) return UI.toast('Falta nombre', 'error');
+
+  const objetivos = Store.get(Store.KEYS.OBJETIVOS, []);
+  objetivos.push({
+    id: 'obj_' + Date.now(),
+    nombre,
+    tipo: window._objModalState?.tipo || 'monetario',
+    target,
+    descripcion: desc,
+    acumulado: 0,
+    progreso: 0,
+    created_at: Date.now()
+  });
+  Store.set(Store.KEYS.OBJETIVOS, objetivos);
+  UI.toast('Objetivo creado', 'success');
+  cerrarModalObjetivo();
+  renderTab('objetivos');
+}
+
+// ============================================================
+// DETALLE DE OBJETIVO · vista expandida con tareas
+// ============================================================
+function verDetalleObjetivo(id) {
+  const obj = Store.get(Store.KEYS.OBJETIVOS, []).find(o => o.id === id);
+  if (!obj) return UI.toast('Objetivo no encontrado', 'error');
+
+  const progreso = ObjetivosLink.progresoCompleto(obj);
+  const tareas = ObjetivosLink.tareasPorObjetivo(id);
+  const sugerencias = ObjetivosLink.sugerirTareas(obj);
+
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-detalle-obj';
+
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()" style="max-width:480px;max-height:92vh;">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow">
+        <div class="dot"></div>
+        <div class="label">Objetivo</div>
+      </div>
+      <div class="g2c-modal-title" style="font-size:18px;">${Util.esc(obj.nombre)}</div>
+      ${obj.descripcion ? `<div style="font-size:11px;color:var(--text-tertiary);margin-bottom:14px;margin-top:-8px;">${Util.esc(obj.descripcion)}</div>` : ''}
+
+      <!-- Progreso monetario -->
+      ${obj.target ? `
+        <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.08em;text-transform:uppercase;">progreso $</div>
+            <div style="font-size:18px;font-weight:500;color:rgba(180,220,170,0.95);">${progreso.monetario_pct}%</div>
+          </div>
+          <div style="height:6px;background:rgba(244,243,239,0.04);border-radius:3px;margin-bottom:8px;">
+            <div style="height:100%;width:${progreso.monetario_pct}%;background:linear-gradient(90deg,rgba(180,220,170,0.6),rgba(180,220,170,0.95));border-radius:3px;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);">
+            <div>${Util.fmtMoney(obj.acumulado || 0)}</div>
+            <div>de ${Util.fmtMoney(obj.target)}</div>
+          </div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:4px;">Falta ${Util.fmtMoney(obj.target - (obj.acumulado || 0))}</div>
+        </div>
+      ` : ''}
+
+      <!-- Progreso tareas -->
+      <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+          <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.08em;text-transform:uppercase;">progreso tareas</div>
+          <div style="font-size:18px;font-weight:500;color:rgba(150,210,230,0.95);">${progreso.tareas_pct}%</div>
+        </div>
+        <div style="height:6px;background:rgba(244,243,239,0.04);border-radius:3px;margin-bottom:8px;">
+          <div style="height:100%;width:${progreso.tareas_pct}%;background:linear-gradient(90deg,rgba(150,210,230,0.6),rgba(150,210,230,0.95));border-radius:3px;"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);">${progreso.tareas_completadas} de ${progreso.tareas_total} tareas listas</div>
+      </div>
+
+      <!-- Tareas vinculadas -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-size:11px;font-weight:500;color:var(--text-primary);">Tareas vinculadas</div>
+          <div onclick="agregarTareaAObjetivo('${id}')" style="font-size:11px;color:rgba(255,150,80,0.9);cursor:pointer;">+ vincular</div>
+        </div>
+        ${tareas.length ? tareas.map(t => `
+          <div style="background:${t.done ? 'rgba(180,220,170,0.05)' : 'rgba(244,243,239,0.025)'};border:0.5px solid ${t.done ? 'rgba(180,220,170,0.2)' : 'var(--border-soft)'};border-radius:9px;padding:10px 11px;margin-bottom:5px;display:flex;align-items:center;gap:10px;">
+            <div onclick="toggleTarea('${t.id}','${id}')" style="width:18px;height:18px;border-radius:5px;border:1.5px solid ${t.done ? 'rgba(180,220,170,0.6)' : 'rgba(244,243,239,0.25)'};background:${t.done ? 'rgba(180,220,170,0.3)' : 'transparent'};cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              ${t.done ? '<div style="color:rgba(180,220,170,1);font-size:11px;">✓</div>' : ''}
+            </div>
+            <div style="flex:1;font-size:12px;color:${t.done ? 'var(--text-tertiary)' : 'var(--text-primary)'};text-decoration:${t.done ? 'line-through' : 'none'};">${Util.esc(t.titulo)}</div>
+            <a href="pendientes.html" style="font-size:9px;color:rgba(150,210,230,0.85);text-decoration:none;flex-shrink:0;">ver →</a>
+          </div>
+        `).join('') : '<div style="background:rgba(244,213,128,0.06);border:0.5px solid rgba(244,213,128,0.2);border-radius:9px;padding:11px;font-size:11px;color:rgba(244,213,128,0.95);text-align:center;">Aún no hay tareas vinculadas</div>'}
+      </div>
+
+      <!-- Sugerencias IA -->
+      ${sugerencias.length ? `
+        <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:11px;padding:12px;margin-bottom:12px;">
+          <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">Mando sugiere · tap para crear</div>
+          ${sugerencias.map(s => `
+            <div onclick="crearTareaSugerida('${id}','${Util.esc(s).replace(/'/g, '&#39;')}')" style="background:rgba(244,243,239,0.04);border:0.5px solid rgba(244,243,239,0.08);border-radius:7px;padding:8px 10px;margin-bottom:5px;font-size:11px;color:var(--text-secondary);cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+              <div>${Util.esc(s)}</div>
+              <div style="color:rgba(255,150,80,0.7);font-size:14px;">+</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarDetalleObjetivo()">Cerrar</button>
+        <button class="btn" onclick="eliminarObjetivo('${id}')" style="background:rgba(255,79,0,0.08);border-color:rgba(255,79,0,0.25);color:rgba(255,170,110,0.95);">Eliminar</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarDetalleObjetivo);
+  document.body.appendChild(modal);
+}
+
+function cerrarDetalleObjetivo() {
+  const m = document.getElementById('modal-detalle-obj');
+  if (m) m.remove();
+}
+
+function toggleTarea(tareaId, objId) {
+  const pendientes = Store.get(Store.KEYS.PENDIENTES, []);
+  const t = pendientes.find(p => p.id === tareaId);
+  if (t) {
+    t.done = !t.done;
+    if (t.done) t.completed_at = Date.now();
+    Store.set(Store.KEYS.PENDIENTES, pendientes);
+    cerrarDetalleObjetivo();
+    setTimeout(() => verDetalleObjetivo(objId), 100);
+  }
+}
+
+function crearTareaSugerida(objId, titulo) {
+  const obj = Store.get(Store.KEYS.OBJETIVOS, []).find(o => o.id === objId);
+  Store.push(Store.KEYS.PENDIENTES, {
+    id: 'pend_' + Date.now(),
+    titulo,
+    prioridad: 'media',
+    objetivo_id: objId,
+    objetivo_nombre: obj?.nombre || '',
+    due_ts: Date.now() + 7 * 86400000,
+    fecha_creacion: Date.now(),
+    done: false
+  });
+  UI.toast('Tarea vinculada al objetivo', 'success');
+  cerrarDetalleObjetivo();
+  setTimeout(() => verDetalleObjetivo(objId), 200);
+}
+
+function agregarTareaAObjetivo(objId) {
+  const titulo = prompt('Título de la tarea vinculada:');
+  if (!titulo) return;
+  crearTareaSugerida(objId, titulo);
+}
+
+function eliminarObjetivo(id) {
+  if (!confirm('¿Eliminar este objetivo? Las tareas vinculadas no se borrarán.')) return;
+  const objetivos = Store.get(Store.KEYS.OBJETIVOS, []);
+  Store.set(Store.KEYS.OBJETIVOS, objetivos.filter(o => o.id !== id));
+  UI.toast('Objetivo eliminado', 'info');
+  cerrarDetalleObjetivo();
+  renderTab('objetivos');
 }
 
 function agregarCliente() {
