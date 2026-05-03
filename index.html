@@ -260,7 +260,12 @@ async function loadBriefing() {
     }
 
     if (result.text) {
-      const lines = result.text.split('\n').filter(Boolean);
+      // CRÍTICO: limpiar bloques action por si la IA los inyectó por error
+      let cleanText = result.text;
+      if (typeof Actions !== 'undefined') {
+        cleanText = Actions.stripFromResponse(cleanText) || result.text;
+      }
+      const lines = cleanText.split('\n').filter(Boolean);
       const aiGreeting = lines[0] || greeting;
       const rest = lines.slice(1).join(' ').trim();
 

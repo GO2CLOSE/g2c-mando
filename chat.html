@@ -56,6 +56,31 @@ let scope = 'general';
 
   // Recuperar conversación previa
   conversationHistory = Store.get(Store.KEYS.CHAT_CONV, []);
+
+  // Migrar / limpiar historial corrupto:
+  //  - drop entries sin role válido
+  //  - quitar bloques action del texto guardado
+  //  - drop entries con content vacío
+  let dirty = false;
+  conversationHistory = conversationHistory.filter(m => {
+    if (!m || (m.role !== 'user' && m.role !== 'assistant')) { dirty = true; return false; }
+    if (typeof m.content !== 'string' || !m.content.trim()) { dirty = true; return false; }
+    return true;
+  }).map(m => {
+    if (m.role === 'assistant' && m.content.includes('```')) {
+      const cleaned = typeof Actions !== 'undefined' ? Actions.stripFromResponse(m.content) : m.content;
+      if (cleaned !== m.content) {
+        dirty = true;
+        return { ...m, content: cleaned || '(respuesta previa)' };
+      }
+    }
+    return m;
+  });
+  if (dirty) {
+    Store.set(Store.KEYS.CHAT_CONV, conversationHistory);
+    console.log('[Chat] Historial limpiado · entries corruptas removidas');
+  }
+
   renderHistory();
 
   // Si vino con mensaje pre-cargado desde otro módulo
@@ -223,10 +248,23 @@ async function handleSend(text) {
   const systemPrompt = IA.buildSystemPrompt(scope) + `\n\n# TONO DETECTADO: ${tone}\n${tone === 'personal' ? 'Reconoce lo personal ANTES de operar. Tono cálido, escucha primero.' : 'Datos duros + acción concreta. Operativo.'}`;
 
   // Mantén historial corto (últimos 8 mensajes para no saturar contexto)
-  const recentHistory = conversationHistory.slice(-8).map(m => ({
-    role: m.role,
-    content: m.content
-  }));
+  // CRÍTICO: filtrar entries malformadas + limpiar bloques action del texto histórico
+  const recentHistory = conversationHistory
+    .slice(-8)
+    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim().length > 0)
+    .map(m => {
+      let content = m.content;
+      // Si es respuesta de assistant, quitar bloques action que envenenan el contexto
+      if (m.role === 'assistant' && typeof Actions !== 'undefined') {
+        content = Actions.stripFromResponse(content) || '(respuesta previa)';
+      }
+      return { role: m.role, content };
+    });
+
+  // Asegurar que el último mensaje sea del usuario (la API lo exige)
+  if (recentHistory.length === 0 || recentHistory[recentHistory.length - 1].role !== 'user') {
+    recentHistory.push({ role: 'user', content: text });
+  }
 
   const res = await IA.call({
     model: G2C.models.sonnet,

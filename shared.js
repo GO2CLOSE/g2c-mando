@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.6.4',
+  version: '1.6.5',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -463,7 +463,7 @@ ${this.buildStateContext(snap)}
 ${typeof Attach !== 'undefined' ? Attach.buildContext() : ''}
 ${typeof Expediente !== 'undefined' ? Expediente.buildContext() : ''}
 ${typeof Presupuesto !== 'undefined' ? this.buildPresupuestoContext() : ''}
-${typeof Actions !== 'undefined' ? Actions.buildPromptCatalog() : ''}
+${typeof Actions !== 'undefined' ? Actions.buildPromptCatalog(scope) : ''}
 
 # CÓMO RESPONDER
 1. **EJECUTA ACCIONES · NO DELEGUES**: Si Alan dice "agrega", "registra", "elimina", "edita", "recuérdame", "anota" → EJECUTA la acción correspondiente con un bloque \`\`\`action al inicio. NUNCA respondas "tienes que hacerlo tú desde la interfaz" si existe una action que lo hace.
@@ -1644,7 +1644,7 @@ const Actions = {
   /**
    * Construye un texto con TODAS las acciones disponibles para inyectar al system prompt.
    */
-  buildPromptCatalog() {
+  buildPromptCatalog(scope = 'chat') {
     const ahora = new Date();
     const ahoraMX = ahora.toLocaleString('es-MX', { timeZone: 'America/Tijuana', dateStyle: 'full', timeStyle: 'short' });
     const isoMX = (() => {
@@ -1652,6 +1652,23 @@ const Actions = {
       return d.toISOString().slice(0, 19);
     })();
 
+    // Scopes que NO necesitan acciones · solo texto narrativo
+    const isReadOnly = ['briefing', 'tip', 'analisis', 'resumen', 'pulso'].some(s => scope.includes(s));
+
+    if (isReadOnly) {
+      // Briefing/tip/análisis: SIN catálogo de acciones, SIN quick_choices, SIN bloques action.
+      // Solo texto natural · la UI tiene sus propios botones hardcoded.
+      let txt = '\n# CONTEXTO TEMPORAL\n';
+      txt += `Hora actual MX: ${ahoraMX}\n\n`;
+      txt += '# FORMATO DE RESPUESTA\n';
+      txt += 'Esta respuesta es un BRIEFING/TIP narrativo que se muestra en home/dashboard.\n';
+      txt += 'NO uses bloques ```action```. NO uses quick_choices. NO uses JSON.\n';
+      txt += 'Solo texto natural directo · 2-4 oraciones máximo · MX neutro.\n';
+      txt += 'No saludes con "buenas noches" o similar · ya hay header. Empieza directo con la observación.\n';
+      return txt;
+    }
+
+    // CHAT scope · catálogo completo + quick_choices obligatorio
     let txt = '\n# ACCIONES QUE PUEDES EJECUTAR EN EL SISTEMA\n';
     txt += `Hora actual MX: ${ahoraMX} (ISO: ${isoMX})\n\n`;
     txt += '## CÓMO EJECUTAR ACCIONES\n';
@@ -1663,7 +1680,7 @@ const Actions = {
     txt += 'Después del bloque, escribe lenguaje natural CORTO confirmando lo hecho.\n\n';
 
     txt += '## OBLIGATORIO · RESPUESTA TERMINA CON BOTONES\n';
-    txt += 'CADA respuesta SIEMPRE termina con un segundo bloque action que define 2-4 botones de "respuesta rápida":\n\n';
+    txt += 'CADA respuesta de chat SIEMPRE termina con un segundo bloque action que define 2-4 botones de "respuesta rápida":\n\n';
     txt += '```action\n';
     txt += '{"action": "quick_choices", "args": {"choices": ["Sí, hazlo", "Cambiar fecha", "Cancelar"]}}\n';
     txt += '```\n\n';
