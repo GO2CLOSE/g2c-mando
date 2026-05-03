@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.6.6',
+  version: '1.7.0',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -281,12 +281,12 @@ const Store = {
 
 const Util = {
   fmtMoney(n, sym = '$') {
-    if (n == null) return '—';
+    if (n == null || isNaN(n)) return sym + '0';
     return sym + Math.round(n).toLocaleString('es-MX');
   },
 
   fmtMoneyK(n) {
-    if (n == null) return '—';
+    if (n == null || isNaN(n)) return '$0';
     if (Math.abs(n) >= 1000) return '$' + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
     return this.fmtMoney(n);
   },
@@ -1638,6 +1638,38 @@ const Actions = {
         // No ejecuta nada · solo se renderiza como botones inline en chat.html
         return { ok: true, msg: '', data: { choices: args.choices || [] }, is_quick_choices: true };
       }
+    },
+
+    // ===== NAVEGACIÓN · cuando IA encuentra algo y quiere mandar a Alan a verlo =====
+    ir_a: {
+      description: 'Cuando encuentres data relevante (cliente, pendiente, tocada, evento, etc) y quieras que Alan VEA el módulo donde está, agrega esta acción · sale tarjeta con botón "Ver →". Modulos válidos: finanzas, finanzas_recurrentes, finanzas_proyecciones, musica, calendario, pendientes, cuidado, config. Para deep-link a item específico, agrega item_id.',
+      parameters: ['modulo', 'item_id?', 'label?'],
+      execute(args) {
+        const modulos = {
+          finanzas: { url: 'finanzas.html', label: 'Ver finanzas' },
+          finanzas_recurrentes: { url: 'finanzas.html?tab=recurrentes', label: 'Ver recurrentes' },
+          finanzas_proyecciones: { url: 'finanzas.html?tab=proyecciones', label: 'Ver proyecciones' },
+          finanzas_objetivos: { url: 'finanzas.html?tab=objetivos', label: 'Ver objetivos' },
+          finanzas_personal: { url: 'finanzas.html?tab=personal', label: 'Ver gastos personal' },
+          musica: { url: 'musica.html', label: 'Ver música' },
+          calendario: { url: 'calendario.html', label: 'Ver calendario' },
+          pendientes: { url: 'pendientes.html', label: 'Ver pendientes' },
+          cuidado: { url: 'cuidado.html', label: 'Ver cuidado' },
+          cuidado_perfil: { url: 'cuidado.html?tab=perfil', label: 'Ver perfil' },
+          cuidado_ejercicio: { url: 'cuidado.html?tab=ejercicio', label: 'Ver ejercicio' },
+          cuidado_dieta: { url: 'cuidado.html?tab=dieta', label: 'Ver dieta' },
+          cuidado_ocio: { url: 'cuidado.html?tab=ocio', label: 'Ver ocio' },
+          config: { url: 'config.html', label: 'Ver configuración' },
+          chat: { url: 'chat.html', label: 'Ver chat' }
+        };
+        const m = modulos[args.modulo];
+        if (!m) return { ok: false, msg: `Módulo "${args.modulo}" no existe · usa: ${Object.keys(modulos).join(', ')}` };
+        let url = m.url;
+        if (args.item_id) {
+          url += (url.includes('?') ? '&' : '?') + 'highlight=' + encodeURIComponent(args.item_id);
+        }
+        return { ok: true, msg: '', data: { url, label: args.label || m.label }, is_navigation: true };
+      }
     }
   },
 
@@ -1711,17 +1743,34 @@ const Actions = {
     txt += '7. SI NO HAY DATA → "listar" primero o pregunta UNA cosa puntual (PERO con quick_choices al final).\n';
     txt += '8. NUNCA digas "no puedo editar/eliminar X" · TODO se puede.\n';
     txt += '9. RESPUESTAS CORTAS · máximo 3 oraciones de texto + bloques action. Alan tiene poco tiempo.\n';
-    txt += '10. CERO sugerencias de "escríbele a alguien" o "habla con tu contador" · ejecuta o sugiere acción del sistema.\n\n';
+    txt += '10. CERO sugerencias de "escríbele a alguien" o "habla con tu contador" · ejecuta o sugiere acción del sistema.\n';
+    txt += '11. CUANDO ENCUENTRES ALGO RELEVANTE (cliente, tocada, pendiente, evento) agrega "ir_a" para que Alan VEA el módulo · sale tarjeta tappeable.\n\n';
 
-    txt += '## EJEMPLO COMPLETO DE RESPUESTA\n';
+    txt += '## EJEMPLOS COMPLETOS DE RESPUESTA\n\n';
+
+    txt += '### Ejemplo 1 · Edición + quick_choices\n';
     txt += 'Alan: "Lanmarc ahora paga 7500"\n';
-    txt += 'Tu respuesta debe ser EXACTAMENTE así:\n\n';
+    txt += 'Tu respuesta:\n\n';
     txt += '```action\n';
     txt += '{"action": "editar_cliente", "args": {"id_o_nombre": "Lanmarc", "monto": 7500}}\n';
     txt += '```\n\n';
-    txt += 'Subido a 7500. ¿Aplica desde el próximo cobro o ya?\n\n';
+    txt += 'Subido a 7500.\n\n';
     txt += '```action\n';
-    txt += '{"action": "quick_choices", "args": {"choices": ["Desde próximo cobro", "Aplica ya este mes", "Ver todos los cobros"]}}\n';
+    txt += '{"action": "quick_choices", "args": {"choices": ["Aplica ya", "Desde próximo cobro", "Ver historial"]}}\n';
+    txt += '```\n\n';
+
+    txt += '### Ejemplo 2 · Encuentro de info + ir_a\n';
+    txt += 'Alan: "qué tocadas tengo esta semana"\n';
+    txt += 'Tu respuesta (después de listar mentalmente):\n\n';
+    txt += '```action\n';
+    txt += '{"action": "listar", "args": {"tipo": "tocadas"}}\n';
+    txt += '```\n\n';
+    txt += 'Tienes Tocada Tilly\'s sábado 9 mayo + Estadio Toros jueves. Total proyectado: $3,400.\n\n';
+    txt += '```action\n';
+    txt += '{"action": "ir_a", "args": {"modulo": "musica", "label": "Ver las 2 tocadas"}}\n';
+    txt += '```\n\n';
+    txt += '```action\n';
+    txt += '{"action": "quick_choices", "args": {"choices": ["Armar setlist", "Confirmar pagos", "Agregar otra"]}}\n';
     txt += '```\n';
     return txt;
   },
@@ -1934,6 +1983,34 @@ const UI = {
       wrap.classList.remove('active');
       onSend(txt);
     });
+
+    // ============================================================
+    // FIX iOS · keyboard mueve el input arriba del teclado
+    // visualViewport API detecta cuando el teclado abre/cierra
+    // ============================================================
+    const wrapHost = document.querySelector('.chat-input-wrap');
+    if (wrapHost && window.visualViewport) {
+      const adjustForKeyboard = () => {
+        const vv = window.visualViewport;
+        const keyboardOpen = vv.height < window.innerHeight - 100;
+
+        if (keyboardOpen) {
+          // Calcular cuánto sube · gap pequeño desde abajo del viewport visible
+          const gap = window.innerHeight - vv.height - vv.offsetTop + 8;
+          wrapHost.style.setProperty('--keyboard-bottom', gap + 'px');
+          wrapHost.classList.add('keyboard-open');
+        } else {
+          wrapHost.classList.remove('keyboard-open');
+          wrapHost.style.removeProperty('--keyboard-bottom');
+        }
+      };
+
+      window.visualViewport.addEventListener('resize', adjustForKeyboard);
+      window.visualViewport.addEventListener('scroll', adjustForKeyboard);
+      // También en focus/blur del input (extra seguro)
+      field.addEventListener('focus', () => setTimeout(adjustForKeyboard, 100));
+      field.addEventListener('blur', () => setTimeout(adjustForKeyboard, 100));
+    }
   },
 
   /**

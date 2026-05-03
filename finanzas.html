@@ -81,24 +81,82 @@ function renderResumen() {
   const finanzas = Store.get(Store.KEYS.FINANZAS, {});
   const clientes = Store.get(Store.KEYS.CLIENTES, []);
   const movimientos = Store.get('alan_mando_movimientos', []);
+  const cobrosRec = typeof Recurrentes !== 'undefined' ? Recurrentes.cobros().filter(c => c.activo) : [];
+  const pagosRec = typeof Recurrentes !== 'undefined' ? Recurrentes.pagos().filter(p => p.activo) : [];
+  const cuentasCobrar = Store.get('alan_mando_cuentas_cobrar', []).filter(c => !c.cobrado);
+  const cuentasPagar = Store.get('alan_mando_cuentas_pagar', []).filter(c => !c.pagado);
+
   const proxCobros = clientes.filter(c => c.status !== 'archivado' && c.proximo_cobro && Util.daysUntil(c.proximo_cobro) <= 7);
 
-  const patrimonio = finanzas.patrimonio || (finanzas.mrr * 4) + 100000; // placeholder
-  const utilidad = (finanzas.mrr || 0) * 0.7; // 70% margen estimado
-  const flujo30d = finanzas.flujo_30d || (finanzas.mrr || 0) - 8000;
+  // ============================================================
+  // CÁLCULOS REALES · sin placeholders
+  // ============================================================
+  const ahora = Date.now();
+  const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+  const inicioMesAnterior = new Date(inicioMes); inicioMesAnterior.setMonth(inicioMesAnterior.getMonth() - 1);
+  const finMesAnterior = new Date(inicioMes.getTime() - 1);
+  const inicio30d = ahora - 30 * 86400000;
+
+  // MRR · suma de cobros recurrentes activos mensuales
+  const mrr = cobrosRec.reduce((s, c) => {
+    const dias = (typeof Recurrentes !== 'undefined' && Recurrentes.FRECUENCIAS) ? (Recurrentes.FRECUENCIAS[c.frecuencia]?.dias || 30) : 30;
+    return s + (c.monto * (30 / dias));
+  }, 0);
+
+  // Egresos recurrentes mensuales
+  const egresosRec = pagosRec.reduce((s, p) => {
+    const dias = (typeof Recurrentes !== 'undefined' && Recurrentes.FRECUENCIAS) ? (Recurrentes.FRECUENCIAS[p.frecuencia]?.dias || 30) : 30;
+    return s + (p.monto * (30 / dias));
+  }, 0);
+
+  // Ingresos / gastos del mes actual
+  const movMesActual = movimientos.filter(m => m.ts >= inicioMes.getTime());
+  const ingresosMes = movMesActual.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + (m.monto || 0), 0);
+  const gastosMes = movMesActual.filter(m => m.tipo === 'gasto').reduce((s, m) => s + (m.monto || 0), 0);
+  const utilidad = ingresosMes - gastosMes;
+
+  // Utilidad mes anterior (para comparar)
+  const movMesAnt = movimientos.filter(m => m.ts >= inicioMesAnterior.getTime() && m.ts <= finMesAnterior.getTime());
+  const utilidadMesAnt = movMesAnt.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + (m.monto || 0), 0)
+                       - movMesAnt.filter(m => m.tipo === 'gasto').reduce((s, m) => s + (m.monto || 0), 0);
+
+  // Flujo 30 días
+  const mov30d = movimientos.filter(m => m.ts >= inicio30d);
+  const flujo30d = mov30d.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + (m.monto || 0), 0)
+                 - mov30d.filter(m => m.tipo === 'gasto').reduce((s, m) => s + (m.monto || 0), 0);
+
+  // Margen
+  const margenPct = ingresosMes > 0 ? Math.round((utilidad / ingresosMes) * 100) : 0;
+
+  // Patrimonio · suma de movimientos históricos + CXC pendientes - CXP pendientes
+  const totalIngresosHist = movimientos.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + (m.monto || 0), 0);
+  const totalGastosHist = movimientos.filter(m => m.tipo === 'gasto').reduce((s, m) => s + (m.monto || 0), 0);
+  const cxcAbiertas = cuentasCobrar.reduce((s, c) => s + (c.monto || 0), 0);
+  const cxpAbiertas = cuentasPagar.reduce((s, c) => s + (c.monto || 0), 0);
+  const patrimonio = (totalIngresosHist - totalGastosHist) + cxcAbiertas - cxpAbiertas;
+
+  // Delta vs mes anterior
+  const deltaMes = utilidad - utilidadMesAnt;
+  const deltaLabel = deltaMes >= 0 ? `+${Util.fmtMoneyK(deltaMes)}` : `−${Util.fmtMoneyK(Math.abs(deltaMes))}`;
+  const deltaColor = deltaMes >= 0 ? 'rgba(180,220,170,0.85)' : 'rgba(255,170,110,0.85)';
+
+  // Status text
+  const statusText = movimientos.length === 0
+    ? 'Sin movimientos registrados aún · empieza a cargar tu data'
+    : `${deltaLabel} vs mes anterior · ${deltaMes >= 0 ? 'vas mejor' : 'estás abajo'}`;
 
   let html = `
     <div style="background:linear-gradient(135deg,rgba(180,220,170,0.06),rgba(180,220,170,0.01));border:0.5px solid rgba(180,220,170,0.2);border-radius:16px;padding:14px;margin-bottom:14px;position:relative;overflow:hidden;">
       <div style="font-size:9px;color:rgba(180,220,170,0.95);letter-spacing:0.15em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">patrimonio neto · hoy</div>
       <div style="font-size:26px;font-weight:500;letter-spacing:-0.02em;line-height:1.1;font-variant-numeric:tabular-nums;">${Util.fmtMoney(patrimonio)}</div>
-      <div style="font-size:11px;color:rgba(244,243,239,0.65);margin-top:4px;">+$42K vs mes anterior · vas en buen camino</div>
+      <div style="font-size:11px;color:${deltaColor};margin-top:4px;">${statusText}</div>
     </div>
 
     <div class="stat-grid cols-2">
       <div class="stat-card"><div class="stat-label">UTILIDAD MES</div><div class="stat-value tabular">${Util.fmtMoney(utilidad)}</div></div>
-      <div class="stat-card"><div class="stat-label">FLUJO 30D</div><div class="stat-value tabular">+${Util.fmtMoneyK(flujo30d)}</div></div>
-      <div class="stat-card"><div class="stat-label">MRR</div><div class="stat-value tabular">${Util.fmtMoney(finanzas.mrr || 0)}</div></div>
-      <div class="stat-card"><div class="stat-label">MARGEN</div><div class="stat-value">68%</div></div>
+      <div class="stat-card"><div class="stat-label">FLUJO 30D</div><div class="stat-value tabular">${flujo30d >= 0 ? '+' : ''}${Util.fmtMoneyK(flujo30d)}</div></div>
+      <div class="stat-card"><div class="stat-label">MRR</div><div class="stat-value tabular">${Util.fmtMoney(mrr)}</div></div>
+      <div class="stat-card"><div class="stat-label">MARGEN</div><div class="stat-value">${margenPct}%</div></div>
     </div>
   `;
 

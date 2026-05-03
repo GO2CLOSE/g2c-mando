@@ -662,6 +662,12 @@ body:has(.quick-choices-dock) .chat-thread {
   left: var(--pad-side);
   right: var(--pad-side);
   z-index: 50;
+  transition: bottom 0.2s ease-out;
+  /* En iOS, cuando se abre teclado, JS ajusta vía .keyboard-open */
+}
+.chat-input-wrap.keyboard-open {
+  bottom: var(--keyboard-bottom, 8px) !important;
+  /* Cuando teclado abierto, baja al edge del viewport visible */
 }
 .chat-input {
   background: rgba(15,20,25,0.98);
@@ -685,7 +691,7 @@ body:has(.quick-choices-dock) .chat-thread {
   outline: none;
   color: var(--text-primary);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 16px; /* CRÍTICO iOS: <16px hace zoom al focus */
 }
 .chat-input input::placeholder { color: var(--text-tertiary); }
 .chat-input .icon-mic {
