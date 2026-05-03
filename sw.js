@@ -1,8 +1,8 @@
 // G2C Mando · Service Worker
-// v1.0 · Push notifications + cache básico
+// v1.6 · Push notifications + cache versionado
 
-const SW_VERSION = 'g2c-mando-sw-v1.0';
-const CACHE_NAME = 'g2c-mando-cache-v1';
+const SW_VERSION = 'g2c-mando-sw-v1.6';
+const CACHE_NAME = 'g2c-mando-cache-v1.6';
 
 // Archivos críticos para cache offline
 const CACHE_URLS = [
@@ -23,43 +23,64 @@ self.addEventListener('install', (event) => {
       return cache.addAll(CACHE_URLS).catch(err => {
         console.warn('[SW] Cache addAll failed:', err);
       });
-    })
+    }).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
-// === ACTIVATE ===
+// === ACTIVATE · borra TODOS los caches viejos ===
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activate', SW_VERSION);
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+        keys.filter((k) => k !== CACHE_NAME).map((k) => {
+          console.log('[SW] Borrando cache viejo:', k);
+          return caches.delete(k);
+        })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  return self.clients.claim();
 });
 
-// === FETCH · network-first con fallback a cache ===
+// === FETCH · network-FIRST agresivo para HTML/JS ===
 self.addEventListener('fetch', (event) => {
-  // Solo cachear GET de mismo origen
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith(self.location.origin)) return;
 
+  const url = new URL(event.request.url);
+  const isCriticalAsset = url.pathname.endsWith('.html') ||
+                          url.pathname.endsWith('.js') ||
+                          url.pathname.endsWith('.css') ||
+                          url.pathname === '/';
+
+  // Para HTML/JS/CSS · SIEMPRE network-first sin caché stale
+  if (isCriticalAsset) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-cache' }).then((res) => {
+        if (res && res.status === 200) {
+          const resClone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+        }
+        return res;
+      }).catch(() => {
+        return caches.match(event.request).then((cached) => {
+          return cached || new Response('Offline', { status: 503 });
+        });
+      })
+    );
+    return;
+  }
+
+  // Para otros assets (imágenes, manifest) · cache-first OK
   event.respondWith(
-    fetch(event.request).then((res) => {
-      // Cachear las respuestas exitosas
-      if (res && res.status === 200) {
-        const resClone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
-      }
-      return res;
-    }).catch(() => {
-      // Si falla la red, fallback a cache
-      return caches.match(event.request).then((cached) => {
-        return cached || new Response('Offline', { status: 503 });
-      });
+    caches.match(event.request).then((cached) => {
+      return cached || fetch(event.request).then((res) => {
+        if (res && res.status === 200) {
+          const resClone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+        }
+        return res;
+      }).catch(() => new Response('Offline', { status: 503 }));
     })
   );
 });

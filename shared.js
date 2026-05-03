@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.6.0',
+  version: '1.6.1',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -400,12 +400,19 @@ const IA = {
 
   trackUsage(model, usage) {
     if (!usage) return;
-    const stats = Store.get(Store.KEYS.CHAT_STATS, { sonnet: { msgs: 0, in: 0, out: 0 }, haiku: { msgs: 0, in: 0, out: 0 } });
-    const key = model.includes('haiku') ? 'haiku' : 'sonnet';
-    stats[key].msgs++;
-    stats[key].in += usage.input_tokens || 0;
-    stats[key].out += usage.output_tokens || 0;
-    Store.set(Store.KEYS.CHAT_STATS, stats);
+    let stats = Store.get(Store.KEYS.CHAT_STATS, null);
+    // Auto-reparar si la estructura no es la esperada
+    if (!stats || typeof stats !== 'object' || !stats.sonnet || !stats.haiku) {
+      stats = { sonnet: { msgs: 0, in: 0, out: 0 }, haiku: { msgs: 0, in: 0, out: 0 } };
+    }
+    if (!stats.sonnet || typeof stats.sonnet.msgs !== 'number') stats.sonnet = { msgs: 0, in: 0, out: 0 };
+    if (!stats.haiku || typeof stats.haiku.msgs !== 'number') stats.haiku = { msgs: 0, in: 0, out: 0 };
+
+    const key = model && model.includes('haiku') ? 'haiku' : 'sonnet';
+    stats[key].msgs = (stats[key].msgs || 0) + 1;
+    stats[key].in = (stats[key].in || 0) + (usage.input_tokens || 0);
+    stats[key].out = (stats[key].out || 0) + (usage.output_tokens || 0);
+    try { Store.set(Store.KEYS.CHAT_STATS, stats); } catch (e) { console.warn('No pude guardar stats:', e.message); }
   },
 
   /**

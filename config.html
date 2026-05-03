@@ -1282,15 +1282,21 @@ function recargarCalendarioSAT() {
 // STATS
 // ============================================================
 function renderStats() {
-  const stats = Store.get(Store.KEYS.CHAT_STATS, { sonnet: { msgs: 0, in: 0, out: 0 }, haiku: { msgs: 0, in: 0, out: 0 } });
-  const sonnetCost = (stats.sonnet.in / 1000000) * 3 + (stats.sonnet.out / 1000000) * 15;
-  const haikuCost = (stats.haiku.in / 1000000) * 1 + (stats.haiku.out / 1000000) * 5;
+  let stats = Store.get(Store.KEYS.CHAT_STATS, null);
+  if (!stats || !stats.sonnet || !stats.haiku) {
+    stats = { sonnet: { msgs: 0, in: 0, out: 0 }, haiku: { msgs: 0, in: 0, out: 0 } };
+  }
+  if (!stats.sonnet || typeof stats.sonnet.msgs !== 'number') stats.sonnet = { msgs: 0, in: 0, out: 0 };
+  if (!stats.haiku || typeof stats.haiku.msgs !== 'number') stats.haiku = { msgs: 0, in: 0, out: 0 };
 
-  document.getElementById('sonnet-msgs').textContent = stats.sonnet.msgs;
-  document.getElementById('sonnet-cost').textContent = `$${sonnetCost.toFixed(2)} USD`;
-  document.getElementById('haiku-msgs').textContent = stats.haiku.msgs;
-  document.getElementById('haiku-cost').textContent = `$${haikuCost.toFixed(2)} USD`;
-  document.getElementById('costo-total').textContent = `$${(sonnetCost + haikuCost).toFixed(2)} USD`;
+  const sonnetCost = ((stats.sonnet.in || 0) / 1000000) * 3 + ((stats.sonnet.out || 0) / 1000000) * 15;
+  const haikuCost = ((stats.haiku.in || 0) / 1000000) * 1 + ((stats.haiku.out || 0) / 1000000) * 5;
+
+  const sm = document.getElementById('sonnet-msgs'); if (sm) sm.textContent = stats.sonnet.msgs || 0;
+  const sc = document.getElementById('sonnet-cost'); if (sc) sc.textContent = `$${sonnetCost.toFixed(2)} USD`;
+  const hm = document.getElementById('haiku-msgs'); if (hm) hm.textContent = stats.haiku.msgs || 0;
+  const hc = document.getElementById('haiku-cost'); if (hc) hc.textContent = `$${haikuCost.toFixed(2)} USD`;
+  const ct = document.getElementById('costo-total'); if (ct) ct.textContent = `$${(sonnetCost + haikuCost).toFixed(2)} USD`;
 }
 
 // ============================================================
