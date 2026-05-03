@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '2.0.0',
+  version: '2.1.0',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -1148,23 +1148,30 @@ const Actions = {
       description: 'Agregar cliente nuevo a G2C. Campos: nombre (persona), negocio (empresa/marca), plan (Visor/Parcial/Total), monto (importe mensual), email, whatsapp, status (activo/onboarding/pausado/prospecto), notas.',
       parameters: ['nombre', 'negocio?', 'plan?', 'monto?', 'email?', 'whatsapp?', 'status?', 'frecuencia?', 'notas?'],
       execute(args) {
+        const monto = parseFloat(args.monto) || 0;
         const cli = {
           id: 'cli_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
           nombre: args.nombre,
           negocio: args.negocio || '',
           plan: args.plan || 'Visor',
-          monto: args.monto || 0,
+          tier: (args.plan || 'visor').toLowerCase(),
+          monto: monto,
+          monto_mensual: monto, // compatibilidad con UI antigua
           email: args.email || '',
           whatsapp: args.whatsapp || '',
           frecuencia: args.frecuencia || 'mensual',
           fechaInicio: new Date().toISOString().slice(0, 10),
+          fecha_inicio: Date.now(),
+          contrato_meses: 12,
           notas: args.notas || '',
           status: args.status || 'activo',
-          createdAt: Date.now()
+          createdAt: Date.now(),
+          ultimo_pago: null,
+          historial_pagos: []
         };
         Store.push(Store.KEYS.CLIENTES, cli);
         const label = cli.negocio || cli.nombre;
-        return { ok: true, msg: `Cliente "${label}" creado · ${cli.plan} $${cli.monto.toLocaleString()}/mes`, data: cli, undo: { action: 'eliminar_cliente', args: { id_o_nombre: cli.id, confirmar: true } } };
+        return { ok: true, msg: `Cliente "${label}" creado · ${cli.plan} $${monto.toLocaleString()}/mes`, data: cli, undo: { action: 'eliminar_cliente', args: { id_o_nombre: cli.id, confirmar: true } } };
       }
     },
 
@@ -1179,7 +1186,12 @@ const Actions = {
         const cambios = [];
         if (args.nombre) { cambios.push(`nombre: ${c.nombre} → ${args.nombre}`); c.nombre = args.nombre; }
         if (args.negocio !== undefined) { cambios.push(`negocio: ${c.negocio || '—'} → ${args.negocio}`); c.negocio = args.negocio; }
-        if (args.monto !== undefined) { cambios.push(`monto: $${c.monto} → $${args.monto}`); c.monto = args.monto; }
+        if (args.monto !== undefined) {
+          const m = parseFloat(args.monto) || 0;
+          cambios.push(`monto: $${c.monto || c.monto_mensual || 0} → $${m}`);
+          c.monto = m;
+          c.monto_mensual = m; // sincroniza ambas
+        }
         if (args.plan) { cambios.push(`plan: ${c.plan} → ${args.plan}`); c.plan = args.plan; }
         if (args.status) { cambios.push(`status: ${c.status} → ${args.status}`); c.status = args.status; }
         if (args.email !== undefined) c.email = args.email;

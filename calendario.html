@@ -223,7 +223,173 @@ function renderCalendario() {
 }
 
 function verDia(d) {
-  UI.toast(`Día ${d} ${anioActual}-${mesActual + 1} · próx versión muestra detalle`, 'info');
+  const fecha = new Date(anioActual, mesActual, d);
+  const inicioDia = new Date(fecha); inicioDia.setHours(0,0,0,0);
+  const finDia = inicioDia.getTime() + 86400000;
+
+  // Recolecta eventos de TODAS las fuentes
+  const calendario = Store.get(Store.KEYS.CALENDARIO, []) || [];
+  const eventosMusica = Store.get(Store.KEYS.EVENTOS_MUSICA, []) || [];
+  const cuentasCobrar = Store.get('alan_mando_cuentas_cobrar', []) || [];
+  const cuentasPagar = Store.get('alan_mando_cuentas_pagar', []) || [];
+  const cobrosRec = (Store.get('alan_mando_cobros_recurrentes', []) || []).filter(c => c.activo);
+  const pagosRec = (Store.get('alan_mando_pagos_recurrentes', []) || []).filter(p => p.activo);
+  const pendientes = (Store.get(Store.KEYS.PENDIENTES, []) || []).filter(p => !p.done);
+  const objetivos = Store.get(Store.KEYS.OBJETIVOS, []) || [];
+
+  const items = [];
+
+  // Eventos calendario
+  calendario.filter(e => e.ts >= inicioDia.getTime() && e.ts < finDia).forEach(e => {
+    items.push({
+      ts: e.ts,
+      titulo: e.titulo || e.nombre || 'Evento',
+      tipo: e.tipo || 'evento',
+      color: e.tipo === 'viaje' ? '#7AC8DC' : e.tipo === 'pago' ? '#D4A574' : e.tipo === 'cobro' ? '#FF9650' : '#7AC68A',
+      navUrl: 'calendario.html'
+    });
+  });
+
+  // Música
+  eventosMusica.filter(e => e.ts >= inicioDia.getTime() && e.ts < finDia).forEach(e => {
+    items.push({
+      ts: e.ts,
+      titulo: `[${(e.tipo || 'tocada').toUpperCase()}] ${e.titulo || e.lugar || 'Música'}`,
+      tipo: 'musica',
+      monto: e.pago,
+      color: '#7AC8DC',
+      navUrl: 'musica.html?highlight=' + e.id
+    });
+  });
+
+  // Cuentas por cobrar
+  cuentasCobrar.filter(c => !c.cobrado && c.fecha_esperada >= inicioDia.getTime() && c.fecha_esperada < finDia).forEach(c => {
+    items.push({
+      ts: c.fecha_esperada,
+      titulo: `[COBRO] ${c.cliente_nombre || c.cliente || 'Cliente'} · ${c.concepto || ''}`,
+      tipo: 'cobro',
+      monto: c.monto,
+      color: '#FF9650',
+      navUrl: 'finanzas.html?highlight=' + c.id
+    });
+  });
+
+  // Cobros recurrentes
+  cobrosRec.filter(c => c.proximo_cobro >= inicioDia.getTime() && c.proximo_cobro < finDia).forEach(c => {
+    items.push({
+      ts: c.proximo_cobro,
+      titulo: `[REC COBRO] ${c.cliente_nombre} · ${c.concepto || c.frecuencia}`,
+      tipo: 'cobro_rec',
+      monto: c.monto,
+      color: '#7AC68A',
+      navUrl: 'finanzas.html?tab=recurrentes&highlight=' + c.id
+    });
+  });
+
+  // Cuentas por pagar
+  cuentasPagar.filter(p => !p.pagado && p.fecha >= inicioDia.getTime() && p.fecha < finDia).forEach(p => {
+    items.push({
+      ts: p.fecha,
+      titulo: `[PAGO] ${p.proveedor_nombre || p.proveedor || ''} · ${p.concepto || ''}`,
+      tipo: 'pago',
+      monto: p.monto,
+      color: '#D4A574',
+      navUrl: 'finanzas.html?highlight=' + p.id
+    });
+  });
+
+  // Pagos recurrentes
+  pagosRec.filter(p => p.proximo_pago >= inicioDia.getTime() && p.proximo_pago < finDia).forEach(p => {
+    items.push({
+      ts: p.proximo_pago,
+      titulo: `[REC PAGO] ${p.proveedor_nombre || p.concepto}`,
+      tipo: 'pago_rec',
+      monto: p.monto,
+      color: '#D4A574',
+      navUrl: 'finanzas.html?tab=recurrentes&highlight=' + p.id
+    });
+  });
+
+  // Pendientes con fecha límite
+  pendientes.filter(p => p.fecha_limite && p.fecha_limite >= inicioDia.getTime() && p.fecha_limite < finDia).forEach(p => {
+    items.push({
+      ts: p.fecha_limite,
+      titulo: `[PENDIENTE] ${p.titulo || p.descripcion}`,
+      tipo: 'pendiente',
+      color: p.prioridad === 'alta' ? '#C56A6A' : '#FFB060',
+      navUrl: 'pendientes.html?highlight=' + p.id
+    });
+  });
+
+  // Objetivos con deadline
+  objetivos.filter(o => !o.cumplido && o.deadline && o.deadline >= inicioDia.getTime() && o.deadline < finDia).forEach(o => {
+    items.push({
+      ts: o.deadline,
+      titulo: `[OBJETIVO DEADLINE] ${o.nombre || o.titulo}`,
+      tipo: 'objetivo',
+      color: '#FF7A00',
+      navUrl: 'finanzas.html?tab=objetivos&highlight=' + o.id
+    });
+  });
+
+  items.sort((a, b) => a.ts - b.ts);
+
+  // Renderizar modal
+  let backdrop = document.getElementById('dia-modal-backdrop');
+  if (backdrop) backdrop.remove();
+
+  backdrop = document.createElement('div');
+  backdrop.id = 'dia-modal-backdrop';
+  backdrop.style.cssText = `
+    position:fixed; inset:0; background:rgba(0,0,0,0.75);
+    display:flex; align-items:flex-end; justify-content:center;
+    z-index:9999; backdrop-filter:blur(8px);
+  `;
+  backdrop.onclick = (e) => { if (e.target === backdrop) backdrop.remove(); };
+
+  const fechaLabel = fecha.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  backdrop.innerHTML = `
+    <div style="background:#0F1419;border-top:0.5px solid rgba(244,243,239,0.1);border-radius:18px 18px 0 0;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;padding:18px 16px calc(20px + env(safe-area-inset-bottom));">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:13px;">
+        <div>
+          <div style="font-size:9px;color:rgba(255,150,80,0.95);letter-spacing:0.14em;text-transform:uppercase;font-weight:500;">DETALLE DEL DÍA</div>
+          <div style="font-size:18px;font-weight:500;text-transform:capitalize;margin-top:2px;">${fechaLabel}</div>
+          <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">${items.length} ${items.length === 1 ? 'evento' : 'eventos'}</div>
+        </div>
+        <button onclick="document.getElementById('dia-modal-backdrop').remove();" style="background:transparent;border:0;color:var(--text-tertiary);font-size:22px;cursor:pointer;padding:0;line-height:1;">×</button>
+      </div>
+
+      ${items.length === 0 ? `
+        <div style="text-align:center;padding:30px 16px;color:var(--text-tertiary);font-size:12px;">
+          Sin eventos agendados en este día
+        </div>
+      ` : `
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${items.map((it, i) => `
+            <div onclick="navegarA('${it.navUrl}')" style="background:linear-gradient(135deg,${it.color}10,${it.color}02);border:0.5px solid ${it.color}33;border-radius:11px;padding:11px 13px;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;justify-content:space-between;align-items:flex-start;gap:11px;">
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                  <div style="width:5px;height:5px;background:${it.color};border-radius:50%;"></div>
+                  <div style="font-size:9px;color:${it.color};letter-spacing:0.1em;text-transform:uppercase;font-weight:500;">${new Date(it.ts).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+                <div style="font-size:12px;font-weight:500;line-height:1.3;">${Util.esc(it.titulo)}</div>
+                ${it.monto ? `<div style="font-size:10px;color:rgba(244,243,239,0.55);margin-top:3px;font-variant-numeric:tabular-nums;">${Util.fmtMoney(it.monto)}</div>` : ''}
+              </div>
+              <div style="font-size:14px;color:${it.color};flex-shrink:0;">→</div>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+}
+
+function navegarA(url) {
+  document.getElementById('dia-modal-backdrop')?.remove();
+  location.href = url;
 }
 
 async function renderIASuggestions() {

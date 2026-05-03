@@ -107,34 +107,76 @@ async function buscarYouTubeRepertorio(query) {
 
   try {
     const q = encodeURIComponent(query);
-    const res = await fetch(`${G2C.api.proxy}/api/youtube?q=${q}`);
-    const data = await res.json();
+    const url = `${G2C.api.proxy}/api/youtube?q=${q}`;
+    console.log('[YouTube] GET', url);
+    const res = await fetch(url);
 
-    if (!data.results || !data.results.length) {
-      resultsDiv.innerHTML = `<div style="text-align:center;font-size:11px;color:rgba(255,170,110,0.95);padding:14px;">Sin resultados · intenta otro título</div>`;
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '(sin body)');
+      console.error('[YouTube] HTTP', res.status, txt);
+      resultsDiv.innerHTML = `<div style="background:rgba(255,79,0,0.06);border:0.5px solid rgba(255,79,0,0.25);border-radius:9px;padding:12px;font-size:11px;color:rgba(255,170,110,0.95);line-height:1.5;">
+        <div style="font-weight:500;margin-bottom:4px;">Worker error · HTTP ${res.status}</div>
+        <div style="font-size:10px;color:var(--text-tertiary);">Verifica que YOUTUBE_API_KEY esté en Cloudflare Worker. Revisa Configuración → Diagnóstico.</div>
+      </div>`;
       return;
     }
 
-    resultsDiv.innerHTML = data.results.slice(0, 5).map(r => `
-      <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:9px;padding:9px;display:flex;gap:9px;align-items:center;">
-        <div style="width:54px;height:40px;background:url('${r.thumbnail || ''}') center/cover, #1f2d4e;border-radius:5px;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:500;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${Util.esc(r.titulo || 'sin título')}</div>
-          <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Util.esc(r.canal || '')}${r.duracion ? ' · ' + Util.esc(r.duracion) : ''}</div>
+    const data = await res.json();
+    console.log('[YouTube] response keys:', Object.keys(data || {}), 'sample:', JSON.stringify(data).slice(0, 200));
+
+    // Normaliza varios formatos posibles del Worker
+    let resultados = [];
+    if (Array.isArray(data.results) && data.results.length) {
+      resultados = data.results;
+    } else if (Array.isArray(data.items) && data.items.length) {
+      // Formato YouTube API v3 directo
+      resultados = data.items.map(it => ({
+        videoId: it.id?.videoId || it.id,
+        titulo: it.snippet?.title || '(sin título)',
+        canal: it.snippet?.channelTitle || '',
+        thumbnail: it.snippet?.thumbnails?.medium?.url || it.snippet?.thumbnails?.default?.url || '',
+        duracion: ''
+      }));
+    } else if (Array.isArray(data) && data.length) {
+      resultados = data;
+    }
+
+    if (!resultados.length) {
+      resultsDiv.innerHTML = `<div style="background:rgba(244,213,128,0.06);border:0.5px solid rgba(244,213,128,0.25);border-radius:9px;padding:12px;font-size:11px;color:rgba(244,213,128,0.95);line-height:1.5;">
+        <div style="font-weight:500;margin-bottom:4px;">Sin resultados · "${Util.esc(query)}"</div>
+        <div style="font-size:10px;color:var(--text-tertiary);">Posibles causas: 1) Worker funciona pero la API key tiene cuota agotada · 2) Worker devuelve formato no esperado · 3) Query muy específico. Intenta solo el artista.</div>
+      </div>`;
+      return;
+    }
+
+    resultsDiv.innerHTML = resultados.slice(0, 6).map(r => {
+      const vid = r.videoId || r.id || '';
+      const titulo = (r.titulo || r.title || 'sin título').replace(/`/g, '');
+      const canal = (r.canal || r.channel || r.channelTitle || '').replace(/`/g, '');
+      return `
+        <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:9px;padding:9px;display:flex;gap:9px;align-items:center;">
+          <div style="width:54px;height:40px;background:url('${r.thumbnail || ''}') center/cover, #1f2d4e;border-radius:5px;flex-shrink:0;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:500;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${Util.esc(titulo)}</div>
+            <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Util.esc(canal)}${r.duracion ? ' · ' + Util.esc(r.duracion) : ''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+            <button onclick="reproducirPreview('${vid}', \`${Util.esc(titulo)}\`)" title="Reproducir sin agregar"
+              style="background:rgba(120,200,220,0.15);border:0.5px solid rgba(120,200,220,0.35);color:rgba(180,220,240,0.95);width:32px;height:30px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="white"><polygon points="6,4 20,12 6,20"/></svg>
+            </button>
+            <button onclick="agregarDesdeBusqueda('${vid}', \`${Util.esc(titulo)}\`, \`${Util.esc(canal)}\`)" title="Agregar al repertorio"
+              style="background:rgba(255,79,0,0.18);border:0.5px solid rgba(255,79,0,0.4);color:rgba(255,170,110,0.98);width:32px;height:30px;border-radius:6px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
+          </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-          <button onclick="reproducirPreview('${r.videoId}', \`${Util.esc((r.titulo||'').replace(/`/g,''))}\`)" title="Reproducir sin agregar"
-            style="background:rgba(120,200,220,0.15);border:0.5px solid rgba(120,200,220,0.35);color:rgba(180,220,240,0.95);width:32px;height:30px;border-radius:6px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="white"><polygon points="6,4 20,12 6,20"/></svg>
-          </button>
-          <button onclick="agregarDesdeBusqueda('${r.videoId}', \`${Util.esc((r.titulo||'').replace(/`/g,''))}\`, \`${Util.esc((r.canal||'').replace(/`/g,''))}\`)" title="Agregar al repertorio"
-            style="background:rgba(255,79,0,0.18);border:0.5px solid rgba(255,79,0,0.4);color:rgba(255,170,110,0.98);width:32px;height:30px;border-radius:6px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   } catch (e) {
-    console.error('YouTube error:', e);
-    resultsDiv.innerHTML = `<div style="text-align:center;font-size:11px;color:rgba(255,170,110,0.95);padding:14px;">Error consultando YouTube · revisa Configuración</div>`;
+    console.error('[YouTube] catch:', e);
+    resultsDiv.innerHTML = `<div style="background:rgba(255,79,0,0.06);border:0.5px solid rgba(255,79,0,0.25);border-radius:9px;padding:12px;font-size:11px;color:rgba(255,170,110,0.95);line-height:1.5;">
+      <div style="font-weight:500;margin-bottom:4px;">Error de red al consultar Worker</div>
+      <div style="font-size:10px;color:var(--text-tertiary);">${Util.esc(e.message || 'desconocido')}. Verifica conexión y que el Worker esté desplegado en ${G2C.api.proxy}.</div>
+    </div>`;
   }
 }
 

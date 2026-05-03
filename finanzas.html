@@ -176,7 +176,7 @@ function renderResumen() {
               <div class="row-sub">${label}</div>
             </div>
           </div>
-          <div class="row-value">${Util.fmtMoneyK(c.monto_mensual)}</div>
+          <div class="row-value">${Util.fmtMoneyK(c.monto || c.monto_mensual || 0)}</div>
         </div>
       `;
     });
@@ -324,8 +324,8 @@ function renderTrabajo() {
   const clientes = Store.get(Store.KEYS.CLIENTES, []);
   const finanzas = Store.get(Store.KEYS.FINANZAS, {});
 
-  const cobrado = clientes.filter(c => c.ultimo_pago && Util.daysSince(c.ultimo_pago) < 30).reduce((s, c) => s + (c.monto_mensual || 0), 0);
-  const porCobrar = clientes.filter(c => c.status === 'vencido' || c.status === 'vence_hoy').reduce((s, c) => s + (c.monto_pendiente || c.monto_mensual || 0), 0);
+  const cobrado = clientes.filter(c => c.ultimo_pago && Util.daysSince(c.ultimo_pago) < 30).reduce((s, c) => s + (c.monto || c.monto_mensual || 0), 0);
+  const porCobrar = clientes.filter(c => c.status === 'vencido' || c.status === 'vence_hoy').reduce((s, c) => s + (c.monto_pendiente || c.monto || c.monto_mensual || 0), 0);
 
   let html = `
     <div class="stat-grid cols-2">
@@ -356,23 +356,23 @@ function renderTrabajo() {
     const valueColor = isVencido ? 'rgba(255,170,110,0.95)' : '';
 
     html += `
-      <div class="decision-card ${cardClass}">
+      <div class="decision-card ${cardClass}" style="cursor:pointer;-webkit-tap-highlight-color:transparent;" onclick="abrirDetalleCliente('${c.id}', 'cliente')" data-clickable="true">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;">
           <div style="flex:1;">
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
               <div style="font-size:12px;font-weight:500;">${Util.esc(c.nombre)}</div>
               <div class="pill ${pillClass}">${pillText}</div>
             </div>
-            <div style="font-size:9px;color:rgba(244,243,239,0.55);">Plan ${Util.esc(c.tier || '—')} · contrato ${c.contrato_meses || 12}m · LTV ${Util.fmtMoneyK((c.monto_mensual || 0) * (c.contrato_meses || 12))}</div>
+            <div style="font-size:9px;color:rgba(244,243,239,0.55);">Plan ${Util.esc(c.tier || c.plan || '—')} · contrato ${c.contrato_meses || 12}m · LTV ${Util.fmtMoneyK((c.monto || c.monto_mensual || 0) * (c.contrato_meses || 12))}</div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:13px;font-weight:500;color:${valueColor};">${Util.fmtMoneyK(c.monto_pendiente || c.monto_mensual)}</div>
+            <div style="font-size:13px;font-weight:500;color:${valueColor};">${Util.fmtMoneyK(c.monto_pendiente || c.monto || c.monto_mensual || 0)}</div>
             <div style="font-size:9px;color:rgba(244,243,239,0.5);">${c.proximo_cobro ? 'próx ' + Util.fmtDate(c.proximo_cobro, { short: true }) : '—'}</div>
           </div>
         </div>
 
         ${(isVencido || isVenceHoy) ? `
-          <div style="display:flex;gap:5px;margin-bottom:9px;">
+          <div style="display:flex;gap:5px;margin-bottom:9px;" onclick="event.stopPropagation();">
             <button class="btn primary-green" data-cliente-id="${c.id}" data-action="marcar_pagado" style="flex:1.5;display:flex;align-items:center;justify-content:center;gap:6px;">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
               Marcar pagado
@@ -999,7 +999,7 @@ function abrirDetalleCliente(refId, contexto = 'cobro') {
 
   const status = clienteObj?.status || 'activo';
   const plan = clienteObj?.plan || (cobrosRec[0] ? 'Visor' : '—');
-  const monto = clienteObj?.monto || (cobrosRec[0]?.monto || 0);
+  const monto = clienteObj?.monto || clienteObj?.monto_mensual || (cobrosRec[0]?.monto || 0);
 
   backdrop.innerHTML = `
     <div style="

@@ -14,328 +14,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
-body {
-  padding-bottom: calc(var(--pad-bottom-nav) + 90px + env(safe-area-inset-bottom, 0px));
-}
-
-.mando-thread {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.thread-msg-ai {
-  align-self: flex-start;
-  max-width: 92%;
-  margin-bottom: 4px;
-  animation: msgIn 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.thread-msg-user {
-  align-self: flex-end;
-  max-width: 88%;
-  background: rgba(255,79,0,0.16);
-  border: 0.5px solid rgba(255,79,0,0.3);
-  color: rgba(255,200,170,0.98);
-  padding: 9px 13px;
-  border-radius: 16px 16px 4px 16px;
-  font-size: 13px;
-  line-height: 1.45;
-  margin-bottom: 4px;
-  animation: msgIn 0.25s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-@keyframes msgIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.9); }
-}
-
-.ai-eyebrow-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 5px;
-  padding-left: 2px;
-}
-.ai-dot-pulse {
-  width: 6px;
-  height: 6px;
-  background: #FF7A00;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-.ai-eyebrow-text {
-  font-size: 9px;
-  color: rgba(255,150,80,0.95);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-weight: 500;
-}
-
-.ai-bubble-greet {
-  background: linear-gradient(135deg, rgba(255,79,0,0.08), rgba(255,79,0,0.02));
-  border: 0.5px solid rgba(255,79,0,0.22);
-  border-radius: 16px 16px 16px 4px;
-  padding: 14px 16px;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--text-primary);
-}
-.ai-bubble-greet .greet-title {
-  font-family: 'DM Serif Display', serif;
-  font-size: 22px;
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  margin-bottom: 6px;
-  line-height: 1.15;
-}
-
-.proactiv-card {
-  align-self: flex-start;
-  max-width: 92%;
-  background: linear-gradient(135deg, var(--card-bg-1, rgba(255,79,0,0.10)), var(--card-bg-2, rgba(255,79,0,0.02)));
-  border: 0.5px solid var(--card-border, rgba(255,79,0,0.30));
-  border-radius: 14px;
-  padding: 12px 14px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.15s, box-shadow 0.15s;
-  margin-bottom: 4px;
-  animation: msgIn 0.36s cubic-bezier(0.32, 0.72, 0, 1) both;
-}
-.proactiv-card:active { transform: scale(0.985); }
-
-.proactiv-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-.proactiv-eyebrow {
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-weight: 500;
-}
-.proactiv-arrow { font-size: 14px; flex-shrink: 0; }
-.proactiv-titulo {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-bottom: 3px;
-  line-height: 1.3;
-}
-.proactiv-desc {
-  font-size: 11px;
-  color: rgba(244,243,239,0.62);
-  line-height: 1.45;
-}
-
-.thread-chips {
-  align-self: flex-start;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 6px 0 8px;
-  max-width: 92%;
-}
-.chat-chip {
-  background: rgba(244,243,239,0.04);
-  border: 0.5px solid rgba(244,243,239,0.12);
-  color: var(--text-primary);
-  padding: 7px 13px;
-  border-radius: 14px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: all 0.15s;
-  white-space: nowrap;
-  font-family: inherit;
-}
-.chat-chip:active { background: rgba(255,79,0,0.12); border-color: rgba(255,79,0,0.3); }
-.chat-chip.primary {
-  background: rgba(255,79,0,0.14);
-  border-color: rgba(255,79,0,0.35);
-  color: rgba(255,170,110,0.98);
-}
-
 .agenda-quick {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
-  background: rgba(120,200,220,0.08);
-  border: 0.5px solid rgba(120,200,220,0.28);
-  border-radius: 22px;
+  gap: 6px;
+  padding: 7px 11px;
+  background: rgba(120,200,220,0.1);
+  border: 0.5px solid rgba(120,200,220,0.3);
+  border-radius: 18px;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
-  transition: all 0.15s;
+  transition: transform 0.15s;
 }
 .agenda-quick:active { transform: scale(0.97); }
-.agenda-quick-label {
-  font-size: 11px;
-  color: rgba(180,220,240,0.95);
-  font-weight: 500;
-}
-.agenda-quick-count {
-  font-size: 10px;
-  color: rgba(120,200,220,0.95);
-  background: rgba(120,200,220,0.14);
-  padding: 2px 7px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.typing-bubble {
-  align-self: flex-start;
-  background: rgba(244,243,239,0.04);
-  border: 0.5px solid rgba(244,243,239,0.08);
-  border-radius: 16px 16px 16px 4px;
-  padding: 12px 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.typing-dot {
-  width: 6px;
-  height: 6px;
-  background: rgba(244,243,239,0.5);
-  border-radius: 50%;
-  animation: typingPulse 1.3s infinite;
-}
-.typing-dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes typingPulse {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-3px); opacity: 1; }
-}
-
-.lista-visual-card {
-  align-self: flex-start;
-  width: 92%;
-  max-width: 92%;
-  background: linear-gradient(135deg, var(--lv-bg-1, rgba(255,79,0,0.07)), var(--lv-bg-2, rgba(255,79,0,0.01)));
-  border: 0.5px solid var(--lv-border, rgba(255,79,0,0.22));
-  border-radius: 14px;
-  overflow: hidden;
-  margin: 4px 0;
-}
-.lv-header {
-  padding: 11px 13px 9px;
-  border-bottom: 0.5px solid var(--lv-border-soft, rgba(255,79,0,0.12));
-}
-.lv-eyebrow {
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-weight: 500;
-  margin-bottom: 4px;
-  color: var(--lv-accent, rgba(255,170,110,0.98));
-}
-.lv-titulo {
-  font-size: 14px;
-  font-weight: 500;
-}
-.lv-item {
-  padding: 10px 13px;
-  border-bottom: 0.5px solid rgba(244,243,239,0.05);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.lv-item:last-child { border-bottom: 0; }
-.lv-item-content { flex: 1; min-width: 0; }
-.lv-item-principal {
-  font-size: 12px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.lv-item-secundario {
-  font-size: 10px;
-  color: rgba(244,243,239,0.5);
-  margin-top: 2px;
-}
-.lv-item-tag {
-  font-size: 10px;
-  font-weight: 500;
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
-}
-.lv-item-urgent-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.resumen-card {
-  align-self: flex-start;
-  width: 92%;
-  max-width: 92%;
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin: 4px 0;
-}
-.resumen-eyebrow {
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-weight: 500;
-  margin-bottom: 6px;
-}
-.resumen-valor {
-  font-size: 26px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-.resumen-meta {
-  font-size: 10px;
-  color: rgba(244,243,239,0.55);
-  margin-top: 4px;
-}
-
-.nav-card {
-  align-self: flex-start;
-  max-width: 92%;
-  background: rgba(120,200,220,0.06);
-  border: 0.5px solid rgba(120,200,220,0.3);
-  border-radius: 12px;
-  padding: 10px 13px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  margin: 4px 0;
-}
-.nav-card-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(180,220,240,0.98);
-  flex: 1;
-}
-.nav-card-arrow {
-  font-size: 16px;
-  color: rgba(150,210,230,0.95);
-  flex-shrink: 0;
+.agenda-quick-label { font-size: 11px; color: rgba(180,220,240,0.95); font-weight: 500; }
+.agenda-quick-count { font-size: 10px; color: rgba(120,200,220,0.95); background: rgba(120,200,220,0.18); padding: 1px 7px; border-radius: 9px; font-weight: 600; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.92); }
 }
 </style>
 </head>
@@ -343,11 +39,11 @@ body {
 
 <div id="status-bar"></div>
 
-<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-  <div style="display:flex;align-items:center;gap:11px;">
-    <div class="mando-avatar">
+<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="mando-avatar" style="width:36px;height:36px;">
       <div class="core">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
       </div>
       <div class="ring-1"></div>
       <div class="ring-2"></div>
@@ -355,54 +51,32 @@ body {
     <div>
       <div style="font-size:14px;font-weight:500;">Mando</div>
       <div style="display:flex;align-items:center;gap:5px;margin-top:1px;">
-        <div style="width:5px;height:5px;background:rgba(180,220,170,0.95);border-radius:50%;"></div>
+        <div style="width:5px;height:5px;background:rgba(180,220,170,0.95);border-radius:50%;animation:pulse 2s infinite;"></div>
         <div style="font-size:9px;color:rgba(244,243,239,0.55);">activo · Sonnet 4.6</div>
       </div>
     </div>
   </div>
-  <div style="display:flex;gap:6px;">
+  <div style="display:flex;gap:6px;align-items:center;">
     <a id="agenda-quick" href="calendario.html" class="agenda-quick">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
         <rect x="3" y="5" width="18" height="16" rx="2" stroke="rgba(180,220,240,0.95)" stroke-width="1.5" fill="none"/>
         <path d="M3 9h18" stroke="rgba(180,220,240,0.95)" stroke-width="1.5"/>
         <path d="M8 3v3M16 3v3" stroke="rgba(180,220,240,0.95)" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
-      <span class="agenda-quick-label" id="agenda-quick-label">Ver agenda</span>
+      <span class="agenda-quick-label" id="agenda-quick-label">Agenda</span>
       <span class="agenda-quick-count" id="agenda-quick-count" style="display:none;">0</span>
     </a>
-    <a href="config.html" style="width:38px;height:38px;background:rgba(255,79,0,0.1);border:0.5px solid rgba(255,79,0,0.3);border-radius:10px;display:flex;align-items:center;justify-content:center;text-decoration:none;position:relative;" id="config-link">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+    <button class="btn" style="padding:7px 10px;font-size:10px;" onclick="clearChat()">Limpiar</button>
+    <a href="config.html" style="width:32px;height:32px;background:rgba(255,79,0,0.1);border:0.5px solid rgba(255,79,0,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="3" stroke="rgba(255,170,110,0.95)" stroke-width="1.5"/>
-        <path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="rgba(255,170,110,0.95)" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3" stroke="rgba(255,170,110,0.95)" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
-      <div id="config-badge" style="display:none;position:absolute;top:-4px;right:-4px;width:14px;height:14px;background:rgba(255,79,0,1);border-radius:50%;font-size:9px;color:white;align-items:center;justify-content:center;font-weight:600;border:1.5px solid #0F1419;"></div>
     </a>
   </div>
 </header>
 
-<!-- Thread del chat principal · UN SOLO flujo conversacional -->
-<div class="mando-thread" id="mando-thread"></div>
-
-<!-- Mini-player flotante -->
-<div class="miniplayer" id="miniplayer">
-  <div class="yt-thumb">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-      <rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>
-    </svg>
-  </div>
-  <div class="yt-info">
-    <div class="yt-title" id="mp-title">—</div>
-    <div class="yt-progress"><div id="mp-progress" style="width:0%"></div></div>
-  </div>
-  <div class="yt-controls">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" id="mp-pause">
-      <path d="M19 20L9 12l10-8v16z" stroke="rgba(244,243,239,0.7)" stroke-width="1.8"/>
-    </svg>
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" id="mp-close">
-      <path d="M6 18L18 6M6 6l12 12" stroke="rgba(244,243,239,0.5)" stroke-width="1.5"/>
-    </svg>
-  </div>
-</div>
+<div id="chat-thread" class="chat-thread" style="padding-bottom: calc(220px + env(safe-area-inset-bottom, 0px));"></div>
 
 <div id="chat-input-host"></div>
 <div id="footer-host" style="display:none;"></div>
@@ -411,158 +85,116 @@ body {
 <script src="shared.js"></script>
 <script>
 let conversationHistory = [];
+let scope = 'general';
 
 (async function init() {
   if (!Auth.enforce()) return;
-
   document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
-  document.getElementById('chat-input-host').innerHTML = UI.renderChatInput('Háblame...');
+  document.getElementById('chat-input-host').innerHTML = UI.renderChatInput('Escribe tu mensaje...');
   document.getElementById('nav-host').innerHTML = UI.renderBottomNav('mando');
 
-  // Botón agenda dinámico · cuenta eventos hoy/próx 7d
-  renderAgendaQuick();
-
-  // Ejecutar ProactivIA en background
-  ProactivIA.ejecutar().then(() => actualizarContadorAlertas());
-
-  // Render del flow conversacional
-  renderConversationalFlow();
-
-  // Bind input principal
-  UI.bindChatInput(handleChatMessage);
-
-  // Mini-player
-  loadMiniplayer();
-
-  // Restaurar conversación si hay
+  // Recuperar conversación previa
   conversationHistory = Store.get(Store.KEYS.CHAT_CONV, []);
+
+  // Migrar / limpiar historial corrupto:
+  //  - drop entries sin role válido
+  //  - quitar bloques action del texto guardado
+  //  - drop entries con content vacío
+  let dirty = false;
+  conversationHistory = conversationHistory.filter(m => {
+    if (!m || (m.role !== 'user' && m.role !== 'assistant')) { dirty = true; return false; }
+    if (typeof m.content !== 'string' || !m.content.trim()) { dirty = true; return false; }
+    return true;
+  }).map(m => {
+    if (m.role === 'assistant' && m.content.includes('```')) {
+      const cleaned = typeof Actions !== 'undefined' ? Actions.stripFromResponse(m.content) : m.content;
+      if (cleaned !== m.content) {
+        dirty = true;
+        return { ...m, content: cleaned || '(respuesta previa)' };
+      }
+    }
+    return m;
+  });
+  if (dirty) {
+    Store.set(Store.KEYS.CHAT_CONV, conversationHistory);
+    console.log('[Chat] Historial limpiado · entries corruptas removidas');
+  }
+
+  renderHistory();
+
+  // Si vino con mensaje pre-cargado desde otro módulo
+  const params = new URLSearchParams(location.search);
+  const preMsg = params.get('msg');
+  scope = params.get('scope') || 'general';
+
+  UI.bindChatInput(handleSend);
+
+  if (preMsg) {
+    setTimeout(() => handleSend(preMsg), 300);
+  } else if (conversationHistory.length === 0) {
+    showWelcome();
+  }
 })();
 
-// ============================================================
-// FLOW CONVERSACIONAL · saludo IA + cards proactivas + chips
-// ============================================================
-function renderConversationalFlow() {
-  const thread = document.getElementById('mando-thread');
-  thread.innerHTML = '';
-
-  // 1. SALUDO IA en bubble de chat
-  const saludoMsg = document.createElement('div');
-  saludoMsg.className = 'thread-msg-ai';
-  const fecha = new Date().toLocaleDateString('es-MX', { weekday: 'long' });
+function showWelcome() {
+  // Saludo conversacional con briefing real
   const greeting = `${Util.greeting()}, Alan.`;
-  const briefingText = buildLocalBriefing();
-
-  saludoMsg.innerHTML = `
-    <div class="ai-eyebrow-row">
-      <div class="ai-dot-pulse"></div>
-      <div class="ai-eyebrow-text">Mando · ${fecha}</div>
-    </div>
-    <div class="ai-bubble-greet">
-      <div class="greet-title">${Util.esc(greeting)}</div>
-      <div>${Util.esc(briefingText)}</div>
-    </div>
-  `;
-  thread.appendChild(saludoMsg);
-
-  // 2. CARDS PROACTIVAS (idénticas en estilo · entre mensajes)
-  const sugs = ProactivIA.sugerenciasParaHome();
-  sugs.forEach(s => {
-    const card = document.createElement('div');
-    card.className = 'proactiv-card';
-    card.style.setProperty('--card-bg-1', `${s.color}1A`);
-    card.style.setProperty('--card-bg-2', `${s.color}05`);
-    card.style.setProperty('--card-border', `${s.color}40`);
-    card.innerHTML = `
-      <div class="proactiv-row">
-        <div class="proactiv-eyebrow" style="color:${s.color};">${s.eyebrow}</div>
-        <div class="proactiv-arrow" style="color:${s.color};">→</div>
-      </div>
-      <div class="proactiv-titulo">${Util.esc(s.titulo)}</div>
-      <div class="proactiv-desc">${Util.esc(s.descripcion)}</div>
-    `;
-    card.addEventListener('click', () => handleChatMessage(s.prompt));
-    thread.appendChild(card);
+  const briefing = buildLocalBriefing();
+  appendAI({
+    text: `${greeting}\n\n${briefing}`,
+    tone: 'operador'
   });
 
-  // 3. CHIPS de respuesta
-  const chips = document.createElement('div');
-  chips.className = 'thread-chips';
+  // Render cards proactivas como cards visuales en el thread
+  const sugs = (typeof ProactivIA !== 'undefined' && ProactivIA.sugerenciasParaHome) ? ProactivIA.sugerenciasParaHome() : [];
+  if (sugs.length > 0) {
+    const thread = document.getElementById('chat-thread');
+    sugs.forEach(s => {
+      const card = document.createElement('div');
+      card.className = 'msg-card';
+      card.style.cssText = 'align-self:flex-start;max-width:92%;margin-bottom:6px;';
+      card.innerHTML = `
+        <div style="background:linear-gradient(135deg, ${s.color}1A, ${s.color}05); border:0.5px solid ${s.color}40; border-radius:14px; padding:12px 14px; cursor:pointer; -webkit-tap-highlight-color:transparent;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px;">
+            <div style="font-size:9px;color:${s.color};letter-spacing:0.14em;text-transform:uppercase;font-weight:500;">${s.eyebrow}</div>
+            <div style="font-size:14px;color:${s.color};">→</div>
+          </div>
+          <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">${Util.esc(s.titulo)}</div>
+          <div style="font-size:11px;color:rgba(244,243,239,0.62);line-height:1.45;">${Util.esc(s.descripcion)}</div>
+        </div>
+      `;
+      card.addEventListener('click', () => handleSend(s.prompt));
+      thread.appendChild(card);
+    });
 
-  // Chips contextuales según ProactivIA
-  const chipOpts = sugs.length > 0
-    ? [
-        { text: 'Arrancamos con lo urgente', primary: true, prompt: 'arrancamos con lo más urgente' },
-        { text: 'cansado', prompt: 'cansado' },
-        { text: 'denso', prompt: 'denso' }
-      ]
-    : [
-        { text: 'bien · sigamos', primary: true, prompt: 'bien, sigamos' },
-        { text: 'cansado', prompt: 'cansado' },
-        { text: 'denso', prompt: 'denso' },
-        { text: 'qué tengo hoy', prompt: 'qué tengo hoy en agenda' }
-      ];
-
-  chipOpts.forEach(opt => {
-    const c = document.createElement('button');
-    c.className = 'chat-chip' + (opt.primary ? ' primary' : '');
-    c.textContent = opt.text;
-    c.addEventListener('click', () => handleChatMessage(opt.prompt));
-    chips.appendChild(c);
-  });
-  thread.appendChild(chips);
-}
-
-function renderAgendaQuick() {
-  const calendario = Store.get(Store.KEYS.CALENDARIO, []) || [];
-  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []) || [];
-  const ahora = Date.now();
-  const en7d = ahora + 7 * 86400000;
-  const inicioHoy = new Date(); inicioHoy.setHours(0,0,0,0);
-  const finHoy = inicioHoy.getTime() + 86400000;
-
-  // Eventos hoy en calendario + tocadas
-  const eventosHoy = [
-    ...calendario.filter(e => e.ts >= inicioHoy.getTime() && e.ts < finHoy),
-    ...eventos.filter(e => e.ts >= inicioHoy.getTime() && e.ts < finHoy)
-  ].length;
-
-  const eventosSemana = [
-    ...calendario.filter(e => e.ts >= ahora && e.ts <= en7d),
-    ...eventos.filter(e => e.ts >= ahora && e.ts <= en7d)
-  ].length;
-
-  const label = document.getElementById('agenda-quick-label');
-  const count = document.getElementById('agenda-quick-count');
-
-  if (eventosHoy > 0) {
-    label.textContent = 'Hoy';
-    count.textContent = eventosHoy;
-    count.style.display = 'inline-flex';
-  } else if (eventosSemana > 0) {
-    label.textContent = 'Esta semana';
-    count.textContent = eventosSemana;
-    count.style.display = 'inline-flex';
-  } else {
-    label.textContent = 'Ver agenda';
-    count.style.display = 'none';
+    // Chips contextuales
+    const chips = document.createElement('div');
+    chips.style.cssText = 'align-self:flex-start;display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px;max-width:92%;';
+    const chipOpts = [
+      { text: 'Arrancamos lo urgente', primary: true, prompt: 'arrancamos con lo más urgente' },
+      { text: 'Lista de pendientes', prompt: 'muéstrame mis pendientes' },
+      { text: 'Cómo voy del mes', prompt: 'cómo voy del mes' },
+      { text: 'denso', prompt: 'denso' }
+    ];
+    chipOpts.forEach(opt => {
+      const c = document.createElement('button');
+      c.style.cssText = `background:${opt.primary?'rgba(255,79,0,0.14)':'rgba(244,243,239,0.04)'};border:0.5px solid ${opt.primary?'rgba(255,79,0,0.35)':'rgba(244,243,239,0.12)'};color:${opt.primary?'rgba(255,170,110,0.98)':'var(--text-primary)'};padding:7px 13px;border-radius:14px;font-size:12px;font-weight:500;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit;white-space:nowrap;`;
+      c.textContent = opt.text;
+      c.addEventListener('click', () => handleSend(opt.prompt));
+      chips.appendChild(c);
+    });
+    thread.appendChild(chips);
   }
 }
 
 function buildLocalBriefing() {
-  const clientes = Store.get(Store.KEYS.CLIENTES, []) || [];
   const pendientes = (Store.get(Store.KEYS.PENDIENTES, []) || []).filter(p => !p.done);
   const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []) || [];
   const cuentasCobrar = (Store.get('alan_mando_cuentas_cobrar', []) || []).filter(c => !c.cobrado);
-  const cobrosRec = (Store.get('alan_mando_cobros_recurrentes', []) || []).filter(c => c.activo);
-
   const ahora = Date.now();
   const en7d = ahora + 7 * 86400000;
-
   const cobrosVencidos = cuentasCobrar.filter(c => c.fecha_esperada && c.fecha_esperada < ahora);
-  const cobrosProximos = cuentasCobrar.filter(c => c.fecha_esperada && c.fecha_esperada >= ahora && c.fecha_esperada <= en7d);
-  const recProximos = cobrosRec.filter(c => c.proximo_cobro && c.proximo_cobro <= en7d);
   const altas = pendientes.filter(p => p.prioridad === 'alta');
-  const vencidosPend = pendientes.filter(p => p.fecha_limite && p.fecha_limite < ahora);
   const proxTocada = eventos.filter(e => e.tipo === 'tocada' && e.ts > ahora).sort((a, b) => a.ts - b.ts)[0];
 
   const partes = [];
@@ -570,67 +202,651 @@ function buildLocalBriefing() {
     const monto = cobrosVencidos.reduce((s, c) => s + (c.monto || 0), 0);
     partes.push(`${cobrosVencidos.length} cobro${cobrosVencidos.length > 1 ? 's' : ''} vencido${cobrosVencidos.length > 1 ? 's' : ''} (${Util.fmtMoneyK(monto)})`);
   }
-  if (vencidosPend.length) partes.push(`${vencidosPend.length} pendiente${vencidosPend.length > 1 ? 's' : ''} VENCIDO${vencidosPend.length > 1 ? 'S' : ''}`);
-  if (altas.length && !vencidosPend.length) partes.push(`${altas.length} pendiente${altas.length > 1 ? 's' : ''} alta prioridad`);
-  if (cobrosProximos.length || recProximos.length) {
-    const total = cobrosProximos.length + recProximos.length;
-    partes.push(`${total} cobro${total > 1 ? 's' : ''} esta semana`);
-  }
+  if (altas.length) partes.push(`${altas.length} pendiente${altas.length > 1 ? 's' : ''} alta`);
   if (proxTocada) partes.push(`tocada en ${Util.daysUntil(proxTocada.ts)} días`);
 
-  if (partes.length === 0) {
-    return 'Día limpio · sin urgencias detectadas. Aprovecha para trabajo profundo o prospección de clientes nuevos.';
-  }
+  if (partes.length === 0) return 'Día limpio · sin urgencias detectadas. ¿Qué necesitas?';
   return partes.join(' · ') + '. ¿Por dónde arrancamos?';
 }
 
-// ============================================================
-// HANDLE CHAT · navega al chat dedicado con mensaje pre-llenado
-// ============================================================
-function handleChatMessage(text) {
-  if (!text || !text.trim()) return;
-  // Redirige al chat dedicado · ahí está toda la lógica de cards visuales
-  window.location.href = 'chat.html?msg=' + encodeURIComponent(text);
+function renderHistory() {
+  const thread = document.getElementById('chat-thread');
+  thread.innerHTML = '';
+  conversationHistory.forEach(m => {
+    if (m.role === 'user') appendUser(m.content);
+    else appendAI({ text: m.content, tone: m.tone || 'operador' });
+  });
 }
 
-// ============================================================
-// CONFIG BADGE · alertas pendientes
-// ============================================================
-function actualizarContadorAlertas() {
-  const alertas = Store.get('alan_mando_alertas', []) || [];
-  const noLeidas = alertas.filter(a => !a.leida).length;
-  const badge = document.getElementById('config-badge');
-  if (badge) {
-    if (noLeidas > 0) {
-      badge.style.display = 'flex';
-      badge.textContent = noLeidas > 9 ? '9+' : String(noLeidas);
+function appendUser(text) {
+  const thread = document.getElementById('chat-thread');
+  const div = document.createElement('div');
+  div.className = 'msg-user';
+  div.innerHTML = `
+    <div class="user-bubble"><div class="user-text">${Util.esc(text)}</div></div>
+    <div class="user-meta">${Util.fmtTime(Date.now())} ✓</div>
+  `;
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function appendAI({ text, tone = 'operador', card = null, actions = [] }) {
+  const thread = document.getElementById('chat-thread');
+  const div = document.createElement('div');
+  div.className = 'msg-ai' + (tone === 'personal' ? ' personal' : '');
+  div.innerHTML = `
+    <div class="ai-eyebrow">
+      <div class="ai-dot"></div>
+      <div class="ai-label">Mando · ${tone === 'personal' ? 'cálido' : 'Sonnet 4.6'}</div>
+    </div>
+    <div class="ai-bubble">
+      <div class="ai-text">${formatMarkdown(Util.esc(text))}</div>
+    </div>
+  `;
+  thread.appendChild(div);
+
+  if (card) {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'msg-card';
+    cardEl.innerHTML = renderCard(card);
+    thread.appendChild(cardEl);
+  }
+
+  if (actions.length) {
+    const actEl = document.createElement('div');
+    actEl.className = 'msg-actions';
+    actEl.innerHTML = actions.map(a => `<button class="btn ${a.primary ? 'primary-orange' : ''}" data-action="${a.action}" data-payload='${JSON.stringify(a.payload || {})}'>${Util.esc(a.label)}</button>`).join('');
+    thread.appendChild(actEl);
+    actEl.querySelectorAll('[data-action]').forEach(b => {
+      b.addEventListener('click', () => handleAction(b.dataset.action, JSON.parse(b.dataset.payload || '{}')));
+    });
+  }
+
+  thread.scrollTop = thread.scrollHeight;
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function appendTyping() {
+  const thread = document.getElementById('chat-thread');
+  const div = document.createElement('div');
+  div.id = 'typing-indicator';
+  div.className = 'msg-ai';
+  div.innerHTML = `
+    <div class="ai-bubble" style="display:inline-block;">
+      <div class="typing-dots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="typing-label">Mando está pensando</div>
+      </div>
+    </div>
+  `;
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+function formatMarkdown(text) {
+  // Soporte básico: **negrita**, listas con ·, saltos de línea
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n· /g, '<br>· ')
+    .replace(/\n/g, '<br>');
+}
+
+function renderCard(card) {
+  if (card.type === 'desglose') {
+    return `
+      <div style="background:rgba(244,243,239,0.025);border:0.5px solid rgba(255,79,0,0.18);border-radius:11px;padding:11px 13px;">
+        <div style="font-size:9px;color:rgba(255,150,80,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;margin-bottom:7px;">${Util.esc(card.title || '')}</div>
+        ${card.rows.map(r => `
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+            <div style="font-size:11px;color:rgba(244,243,239,0.7);">${Util.esc(r.label)}</div>
+            <div style="font-size:11px;font-weight:500;${r.highlight ? 'color:rgba(255,150,80,0.95);' : ''}">${Util.esc(r.value)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+  return '';
+}
+
+async function handleSend(text) {
+  if (!text || !text.trim()) return;
+
+  appendUser(text);
+  conversationHistory.push({ role: 'user', content: text });
+
+  // 1. Detectar intent (CRUD por voz/texto)
+  appendTyping();
+  const intent = await IA.detectIntent(text);
+
+  // 2. Si es operación CRUD directa, ejecutar
+  if (intent.intent === 'register' && intent.domain === 'movimiento' && intent.data.monto) {
+    removeTyping();
+    Cascada.registrarMovimiento(intent.data);
+    appendAI({
+      text: `Registrado · ${intent.data.tipo === 'ingreso' ? '+' : '−'}${Util.fmtMoney(intent.data.monto)} en ${intent.data.categoria || 'general'}. ¿Algo más?`,
+      tone: 'operador'
+    });
+    saveConversation();
+    return;
+  }
+
+  if (intent.intent === 'delete') {
+    removeTyping();
+    appendAI({
+      text: 'Para eliminar necesito que me confirmes. ¿Qué quieres eliminar exactamente? Esto es destructivo.',
+      tone: 'operador'
+    });
+    return;
+  }
+
+  // 3. Clasificar tono (trabajo vs personal) para responder con la voz adecuada
+  const tone = await IA.classifyTone(text);
+
+  // 4. Llamar a Sonnet con el system prompt completo
+  const systemPrompt = IA.buildSystemPrompt(scope) + `\n\n# TONO DETECTADO: ${tone}\n${tone === 'personal' ? 'Reconoce lo personal ANTES de operar. Tono cálido, escucha primero.' : 'Datos duros + acción concreta. Operativo.'}`;
+
+  // Mantén historial corto (últimos 8 mensajes para no saturar contexto)
+  // CRÍTICO: filtrar entries malformadas + limpiar bloques action del texto histórico
+  const recentHistory = conversationHistory
+    .slice(-8)
+    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim().length > 0)
+    .map(m => {
+      let content = m.content;
+      // Si es respuesta de assistant, quitar bloques action que envenenan el contexto
+      if (m.role === 'assistant' && typeof Actions !== 'undefined') {
+        content = Actions.stripFromResponse(content) || '(respuesta previa)';
+      }
+      return { role: m.role, content };
+    });
+
+  // Asegurar que el último mensaje sea del usuario (la API lo exige)
+  if (recentHistory.length === 0 || recentHistory[recentHistory.length - 1].role !== 'user') {
+    recentHistory.push({ role: 'user', content: text });
+  }
+
+  const res = await IA.call({
+    model: G2C.models.sonnet,
+    system: systemPrompt,
+    messages: recentHistory,
+    max_tokens: 800,
+    scope: 'chat_' + scope
+  });
+
+  removeTyping();
+
+  let responseText;
+  if (res.error) {
+    const errStr = typeof res.error_message === 'string' ? res.error_message : (res.error_message ? JSON.stringify(res.error_message) : 'desconocido');
+    responseText = `No pude conectar con el cerebro IA.\n\nError: ${errStr}\n\nVe a Configuración → Diagnóstico para ver el detalle.`;
+  } else {
+    responseText = res.content?.[0]?.text || 'Sin respuesta del cerebro · reintenta.';
+  }
+
+  // ============================================================
+  // EJECUTAR ACCIONES · SUGERENCIAS · CONFIRMACIONES
+  // ============================================================
+  let cards = [];
+  let executedOk = 0;
+  let executedFail = 0;
+  let detectedFakeExecution = false;
+
+  if (!res.error && typeof Actions !== 'undefined') {
+    const blocks = Actions.parseFromResponse(responseText);
+
+    // Detectar "false claim of execution" · IA dice que hizo algo pero no metió bloque
+    if (blocks.length === 0) {
+      const tl = responseText.toLowerCase();
+      const claims = [
+        'ya lo edité', 'ya edité', 'lo edité', 'editado', 'actualizado',
+        'ya lo eliminé', 'eliminé', 'eliminado', 'borré', 'borrado',
+        'ya lo creé', 'creé', 'creado', 'agregué', 'agregado',
+        'ya lo registré', 'registré', 'registrado',
+        'ya lo agendé', 'agendé', 'agendado',
+        'ya quedó', 'listo, ya', 'ya está', 'hecho',
+        'cambié', 'cambiado', 'modifiqué', 'modificado',
+        'marqué', 'completé'
+      ];
+      const matched = claims.find(c => tl.includes(c));
+      if (matched) {
+        detectedFakeExecution = true;
+        console.warn('[Actions] IA dijo "'+matched+'" pero NO emitió bloque action');
+      }
+    }
+
+    if (blocks.length) {
+      const feedbackLines = [];
+      blocks.forEach(b => {
+        console.log('[Actions] Ejecutando:', b.name, b.args);
+
+        // Caso 0: quick_choices → solo se renderizan como botones, no ejecuta nada
+        if (b.name === 'quick_choices') {
+          const choices = (b.args && b.args.choices) || [];
+          if (choices.length) {
+            cards.push({ type: 'quick_choices', choices });
+          }
+          return;
+        }
+
+        // Caso 0b: ir_a → navegación a módulo (tarjeta con botón "Ver →")
+        if (b.name === 'ir_a') {
+          const r = Actions.execute(b.name, b.args);
+          if (r.ok && r.data) {
+            cards.push({ type: 'navigation', url: r.data.url, label: r.data.label });
+          }
+          return;
+        }
+
+        // Caso 0c: lista_visual → cards visuales en lugar de texto plano
+        if (b.name === 'lista_visual') {
+          const r = Actions.execute(b.name, b.args);
+          if (r.ok && r.data) {
+            cards.push({ type: 'lista_visual', ...r.data });
+          }
+          return;
+        }
+
+        // Caso 0d: tarjeta_resumen → big number destacado
+        if (b.name === 'tarjeta_resumen') {
+          const r = Actions.execute(b.name, b.args);
+          if (r.ok && r.data) {
+            cards.push({ type: 'resumen', ...r.data });
+          }
+          return;
+        }
+
+        // Caso 1: la acción es "sugerir" → IA propone, generamos tarjeta de aprobación
+        if (b.name === 'sugerir') {
+          const r = Actions.execute(b.name, b.args);
+          if (r.ok && r.data) {
+            cards.push({ type: 'suggestion', sugerencia: r.data });
+          }
+          return;
+        }
+
+        // Caso 2: ejecución normal
+        const r = Actions.execute(b.name, b.args);
+        console.log('[Actions] Resultado:', r);
+
+        // Caso 2a: requires_confirm → crear tarjeta de confirmación
+        if (r.requires_confirm) {
+          cards.push({ type: 'confirm', mensaje: r.msg, accion: r.action, args: r.args });
+          return;
+        }
+
+        if (r.ok) {
+          executedOk++;
+          feedbackLines.push(`✓ ${r.msg}`);
+          // Si tiene undo, agregar tarjeta de undo
+          if (r.undo) {
+            cards.push({ type: 'undo', mensaje: r.msg, accion: r.undo.action, args: r.undo.args });
+          }
+        } else {
+          executedFail++;
+          feedbackLines.push(`✗ ${r.msg}`);
+        }
+      });
+
+      responseText = Actions.stripFromResponse(responseText);
+      if (feedbackLines.length) {
+        responseText = feedbackLines.join('\n') + (responseText ? '\n\n' : '') + responseText;
+      }
+    }
+
+    // Si detectamos claim falso, agregamos alerta visible
+    if (detectedFakeExecution) {
+      responseText = '⚠ La IA dice que ejecutó algo pero NO emitió el bloque action válido. Reintenta o verifica.\n\n' + responseText;
+    }
+  }
+
+  conversationHistory.push({ role: 'assistant', content: responseText, tone, cards: cards });
+  saveConversation();
+
+  appendAIWithCards({ text: responseText, tone, cards });
+
+  if (executedOk > 0) {
+    UI.toast(`${executedOk} ${executedOk === 1 ? 'acción ejecutada' : 'acciones ejecutadas'}`, 'success');
+  }
+  if (executedFail > 0 && executedOk === 0) {
+    UI.toast(`${executedFail} acción falló`, 'error');
+  }
+
+  if (!res.error) detectAndAddActions(responseText, intent);
+}
+
+/**
+ * Renderiza respuesta IA + tarjetas inline (sugerencias, confirmaciones, undo).
+ */
+function appendAIWithCards({ text, tone = 'operador', cards = [] }) {
+  appendAI({ text, tone });
+
+  if (!cards.length) return;
+
+  // CRÍTICO: container correcto · chat-thread (NO body)
+  const container = document.getElementById('chat-thread');
+  if (!container) return;
+
+  // Limpiar quick_choices anteriores · solo el más reciente debe estar visible
+  document.querySelectorAll('.quick-choices-dock').forEach(el => el.remove());
+
+  cards.forEach((card, i) => {
+    const cardId = 'card_' + Date.now() + '_' + i;
+    const wrap = document.createElement('div');
+    wrap.id = cardId;
+
+    if (card.type === 'suggestion') {
+      wrap.style.cssText = 'margin: 8px 0 12px;';
+      const accion = card.sugerencia.accion;
+      const argsTxt = JSON.stringify(card.sugerencia.args || {}, null, 0).slice(0, 200);
+      wrap.innerHTML = `
+        <div style="background: rgba(244,213,128,0.06); border: 0.5px solid rgba(244,213,128,0.3); border-radius: 11px; padding: 11px;">
+          <div style="font-size: 9px; color: rgba(244,213,128,0.95); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin-bottom: 6px;">★ Sugerencia</div>
+          <div style="font-size: 12px; color: var(--text-primary); margin-bottom: 4px; font-weight: 500;">${escapeHtml(accion.replace(/_/g, ' '))}</div>
+          ${card.sugerencia.razon ? `<div style="font-size: 11px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 9px;">${escapeHtml(card.sugerencia.razon)}</div>` : ''}
+          <div style="font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--text-tertiary); background: rgba(0,0,0,0.2); padding: 6px 8px; border-radius: 5px; margin-bottom: 10px; word-break: break-all;">${escapeHtml(argsTxt)}</div>
+          <div style="display: flex; gap: 6px;">
+            <button onclick="aprobarSugerencia('${card.sugerencia.id}', '${cardId}')" style="flex:1; background: rgba(180,220,170,0.18); border: 0.5px solid rgba(180,220,170,0.4); color: rgba(200,230,200,1); padding: 9px 12px; border-radius: 7px; font-size: 11px; font-weight: 500; cursor: pointer;">Aprobar</button>
+            <button onclick="rechazarSugerencia('${card.sugerencia.id}', '${cardId}')" style="flex:1; background: transparent; border: 0.5px solid var(--border-mid); color: var(--text-secondary); padding: 9px 12px; border-radius: 7px; font-size: 11px; cursor: pointer;">Rechazar</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(wrap);
+    } else if (card.type === 'confirm') {
+      wrap.style.cssText = 'margin: 8px 0 12px;';
+      wrap.innerHTML = `
+        <div style="background: rgba(255,79,0,0.06); border: 0.5px solid rgba(255,79,0,0.3); border-radius: 11px; padding: 11px;">
+          <div style="font-size: 9px; color: rgba(255,150,80,0.95); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin-bottom: 6px;">⚠ Confirmar acción</div>
+          <div style="font-size: 12px; color: var(--text-primary); margin-bottom: 10px; line-height: 1.5;">${escapeHtml(card.mensaje)}</div>
+          <div style="display: flex; gap: 6px;">
+            <button onclick='confirmarDestructiva(${JSON.stringify(card.accion)}, ${JSON.stringify(card.args)}, "${cardId}")' style="flex:1; background: rgba(255,79,0,0.2); border: 0.5px solid rgba(255,79,0,0.5); color: rgba(255,170,110,1); padding: 9px 12px; border-radius: 7px; font-size: 11px; font-weight: 500; cursor: pointer;">Confirmar</button>
+            <button onclick="cancelarConfirm('${cardId}')" style="flex:1; background: transparent; border: 0.5px solid var(--border-mid); color: var(--text-secondary); padding: 9px 12px; border-radius: 7px; font-size: 11px; cursor: pointer;">Cancelar</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(wrap);
+    } else if (card.type === 'undo') {
+      wrap.style.cssText = 'margin: 8px 0 12px;';
+      wrap.innerHTML = `
+        <div style="background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 9px; padding: 9px 11px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <div style="font-size: 11px; color: var(--text-secondary); flex: 1; min-width: 0;">${escapeHtml(card.mensaje)}</div>
+          <button onclick='deshacerAccion(${JSON.stringify(card.accion)}, ${JSON.stringify(card.args)}, "${cardId}")' style="background: transparent; border: 0.5px solid rgba(120,200,220,0.3); color: rgba(180,220,240,0.95); padding: 6px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 500; flex-shrink: 0;">↶ Deshacer</button>
+        </div>
+      `;
+      container.appendChild(wrap);
+    } else if (card.type === 'quick_choices') {
+      // QUICK CHOICES inline en el thread, compactos · NO dock fixed (taparía contenido)
+      const buttons = card.choices.map((c, idx) => {
+        const safeText = escapeHtml(c);
+        const accent = idx === 0;
+        return `<button onclick='enviarChoice(${JSON.stringify(c)}, "${cardId}")' style="
+          flex: 0 1 auto;
+          background: ${accent ? 'rgba(255,79,0,0.14)' : 'rgba(244,243,239,0.04)'};
+          border: 0.5px solid ${accent ? 'rgba(255,79,0,0.35)' : 'var(--border-mid)'};
+          color: ${accent ? 'rgba(255,170,110,0.98)' : 'var(--text-primary)'};
+          padding: 7px 12px;
+          border-radius: 14px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          font-family: inherit;
+          line-height: 1.2;
+          text-align: center;
+          transition: opacity 0.15s;
+          -webkit-tap-highlight-color: transparent;
+          white-space: nowrap;
+        ">${safeText}</button>`;
+      }).join('');
+
+      wrap.className = 'quick-choices-inline';
+      wrap.style.cssText = `
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin: 4px 0 8px 0;
+        max-width: 92%;
+        align-self: flex-start;
+      `;
+      wrap.innerHTML = buttons;
+    } else if (card.type === 'navigation') {
+      // Tarjeta de navegación · IA encontró algo y manda a Alan al módulo
+      wrap.innerHTML = `
+        <div onclick="window.location.href='${card.url}'" style="
+          background: rgba(120,200,220,0.06);
+          border: 0.5px solid rgba(120,200,220,0.3);
+          border-radius: 11px;
+          padding: 10px 13px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+          transition: background 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        ">
+          <div style="font-size: 12px; font-weight: 500; color: rgba(180,220,240,0.98); flex: 1;">${escapeHtml(card.label)}</div>
+          <div style="font-size: 16px; color: rgba(150,210,230,0.95); flex-shrink: 0;">→</div>
+        </div>
+      `;
+      wrap.style.cssText = 'margin: 4px 0 8px; max-width: 92%; align-self: flex-start;';
+    } else if (card.type === 'lista_visual') {
+      // Cards visuales tipo briefing · NO listas de texto plano
+      const c = card.color || '#FF4F00';
+      const itemsHtml = card.vacio ? `
+        <div style="padding: 14px 12px; text-align: center; color: rgba(244,243,239,0.45); font-size: 11px;">
+          Sin items · todo limpio
+        </div>
+      ` : card.items.map(it => `
+        <div onclick="${card.modulo_link ? `window.location.href='${card.modulo_link === 'pendientes' ? 'pendientes.html' : card.modulo_link === 'musica' ? 'musica.html' : card.modulo_link === 'finanzas_objetivos' ? 'finanzas.html?tab=objetivos' : 'finanzas.html'}'` : ''}" style="
+          padding: 10px 12px;
+          border-bottom: 0.5px solid rgba(244,243,239,0.05);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          ${card.modulo_link ? 'cursor: pointer; -webkit-tap-highlight-color: transparent;' : ''}
+        ">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 12px; font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+              ${it.urgente ? `<div style="width: 6px; height: 6px; background: ${c}; border-radius: 50%; flex-shrink: 0;"></div>` : ''}
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(it.principal)}</span>
+            </div>
+            ${it.secundario ? `<div style="font-size: 10px; color: rgba(244,243,239,0.5); margin-top: 2px;">${escapeHtml(it.secundario)}</div>` : ''}
+          </div>
+          ${it.tag ? `<div style="font-size: 10px; color: ${c}; font-weight: 500; flex-shrink: 0; font-variant-numeric: tabular-nums;">${escapeHtml(it.tag)}</div>` : ''}
+        </div>
+      `).join('');
+
+      wrap.innerHTML = `
+        <div style="
+          background: linear-gradient(135deg, ${c}11, ${c}03);
+          border: 0.5px solid ${c}33;
+          border-radius: 13px;
+          overflow: hidden;
+          margin: 4px 0 8px;
+        ">
+          <div style="padding: 11px 13px 9px; border-bottom: 0.5px solid ${c}1a;">
+            <div style="font-size: 9px; color: ${c}cc; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; margin-bottom: 4px;">${card.tipo}</div>
+            <div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">${escapeHtml(card.titulo)}</div>
+            ${card.subtitulo ? `<div style="font-size: 11px; color: rgba(244,243,239,0.55); margin-top: 2px;">${escapeHtml(card.subtitulo)}</div>` : ''}
+          </div>
+          ${itemsHtml}
+        </div>
+      `;
+      wrap.style.cssText = 'margin: 4px 0 8px; max-width: 92%; align-self: flex-start; width: 92%;';
+    } else if (card.type === 'resumen') {
+      // Big number destacado
+      const colors = {
+        orange: { bg: 'rgba(255,79,0,0.08)', border: 'rgba(255,79,0,0.3)', text: 'rgba(255,170,110,0.95)' },
+        green: { bg: 'rgba(180,220,170,0.06)', border: 'rgba(180,220,170,0.25)', text: 'rgba(180,220,170,0.95)' },
+        cyan: { bg: 'rgba(120,200,220,0.06)', border: 'rgba(120,200,220,0.3)', text: 'rgba(180,220,240,0.95)' },
+        red: { bg: 'rgba(255,100,100,0.06)', border: 'rgba(255,100,100,0.3)', text: 'rgba(255,160,160,0.95)' }
+      };
+      const col = colors[card.color] || colors.orange;
+      wrap.innerHTML = `
+        <div style="
+          background: ${col.bg};
+          border: 0.5px solid ${col.border};
+          border-radius: 13px;
+          padding: 13px 15px;
+        ">
+          <div style="font-size: 9px; color: ${col.text}; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; margin-bottom: 5px;">${escapeHtml(card.titulo)}</div>
+          <div style="font-size: 24px; font-weight: 500; color: var(--text-primary); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1;">${escapeHtml(card.valor)}</div>
+          ${card.contexto ? `<div style="font-size: 10px; color: rgba(244,243,239,0.55); margin-top: 4px;">${escapeHtml(card.contexto)}</div>` : ''}
+        </div>
+      `;
+      wrap.style.cssText = 'margin: 4px 0 8px; max-width: 92%; align-self: flex-start; width: 92%;';
+    }
+  });
+
+  // Scroll abajo del thread (no del body)
+  setTimeout(() => {
+    container.scrollTop = container.scrollHeight;
+    window.scrollTo(0, document.body.scrollHeight);
+  }, 50);
+}
+
+function enviarChoice(text, cardId) {
+  // Deshabilitar visualmente la card de quick_choices que se tapeó
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.style.opacity = '0.4';
+    card.style.pointerEvents = 'none';
+  }
+  // Llamar handleSend directo · es el flujo estándar
+  if (typeof handleSend === 'function') {
+    handleSend(text);
+  }
+}
+
+function aprobarSugerencia(sugId, cardId) {
+  const sugs = Store.get('alan_mando_sugerencias', []);
+  const sug = sugs.find(s => s.id === sugId);
+  if (!sug) return UI.toast('Sugerencia no encontrada', 'error');
+
+  const r = Actions.execute(sug.accion, sug.args);
+  marcarSugerencia(sugId, 'aprobada');
+
+  const card = document.getElementById(cardId);
+  if (card) {
+    if (r.ok) {
+      card.innerHTML = `<div style="background: rgba(180,220,170,0.08); border: 0.5px solid rgba(180,220,170,0.3); border-radius: 9px; padding: 10px; font-size: 11px; color: rgba(200,230,200,1);">✓ ${escapeHtml(r.msg)}</div>`;
+      UI.toast('Sugerencia aprobada · ejecutada', 'success');
     } else {
-      badge.style.display = 'none';
+      card.innerHTML = `<div style="background: rgba(255,79,0,0.06); border: 0.5px solid rgba(255,79,0,0.3); border-radius: 9px; padding: 10px; font-size: 11px; color: rgba(255,170,110,1);">✗ ${escapeHtml(r.msg)}</div>`;
+      UI.toast('Falló al ejecutar', 'error');
     }
   }
 }
 
-// ============================================================
-// MINI-PLAYER
-// ============================================================
-function loadMiniplayer() {
-  const cancion = Store.get('alan_mando_current_song', null);
-  if (!cancion) return;
-  const mp = document.getElementById('miniplayer');
-  document.getElementById('mp-title').textContent = cancion.titulo + ' · ' + cancion.artista;
-  document.getElementById('mp-progress').style.width = (cancion.progress || 0) + '%';
-  mp.classList.add('active');
+function rechazarSugerencia(sugId, cardId) {
+  marcarSugerencia(sugId, 'rechazada');
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.innerHTML = `<div style="background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 9px; padding: 10px; font-size: 11px; color: var(--text-tertiary);">Sugerencia descartada</div>`;
+  }
+  UI.toast('Descartada', 'info');
+}
 
-  document.getElementById('mp-close').addEventListener('click', () => {
-    Store.set('alan_mando_current_song', null);
-    mp.classList.remove('active');
-  });
-  document.getElementById('miniplayer').addEventListener('click', (e) => {
-    if (e.target.closest('#mp-close')) return;
-    location.href = 'musica.html';
-  });
+function marcarSugerencia(id, status) {
+  const sugs = Store.get('alan_mando_sugerencias', []);
+  const s = sugs.find(x => x.id === id);
+  if (s) { s.status = status; s.resolved_at = Date.now(); Store.set('alan_mando_sugerencias', sugs); }
+}
+
+function confirmarDestructiva(accion, args, cardId) {
+  const r = Actions.execute(accion, args);
+  const card = document.getElementById(cardId);
+  if (card) {
+    if (r.ok) {
+      card.innerHTML = `<div style="background: rgba(180,220,170,0.08); border: 0.5px solid rgba(180,220,170,0.3); border-radius: 9px; padding: 10px; font-size: 11px; color: rgba(200,230,200,1);">✓ ${escapeHtml(r.msg)}</div>`;
+      UI.toast('Confirmado', 'success');
+    } else {
+      card.innerHTML = `<div style="background: rgba(255,79,0,0.06); border: 0.5px solid rgba(255,79,0,0.3); border-radius: 9px; padding: 10px; font-size: 11px; color: rgba(255,170,110,1);">✗ ${escapeHtml(r.msg)}</div>`;
+    }
+  }
+}
+
+function cancelarConfirm(cardId) {
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.innerHTML = `<div style="background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 9px; padding: 10px; font-size: 11px; color: var(--text-tertiary);">Cancelado</div>`;
+  }
+}
+
+function deshacerAccion(accion, args, cardId) {
+  const r = Actions.execute(accion, args);
+  const card = document.getElementById(cardId);
+  if (card) {
+    if (r.ok) {
+      card.innerHTML = `<div style="background: rgba(120,200,220,0.06); border: 0.5px solid rgba(120,200,220,0.3); border-radius: 9px; padding: 10px; font-size: 11px; color: rgba(180,220,240,1);">↶ ${escapeHtml(r.msg)}</div>`;
+      UI.toast('Deshecho', 'info');
+    } else {
+      UI.toast('No se pudo deshacer', 'error');
+    }
+  }
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function detectAndAddActions(text, intent) {
+  // Si la IA mencionó "marcar pagado" o "generar liga", agrega botones
+  const tl = text.toLowerCase();
+  if (tl.includes('generar liga') || tl.includes('genero liga')) {
+    const thread = document.getElementById('chat-thread');
+    const actEl = document.createElement('div');
+    actEl.className = 'msg-actions';
+    actEl.innerHTML = `
+      <button class="btn primary-orange" onclick="goToCobros()">Ir a sistema cobros</button>
+      <button class="btn" onclick="UI.toast('Ok · sin acción', 'info')">Ahora no</button>
+    `;
+    thread.appendChild(actEl);
+  }
+}
+
+function handleAction(action, payload) {
+  switch (action) {
+    case 'goto_finanzas':
+      location.href = 'finanzas.html';
+      break;
+    case 'goto_calendario':
+      location.href = 'calendario.html';
+      break;
+    case 'goto_musica':
+      location.href = 'musica.html';
+      break;
+    default:
+      UI.toast('Acción ejecutada', 'info');
+  }
+}
+
+function goToCobros() {
+  window.open('https://cobros.g2c.com.mx', '_blank');
+}
+
+function saveConversation() {
+  // Mantener solo últimos 50 mensajes en storage
+  const trimmed = conversationHistory.slice(-50);
+  Store.set(Store.KEYS.CHAT_CONV, trimmed);
+}
+
+function clearChat() {
+  if (confirm('¿Limpiar conversación?')) {
+    conversationHistory = [];
+    Store.set(Store.KEYS.CHAT_CONV, []);
+    document.getElementById('chat-thread').innerHTML = '';
+    document.querySelectorAll('.quick-choices-dock').forEach(el => el.remove());
+    showWelcome();
+  }
 }
 </script>
-
 </body>
 </html>

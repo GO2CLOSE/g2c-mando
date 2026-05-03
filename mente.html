@@ -14,149 +14,128 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
-.mente-hero {
-  background: radial-gradient(circle at top right, rgba(180,220,170,0.08), rgba(120,200,220,0.04) 70%);
-  border: 0.5px solid rgba(180,220,170,0.18);
-  border-radius: 18px;
-  padding: 18px;
-  margin-bottom: 14px;
-  position: relative;
-  overflow: hidden;
+.metric-quad { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+.metric-card-large {
+  background: linear-gradient(135deg, var(--mc-bg1, rgba(120,200,220,0.06)), var(--mc-bg2, rgba(120,200,220,0.01)));
+  border: 0.5px solid var(--mc-border, rgba(120,200,220,0.22));
+  border-radius: 13px;
+  padding: 13px 14px;
 }
-.ring-container {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-.ring-svg {
-  width: 96px;
-  height: 96px;
-  flex-shrink: 0;
-  filter: drop-shadow(0 0 12px rgba(180,220,170,0.15));
-}
-.ring-content {
-  flex: 1;
-  min-width: 0;
-}
-.heatmap-grid {
-  display: grid;
-  grid-template-columns: repeat(15, 1fr);
-  gap: 3px;
-  margin-top: 4px;
-}
-.heatmap-cell {
-  aspect-ratio: 1;
-  border-radius: 3px;
-  background: rgba(244,243,239,0.04);
-  transition: transform 0.15s;
-}
-.heatmap-cell.l1 { background: rgba(180,220,170,0.25); }
-.heatmap-cell.l2 { background: rgba(180,220,170,0.5); }
-.heatmap-cell.l3 { background: rgba(180,220,170,0.75); }
-.heatmap-cell.l4 { background: rgba(180,220,170,1); }
-.heatmap-cell.cansado { background: rgba(212,165,116,0.7); }
-.heatmap-cell.denso { background: rgba(197,106,106,0.85); }
-.heatmap-cell.inspirado { background: rgba(255,122,0,0.9); }
+.mc-eyebrow { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mc-color); font-weight: 500; margin-bottom: 5px; }
+.mc-row { display: flex; align-items: baseline; gap: 7px; margin-bottom: 6px; }
+.mc-value { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--mc-color); }
+.mc-unit { font-size: 11px; color: rgba(244,243,239,0.5); }
+.mc-bar { height: 5px; background: rgba(244,243,239,0.05); border-radius: 3px; overflow: hidden; }
+.mc-bar-fill { height: 100%; background: var(--mc-color); transition: width 0.6s ease; border-radius: 3px; }
+.mc-meta { font-size: 10px; color: rgba(244,243,239,0.55); margin-top: 5px; }
 
-.estado-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.estado-btn { background: rgba(244,243,239,0.03); border: 0.5px solid var(--border-soft); border-radius: 12px; padding: 14px 4px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+.estado-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.estado-btn {
+  background: rgba(244,243,239,0.03);
+  border: 0.5px solid var(--border-soft);
+  border-radius: 11px;
+  padding: 12px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
 .estado-btn.selected { background: rgba(255,79,0,0.15); border-color: rgba(255,79,0,0.5); transform: scale(1.03); }
-.estado-emoji { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+.estado-emoji { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
 .estado-label { font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(244,243,239,0.7); }
 .estado-btn.selected .estado-label { color: rgba(255,170,110,0.98); font-weight: 500; }
 
-.metric-card {
-  background: rgba(244,243,239,0.03);
-  border: 0.5px solid var(--border-soft);
-  border-radius: 14px;
-  padding: 14px;
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
 }
-.metric-eyebrow { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(244,243,239,0.55); margin-bottom: 6px; font-weight: 500; }
-.metric-value { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.05; }
-.metric-meta { font-size: 10px; color: var(--text-tertiary); margin-top: 3px; }
+.section-sub { font-size: 11px; color: var(--text-tertiary); margin-bottom: 11px; }
 
-.sparkline-svg { width: 100%; height: 36px; margin-top: 8px; }
+.patron-card {
+  background: linear-gradient(135deg, var(--patron-bg1), var(--patron-bg2));
+  border: 0.5px solid var(--patron-border);
+  border-radius: 14px;
+  padding: 13px 15px;
+  margin-bottom: 12px;
+}
+.patron-eyebrow { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500; margin-bottom: 6px; }
+.patron-titulo { font-size: 13px; font-weight: 500; margin-bottom: 5px; line-height: 1.35; }
+.patron-desc { font-size: 11.5px; color: rgba(244,243,239,0.78); line-height: 1.5; }
+
+.cta-mando {
+  background: linear-gradient(135deg, rgba(255,79,0,0.16), rgba(255,79,0,0.04));
+  border: 0.5px solid rgba(255,79,0,0.4);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  margin-bottom: 14px;
+}
+.cta-mando:active { transform: scale(0.99); }
+.cta-mando-avatar {
+  width: 42px; height: 42px;
+  background: radial-gradient(circle, rgba(255,79,0,0.3), rgba(255,79,0,0.05));
+  border: 0.5px solid rgba(255,79,0,0.5);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.cta-mando-text { flex: 1; min-width: 0; }
+.cta-mando-eyebrow { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,170,110,0.95); font-weight: 500; margin-bottom: 3px; }
+.cta-mando-titulo { font-size: 13px; font-weight: 500; line-height: 1.35; margin-bottom: 2px; }
+.cta-mando-desc { font-size: 10.5px; color: rgba(244,243,239,0.6); line-height: 1.4; }
+.cta-mando-arrow { font-size: 18px; color: rgba(255,170,110,0.95); flex-shrink: 0; }
 
 .estrategia-row {
   background: rgba(180,220,170,0.04);
   border: 0.5px solid rgba(180,220,170,0.18);
   border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 6px;
+  padding: 11px 13px;
+  margin-bottom: 5px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
 }
 .estrategia-circle {
-  width: 38px;
-  height: 38px;
+  width: 36px; height: 36px;
   border-radius: 50%;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   background: conic-gradient(rgba(180,220,170,0.85) var(--pct), rgba(244,243,239,0.06) var(--pct));
   position: relative;
 }
 .estrategia-circle::after {
   content: '';
-  position: absolute;
-  inset: 4px;
+  position: absolute; inset: 4px;
   background: #14181F;
   border-radius: 50%;
 }
 .estrategia-circle-inner {
-  position: relative;
-  z-index: 1;
-  font-size: 10px;
-  font-weight: 600;
+  position: relative; z-index: 1;
+  font-size: 10px; font-weight: 600;
   color: rgba(180,220,170,0.95);
+  font-variant-numeric: tabular-nums;
 }
 .estrategia-info { flex: 1; min-width: 0; }
 .estrategia-titulo { font-size: 12px; font-weight: 500; }
 .estrategia-ctx { font-size: 10px; color: rgba(244,243,239,0.5); margin-top: 2px; }
 
-.section-title {
-  font-family: 'DM Serif Display', serif;
-  font-size: 18px;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  margin-bottom: 4px;
-}
-.section-sub {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  margin-bottom: 12px;
-}
-
-.journal-input {
-  width: 100%;
-  background: rgba(244,243,239,0.03);
-  border: 0.5px solid var(--border-soft);
-  border-radius: 12px;
-  padding: 14px;
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--text-primary);
-  resize: vertical;
-  min-height: 90px;
-  outline: none;
-  box-sizing: border-box;
-  line-height: 1.55;
-}
-.journal-input:focus { border-color: rgba(255,79,0,0.4); box-shadow: 0 0 0 3px rgba(255,79,0,0.06); }
-
-.empty-hero {
-  background: rgba(244,243,239,0.025);
-  border: 0.5px dashed rgba(244,243,239,0.15);
-  border-radius: 14px;
-  padding: 24px 16px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--text-tertiary);
-  line-height: 1.6;
-}
+.heatmap-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 3px; }
+.heatmap-cell { aspect-ratio: 1; border-radius: 3px; background: rgba(244,243,239,0.04); }
+.heatmap-cell.l-inspirado { background: rgba(255,122,0,0.9); }
+.heatmap-cell.l-bien { background: rgba(180,220,170,1); }
+.heatmap-cell.l-neutro { background: rgba(180,220,170,0.5); }
+.heatmap-cell.l-cansado { background: rgba(212,165,116,0.7); }
+.heatmap-cell.l-denso { background: rgba(197,106,106,0.85); }
 </style>
 </head>
 <body>
@@ -165,7 +144,7 @@
 
 <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
   <div style="display:flex;align-items:center;gap:11px;">
-    <div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(180,220,170,0.18),rgba(120,200,220,0.12));border:0.5px solid rgba(180,220,170,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+    <div style="width:42px;height:42px;background:linear-gradient(135deg,rgba(180,220,170,0.18),rgba(120,200,220,0.12));border:0.5px solid rgba(180,220,170,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="3" stroke="rgba(180,220,170,0.95)" stroke-width="1.5"/>
         <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2.1 2.1M16.9 16.9L19 19M5 19l2.1-2.1M16.9 7.1L19 5" stroke="rgba(180,220,170,0.95)" stroke-width="1.5" stroke-linecap="round"/>
@@ -173,7 +152,7 @@
     </div>
     <div>
       <div style="font-size:9px;color:rgba(180,220,170,0.85);letter-spacing:0.18em;text-transform:uppercase;font-weight:500;">Mente</div>
-      <div style="font-family:'DM Serif Display', serif;font-size:24px;font-weight:400;letter-spacing:-0.02em;">Tu pulso interno</div>
+      <div style="font-family:'DM Serif Display', serif;font-size:22px;font-weight:400;letter-spacing:-0.02em;">Tu pulso interno</div>
     </div>
   </div>
 </header>
@@ -217,49 +196,243 @@ const ESTADOS = {
   denso: { label: 'Denso', color: '#C56A6A', score: 1 }
 };
 
+// ============================================================
+// CÁLCULOS REALES · cruza con TODO el ERP
+// ============================================================
+function calcularPulsoInterno() {
+  const s = getMenteState();
+  const ahora = Date.now();
+  const en7d = ahora - 7 * 86400000;
+  const en30d = ahora - 30 * 86400000;
+
+  // Carga operativa real
+  const pendientes = (Store.get(Store.KEYS.PENDIENTES, []) || []).filter(p => !p.done);
+  const altas = pendientes.filter(p => p.prioridad === 'alta');
+  const vencidos = pendientes.filter(p => p.fecha_limite && p.fecha_limite < ahora);
+  const cuentasCobrar = (Store.get('alan_mando_cuentas_cobrar', []) || []).filter(c => !c.cobrado);
+  const cobrosVencidos = cuentasCobrar.filter(c => c.fecha_esperada && c.fecha_esperada < ahora);
+  const cuentasPagar = (Store.get('alan_mando_cuentas_pagar', []) || []).filter(p => !p.pagado);
+  const pagosProximos = cuentasPagar.filter(p => p.fecha && p.fecha < ahora + 7 * 86400000);
+
+  // Check-ins recientes
+  const checkins7d = (s.estados_diarios || []).filter(e => new Date(e.fecha).getTime() >= en7d);
+  const checkins30d = (s.estados_diarios || []).filter(e => new Date(e.fecha).getTime() >= en30d);
+
+  // Ejercicios
+  const ejercicios = Store.get('alan_mando_ejercicios', []) || [];
+  const ejer7d = ejercicios.filter(e => e.ts >= en7d);
+  const ejer30d = ejercicios.filter(e => e.ts >= en30d);
+
+  // ESTRÉS · 0-100 · más alta carga + pendientes vencidos + cobros vencidos = más alto
+  let estres = 20; // baseline
+  estres += vencidos.length * 8;
+  estres += altas.length * 5;
+  estres += cobrosVencidos.length * 10;
+  estres += pagosProximos.length * 4;
+  // Si checkins recientes son densos/cansado, sube
+  const densos7d = checkins7d.filter(c => c.estado === 'denso' || c.estado === 'cansado').length;
+  estres += densos7d * 7;
+  estres = Math.min(100, estres);
+
+  // ANSIEDAD · 0-100 · cobros + pagos próximos + falta de ejercicio
+  let ansiedad = 15;
+  ansiedad += cobrosVencidos.length * 12;
+  ansiedad += pagosProximos.length * 6;
+  ansiedad += vencidos.length * 4;
+  if (ejer7d.length === 0) ansiedad += 15;
+  else if (ejer7d.length < 2) ansiedad += 8;
+  // Si check-ins no tienen "denso" → bajar
+  if (densos7d === 0 && checkins7d.length >= 3) ansiedad -= 10;
+  ansiedad = Math.max(0, Math.min(100, ansiedad));
+
+  // ENERGÍA · 0-100 · checkins buenos + ejercicio frecuente = alta
+  let energia = 50;
+  const buenos7d = checkins7d.filter(c => c.estado === 'bien' || c.estado === 'inspirado').length;
+  energia += buenos7d * 7;
+  energia -= densos7d * 8;
+  energia += Math.min(15, ejer7d.length * 4);
+  if (cobrosVencidos.length > 2) energia -= 10;
+  energia = Math.max(5, Math.min(100, energia));
+
+  // FOCO · 0-100 · pocos pendientes vencidos + alta consistencia checkin
+  let foco = 60;
+  foco -= vencidos.length * 6;
+  foco -= altas.length * 3;
+  foco += Math.round((checkins7d.length / 7) * 20);
+  if (ejer7d.length >= 3) foco += 10;
+  foco = Math.max(10, Math.min(100, foco));
+
+  return {
+    estres: Math.round(estres),
+    ansiedad: Math.round(ansiedad),
+    energia: Math.round(energia),
+    foco: Math.round(foco),
+    contexto: {
+      pendientes_total: pendientes.length,
+      pendientes_altas: altas.length,
+      pendientes_vencidos: vencidos.length,
+      cobros_vencidos: cobrosVencidos.length,
+      pagos_proximos: pagosProximos.length,
+      checkins_7d: checkins7d.length,
+      checkins_30d: checkins30d.length,
+      ejer_7d: ejer7d.length,
+      ejer_30d: ejer30d.length,
+      densos_7d: densos7d,
+      buenos_7d: buenos7d
+    }
+  };
+}
+
+function detectarPatron(pulso) {
+  const c = pulso.contexto;
+
+  if (pulso.estres >= 75) {
+    return {
+      tipo: 'critico',
+      eyebrow: 'CARGA CRÍTICA DETECTADA',
+      titulo: `Estrés ${pulso.estres}/100 · sistema en alarma`,
+      descripcion: `${c.pendientes_vencidos} pendientes vencidos + ${c.cobros_vencidos} cobros vencidos. Tu cuerpo está cargando peso. Necesitas 1 estrategia de reset HOY · sin pretextos.`,
+      bg1: 'rgba(197,106,106,0.12)', bg2: 'rgba(197,106,106,0.02)', border: 'rgba(197,106,106,0.4)', color: 'rgba(220,140,140,0.95)'
+    };
+  }
+
+  if (pulso.ansiedad >= 60 && c.ejer_7d < 2) {
+    return {
+      tipo: 'ansiedad_sin_movimiento',
+      eyebrow: 'ANSIEDAD + SEDENTARISMO',
+      titulo: `Ansiedad ${pulso.ansiedad}/100 con ${c.ejer_7d} ejercicios en 7d`,
+      descripcion: `Tu data histórica muestra que swimming AM o caminar con Pepe bajan ansiedad ~30%. Bloquea 30 min mañana 7am en agenda · cero negociación.`,
+      bg1: 'rgba(212,165,116,0.10)', bg2: 'rgba(212,165,116,0.02)', border: 'rgba(212,165,116,0.35)', color: 'rgba(220,180,130,0.95)'
+    };
+  }
+
+  if (pulso.energia <= 30 && c.densos_7d >= 3) {
+    return {
+      tipo: 'energia_baja',
+      eyebrow: 'ENERGÍA EN ROJO',
+      titulo: `Energía ${pulso.energia}/100 · ${c.densos_7d} días densos en semana`,
+      descripcion: `Lleva tiempo en carga sin reset. Recomendación: piscina larga sábado (95% efectividad histórica) + reducir 2 pendientes a la mitad.`,
+      bg1: 'rgba(212,165,116,0.10)', bg2: 'rgba(212,165,116,0.02)', border: 'rgba(212,165,116,0.35)', color: 'rgba(220,180,130,0.95)'
+    };
+  }
+
+  if (pulso.foco <= 40 && c.pendientes_total > 8) {
+    return {
+      tipo: 'foco_disperso',
+      eyebrow: 'FOCO DISPERSO',
+      titulo: `Foco ${pulso.foco}/100 con ${c.pendientes_total} pendientes abiertos`,
+      descripcion: `Demasiados frentes abiertos. Arrancar autoagenda en calendario te bloquearía los 3 más urgentes en horarios fijos.`,
+      bg1: 'rgba(120,200,220,0.08)', bg2: 'rgba(120,200,220,0.02)', border: 'rgba(120,200,220,0.3)', color: 'rgba(180,220,240,0.95)'
+    };
+  }
+
+  if (pulso.energia >= 70 && c.buenos_7d >= 4) {
+    return {
+      tipo: 'racha_positiva',
+      eyebrow: 'RACHA POSITIVA',
+      titulo: `Energía ${pulso.energia}/100 · ${c.buenos_7d} días buenos en semana`,
+      descripcion: `Tu sistema está en buen ritmo. Aprovecha esta ventana para trabajo profundo · es donde cierras más clientes históricamente.`,
+      bg1: 'rgba(180,220,170,0.10)', bg2: 'rgba(180,220,170,0.02)', border: 'rgba(180,220,170,0.35)', color: 'rgba(180,220,170,0.95)'
+    };
+  }
+
+  if (c.checkins_7d < 3) {
+    return {
+      tipo: 'sin_data',
+      eyebrow: 'NECESITO MÁS DATA',
+      titulo: `Solo ${c.checkins_7d} check-ins en 7 días`,
+      descripcion: `No puedo cruzar tu estado mental con tu carga operativa con tan poca data. Hazme un check-in diario · 5 segundos · el resto se calcula solo.`,
+      bg1: 'rgba(150,210,230,0.08)', bg2: 'rgba(150,210,230,0.02)', border: 'rgba(150,210,230,0.3)', color: 'rgba(180,220,240,0.95)'
+    };
+  }
+
+  return {
+    tipo: 'estable',
+    eyebrow: 'SISTEMA ESTABLE',
+    titulo: `Estrés ${pulso.estres} · Energía ${pulso.energia}`,
+    descripcion: `Métricas dentro de rango. Sostén consistencia: check-in diario + ejercicio 3x semana. Cuando algo se desvía, te aviso primero.`,
+    bg1: 'rgba(180,220,170,0.06)', bg2: 'rgba(180,220,170,0.01)', border: 'rgba(180,220,170,0.25)', color: 'rgba(180,220,170,0.95)'
+  };
+}
+
+function colorScore(val, invertido = false) {
+  // invertido = true para estrés/ansiedad (menos = mejor)
+  const score = invertido ? 100 - val : val;
+  if (score >= 70) return '#7AC68A';
+  if (score >= 40) return '#D4A574';
+  return '#C56A6A';
+}
+
 function renderDashboard() {
   const s = getMenteState();
   const c = document.getElementById('dashboard');
   const hoy = new Date().toISOString().slice(0, 10);
   const yaCheckIn = s.estados_diarios.find(e => e.fecha === hoy);
 
-  const estadosArr = Object.entries(ESTADOS).map(([k, v]) => ({ key: k, ...v }));
+  const pulso = calcularPulsoInterno();
+  const patron = detectarPatron(pulso);
+  const ctx = pulso.contexto;
 
-  // ===== HERO · estado del día + ring de score promedio =====
-  const ultimos30 = s.estados_diarios.slice(-30);
-  const scoreAvg = ultimos30.length ? ultimos30.reduce((sum, e) => sum + (ESTADOS[e.estado]?.score || 3), 0) / ultimos30.length : 0;
-  const ringPct = scoreAvg > 0 ? (scoreAvg / 5) * 100 : 0;
-  const ringColor = scoreAvg >= 4 ? '#7AC68A' : scoreAvg >= 3 ? '#8A9CA8' : scoreAvg >= 2 ? '#D4A574' : '#C56A6A';
-  const circumference = 2 * Math.PI * 40;
-  const dashOffset = circumference * (1 - ringPct / 100);
-
-  const ringHero = `
-    <div class="mente-hero">
-      <div class="ring-container">
-        <svg class="ring-svg" viewBox="0 0 96 96">
-          <circle cx="48" cy="48" r="40" fill="none" stroke="rgba(244,243,239,0.06)" stroke-width="6"/>
-          ${ringPct > 0 ? `<circle cx="48" cy="48" r="40" fill="none" stroke="${ringColor}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 48 48)" style="transition: stroke-dashoffset 1s ease-out;"/>` : ''}
-          <text x="48" y="50" text-anchor="middle" dominant-baseline="middle" fill="${ringColor}" font-size="22" font-weight="600" font-family="Inter">
-            ${scoreAvg > 0 ? scoreAvg.toFixed(1) : '—'}
-          </text>
-          <text x="48" y="64" text-anchor="middle" fill="rgba(244,243,239,0.5)" font-size="8" font-family="Inter">/ 5</text>
-        </svg>
-        <div class="ring-content">
-          <div style="font-size:9px;color:rgba(180,220,170,0.85);letter-spacing:0.15em;text-transform:uppercase;font-weight:500;margin-bottom:4px;">PROMEDIO 30D</div>
-          <div style="font-size:18px;font-weight:500;letter-spacing:-0.01em;line-height:1.2;">
-            ${scoreAvg >= 4 ? 'Vas bien · sostén' : scoreAvg >= 3 ? 'Estable · sin tendencia clara' : scoreAvg >= 2 ? 'Carga acumulada' : scoreAvg > 0 ? 'Necesitas reset' : 'Empieza a registrar'}
-          </div>
-          <div style="font-size:11px;color:rgba(244,243,239,0.55);margin-top:4px;">${ultimos30.length} de 30 check-ins</div>
-        </div>
+  // ===== METRIC QUAD · estrés, ansiedad, energía, foco =====
+  const metricsHtml = `
+    <div class="metric-quad">
+      <div class="metric-card-large" style="--mc-color:${colorScore(pulso.estres, true)};--mc-bg1:${colorScore(pulso.estres, true)}14;--mc-bg2:${colorScore(pulso.estres, true)}03;--mc-border:${colorScore(pulso.estres, true)}30;">
+        <div class="mc-eyebrow">ESTRÉS</div>
+        <div class="mc-row"><div class="mc-value">${pulso.estres}</div><div class="mc-unit">/100</div></div>
+        <div class="mc-bar"><div class="mc-bar-fill" style="width:${pulso.estres}%;"></div></div>
+        <div class="mc-meta">${pulso.estres >= 70 ? 'alto · necesita reset' : pulso.estres >= 40 ? 'medio · monitorea' : 'bajo · sostenible'}</div>
+      </div>
+      <div class="metric-card-large" style="--mc-color:${colorScore(pulso.ansiedad, true)};--mc-bg1:${colorScore(pulso.ansiedad, true)}14;--mc-bg2:${colorScore(pulso.ansiedad, true)}03;--mc-border:${colorScore(pulso.ansiedad, true)}30;">
+        <div class="mc-eyebrow">ANSIEDAD</div>
+        <div class="mc-row"><div class="mc-value">${pulso.ansiedad}</div><div class="mc-unit">/100</div></div>
+        <div class="mc-bar"><div class="mc-bar-fill" style="width:${pulso.ansiedad}%;"></div></div>
+        <div class="mc-meta">${ctx.cobros_vencidos > 0 ? `${ctx.cobros_vencidos} cobros vencidos` : ctx.ejer_7d < 2 ? 'falta movimiento' : 'estable'}</div>
+      </div>
+      <div class="metric-card-large" style="--mc-color:${colorScore(pulso.energia)};--mc-bg1:${colorScore(pulso.energia)}14;--mc-bg2:${colorScore(pulso.energia)}03;--mc-border:${colorScore(pulso.energia)}30;">
+        <div class="mc-eyebrow">ENERGÍA</div>
+        <div class="mc-row"><div class="mc-value">${pulso.energia}</div><div class="mc-unit">/100</div></div>
+        <div class="mc-bar"><div class="mc-bar-fill" style="width:${pulso.energia}%;"></div></div>
+        <div class="mc-meta">${ctx.buenos_7d} días buenos · ${ctx.ejer_7d} ejercicios 7d</div>
+      </div>
+      <div class="metric-card-large" style="--mc-color:${colorScore(pulso.foco)};--mc-bg1:${colorScore(pulso.foco)}14;--mc-bg2:${colorScore(pulso.foco)}03;--mc-border:${colorScore(pulso.foco)}30;">
+        <div class="mc-eyebrow">FOCO</div>
+        <div class="mc-row"><div class="mc-value">${pulso.foco}</div><div class="mc-unit">/100</div></div>
+        <div class="mc-bar"><div class="mc-bar-fill" style="width:${pulso.foco}%;"></div></div>
+        <div class="mc-meta">${ctx.pendientes_total} pendientes · ${ctx.pendientes_altas} alta</div>
       </div>
     </div>
   `;
 
+  // ===== PATRÓN DETECTADO · cruza ERP =====
+  const patronHtml = `
+    <div class="patron-card" style="--patron-bg1:${patron.bg1};--patron-bg2:${patron.bg2};--patron-border:${patron.border};">
+      <div class="patron-eyebrow" style="color:${patron.color};">${patron.eyebrow}</div>
+      <div class="patron-titulo">${Util.esc(patron.titulo)}</div>
+      <div class="patron-desc">${Util.esc(patron.descripcion)}</div>
+    </div>
+  `;
+
+  // ===== CTA HABLAR CON MANDO =====
+  const ctaHtml = `
+    <div class="cta-mando" onclick="abrirChatConContexto()">
+      <div class="cta-mando-avatar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,170,110,0.95)"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+      </div>
+      <div class="cta-mando-text">
+        <div class="cta-mando-eyebrow">HABLAR CON MANDO</div>
+        <div class="cta-mando-titulo">¿Qué te tiene la cabeza ocupada?</div>
+        <div class="cta-mando-desc">Mando llega con tu pulso interno + carga operativa cargados</div>
+      </div>
+      <div class="cta-mando-arrow">→</div>
+    </div>
+  `;
+
   // ===== CHECK-IN DEL DÍA =====
-  const checkin = `
-    <div style="margin-bottom:18px;">
+  const estadosArr = Object.entries(ESTADOS).map(([k, v]) => ({ key: k, ...v }));
+  const checkinHtml = `
+    <div style="margin-bottom:14px;">
       <div class="section-title">${yaCheckIn ? '¿Cambió algo?' : '¿Cómo estás hoy?'}</div>
-      <div class="section-sub">tap = registra · 5 segundos</div>
+      <div class="section-sub">tap = registra · 5 segundos · sube precisión de tu pulso</div>
       <div class="estado-grid">
         ${estadosArr.map(e => `
           <div class="estado-btn ${yaCheckIn?.estado === e.key ? 'selected' : ''}" data-estado="${e.key}">
@@ -268,13 +441,13 @@ function renderDashboard() {
           </div>
         `).join('')}
       </div>
-      <textarea class="journal-input" id="estado-nota" placeholder="Una línea (opcional) — ¿qué pasa hoy?" style="margin-top:10px;min-height:50px;">${yaCheckIn?.nota || ''}</textarea>
-      <button class="btn primary-orange" style="width:100%;margin-top:8px;" id="btn-guardar-estado">${yaCheckIn ? 'Actualizar check-in' : 'Registrar check-in'}</button>
+      <textarea id="estado-nota" placeholder="Una línea (opcional) · ¿qué pasa hoy?" style="width:100%;background:rgba(244,243,239,0.03);border:0.5px solid var(--border-soft);border-radius:11px;padding:11px;font-family:inherit;font-size:14px;color:var(--text-primary);resize:vertical;min-height:50px;outline:none;box-sizing:border-box;line-height:1.5;margin-top:9px;">${yaCheckIn?.nota || ''}</textarea>
+      <button class="btn primary-orange" style="width:100%;margin-top:7px;" id="btn-guardar-estado">${yaCheckIn ? 'Actualizar check-in' : 'Registrar check-in'}</button>
     </div>
   `;
 
-  // ===== HEATMAP 60 DÍAS =====
-  let heatmap = '';
+  // ===== HEATMAP 60 días =====
+  let heatmapHtml = '';
   if (s.estados_diarios.length > 0) {
     const dias = [];
     for (let i = 59; i >= 0; i--) {
@@ -283,102 +456,26 @@ function renderDashboard() {
       const e = s.estados_diarios.find(x => x.fecha === fecha);
       dias.push({ fecha, estado: e?.estado || null });
     }
-    heatmap = `
-      <div style="margin-bottom:18px;">
+    heatmapHtml = `
+      <div style="margin-bottom:14px;">
         <div class="section-title">Últimos 60 días</div>
         <div class="section-sub">cada cuadrito · un día · color = estado</div>
         <div class="heatmap-grid">
           ${dias.map(d => {
             if (!d.estado) return `<div class="heatmap-cell" title="${d.fecha} · sin check-in"></div>`;
-            const e = ESTADOS[d.estado];
-            const cls = d.estado === 'inspirado' ? 'inspirado' : d.estado === 'bien' ? 'l4' : d.estado === 'neutro' ? 'l2' : d.estado === 'cansado' ? 'cansado' : 'denso';
-            return `<div class="heatmap-cell ${cls}" title="${d.fecha} · ${e.label}"></div>`;
+            return `<div class="heatmap-cell l-${d.estado}" title="${d.fecha} · ${ESTADOS[d.estado].label}"></div>`;
           }).join('')}
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px;font-size:9px;color:rgba(244,243,239,0.5);">
-          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:rgba(255,122,0,0.9);"></div>inspirado</div>
-          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:rgba(180,220,170,1);"></div>bien</div>
-          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:rgba(212,165,116,0.7);"></div>cansado</div>
-          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:rgba(197,106,106,0.85);"></div>denso</div>
-        </div>
       </div>
     `;
   }
 
-  // ===== SPARKLINE últimos 14 días =====
-  let sparkline = '';
-  const ult14 = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86400000);
-    const fecha = d.toISOString().slice(0, 10);
-    const e = s.estados_diarios.find(x => x.fecha === fecha);
-    ult14.push(e ? ESTADOS[e.estado].score : null);
-  }
-  const valores = ult14.filter(v => v !== null);
-  if (valores.length >= 2) {
-    const max = 5, min = 1;
-    const w = 320, h = 36;
-    const stepX = w / (ult14.length - 1);
-    const points = ult14.map((v, i) => {
-      const x = i * stepX;
-      const y = v !== null ? h - ((v - min) / (max - min)) * h : null;
-      return { x, y };
-    });
-    const validPoints = points.filter(p => p.y !== null);
-    const path = validPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-    const lastPoint = validPoints[validPoints.length - 1];
-
-    sparkline = `
-      <div class="metric-card" style="margin-bottom:8px;">
-        <div class="metric-eyebrow">TENDENCIA 14D</div>
-        <div style="display:flex;align-items:baseline;gap:8px;">
-          <div class="metric-value">${valores[valores.length-1].toFixed(1)}</div>
-          <div style="font-size:11px;color:${valores[valores.length-1] >= valores[0] ? 'rgba(180,220,170,0.95)' : 'rgba(212,165,116,0.95)'};">
-            ${valores[valores.length-1] >= valores[0] ? '↗' : '↘'} ${Math.abs(valores[valores.length-1] - valores[0]).toFixed(1)} pts
-          </div>
-        </div>
-        <svg class="sparkline-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="rgba(180,220,170,0.4)"/>
-              <stop offset="100%" stop-color="rgba(180,220,170,0)"/>
-            </linearGradient>
-          </defs>
-          <path d="${path} L ${lastPoint.x} ${h} L ${validPoints[0].x} ${h} Z" fill="url(#sparkGrad)"/>
-          <path d="${path}" fill="none" stroke="rgba(180,220,170,0.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          ${validPoints.map(p => `<circle cx="${p.x}" cy="${p.y}" r="2" fill="rgba(180,220,170,1)"/>`).join('')}
-        </svg>
-      </div>
-    `;
-  }
-
-  // ===== METRIC GRID =====
-  const counts = { inspirado: 0, bien: 0, neutro: 0, cansado: 0, denso: 0 };
-  ultimos30.forEach(e => { counts[e.estado] = (counts[e.estado] || 0) + 1; });
-  const consistencia = Math.min(100, Math.round((ultimos30.length / 30) * 100));
-
-  const metrics = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
-      ${sparkline ? '' : '<!-- spark va arriba -->'}
-      <div class="metric-card">
-        <div class="metric-eyebrow">CONSISTENCIA 30D</div>
-        <div class="metric-value">${consistencia}%</div>
-        <div class="metric-meta">${ultimos30.length} días registrados</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-eyebrow">DÍAS BUENOS 30D</div>
-        <div class="metric-value">${counts.bien + counts.inspirado}</div>
-        <div class="metric-meta">de ${ultimos30.length} con check-in</div>
-      </div>
-    </div>
-  `;
-
-  // ===== ESTRATEGIAS · top 3 =====
+  // ===== ESTRATEGIAS top 3 =====
   const sorted = [...s.estrategias].sort((a, b) => b.efectividad - a.efectividad).slice(0, 3);
-  const estrategias = `
-    <div style="margin-bottom:18px;">
+  const estrategiasHtml = `
+    <div style="margin-bottom:14px;">
       <div class="section-title">Tus 3 estrategias top</div>
-      <div class="section-sub">marca cuál usaste hoy · sube efectividad</div>
+      <div class="section-sub">marca cuál usaste hoy · sube efectividad histórica</div>
       ${sorted.map(e => `
         <div class="estrategia-row">
           <div class="estrategia-circle" style="--pct:${Math.round(e.efectividad * 100)}%;">
@@ -391,46 +488,12 @@ function renderDashboard() {
           <button class="btn" data-estrategia-id="${e.id}" style="font-size:10px;padding:7px 11px;flex-shrink:0;">Hoy</button>
         </div>
       `).join('')}
-      <button class="btn" style="width:100%;font-size:11px;margin-top:6px;" onclick="abrirAgregarEstrategia()">+ Agregar estrategia</button>
     </div>
   `;
 
-  // ===== PATRONES =====
-  const ultimos14 = s.estados_diarios.slice(-14);
-  const denses = ultimos14.filter(e => e.estado === 'denso' || e.estado === 'cansado').length;
-  const positivos14 = ultimos14.filter(e => e.estado === 'bien' || e.estado === 'inspirado').length;
-  let patron = '';
-  if (denses >= 5) {
-    patron = `<div class="metric-card" style="background:rgba(212,165,116,0.06);border-color:rgba(212,165,116,0.25);"><div class="metric-eyebrow" style="color:rgba(212,165,116,0.95);">PATRÓN DETECTADO</div><div style="font-size:13px;line-height:1.5;color:var(--text-primary);margin-top:4px;">${denses} de 14 días en cansado/denso. Tu estrategia "Swimming AM" + "Ensayo musical" suele bajar carga 30%. Bloquea una en agenda esta semana.</div></div>`;
-  } else if (positivos14 >= 7) {
-    patron = `<div class="metric-card" style="background:rgba(180,220,170,0.06);border-color:rgba(180,220,170,0.25);"><div class="metric-eyebrow" style="color:rgba(180,220,170,0.95);">RACHA POSITIVA</div><div style="font-size:13px;line-height:1.5;color:var(--text-primary);margin-top:4px;">${positivos14} de 14 días en bien/inspirado. Lo que sea que estás haciendo · sigue. Documenta qué cambió.</div></div>`;
-  } else if (ultimos14.length < 5) {
-    patron = `<div class="metric-card" style="background:rgba(150,210,230,0.04);border-color:rgba(150,210,230,0.2);"><div class="metric-eyebrow" style="color:rgba(150,210,230,0.95);">EN APRENDIZAJE</div><div style="font-size:13px;line-height:1.5;color:var(--text-primary);margin-top:4px;">Solo ${ultimos14.length} check-ins recientes. Mente necesita 7+ días para detectar correlaciones reales · 5 segs/día.</div></div>`;
-  }
+  c.innerHTML = metricsHtml + patronHtml + ctaHtml + checkinHtml + estrategiasHtml + heatmapHtml;
 
-  // ===== JOURNAL · prompt rotativo =====
-  const prompts = [
-    '¿Qué te tiene la cabeza ocupada ahorita?',
-    '¿Qué decisión llevas postpuesta más de 3 días?',
-    '¿Qué pequeña cosa te haría sentir mejor en este momento?',
-    '¿De qué te vas a arrepentir si no actúas esta semana?',
-    '¿Qué te está costando energía y no vale la pena?',
-    '¿Qué te dió alegría real hoy (aunque sea chico)?'
-  ];
-  const prompt = prompts[Math.floor((Date.now() / 86400000) % prompts.length)];
-  const journalCard = `
-    <div style="margin-bottom:14px;">
-      <div class="section-title">Reflexión</div>
-      <div class="section-sub">${prompt}</div>
-      <textarea class="journal-input" id="journal-input" placeholder="Sin filtro · sin formato · solo escribe..."></textarea>
-      <button class="btn" style="width:100%;margin-top:8px;font-size:11px;" onclick="guardarJournal('${prompt.replace(/'/g, "\\'")}')">Guardar reflexión</button>
-      ${(s.journal || []).length ? `<div style="font-size:10px;color:rgba(244,243,239,0.5);margin-top:6px;text-align:center;">${s.journal.length} reflexiones guardadas</div>` : ''}
-    </div>
-  `;
-
-  c.innerHTML = ringHero + checkin + (sparkline || '') + metrics + heatmap + (patron || '') + estrategias + journalCard;
-
-  // Bindings
+  // Bindings check-in
   c.querySelectorAll('.estado-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       c.querySelectorAll('.estado-btn').forEach(b => b.classList.remove('selected'));
@@ -445,7 +508,7 @@ function renderDashboard() {
     state.estados_diarios.push({ fecha: hoy, estado: sel.dataset.estado, nota: document.getElementById('estado-nota').value.trim(), ts: Date.now() });
     if (state.estados_diarios.length > 365) state.estados_diarios = state.estados_diarios.slice(-365);
     setMenteState(state);
-    UI.toast('Check-in registrado · Mente aprende de ti', 'success');
+    UI.toast('Check-in registrado · pulso actualizado', 'success');
     renderDashboard();
   });
   c.querySelectorAll('[data-estrategia-id]').forEach(btn => {
@@ -463,64 +526,29 @@ function renderDashboard() {
   });
 }
 
-function guardarJournal(prompt) {
-  const text = document.getElementById('journal-input').value.trim();
-  if (!text) return UI.toast('Escribe algo primero', 'error');
-  const state = getMenteState();
-  state.journal = state.journal || [];
-  state.journal.push({ ts: Date.now(), prompt, text });
-  if (state.journal.length > 200) state.journal = state.journal.slice(-200);
-  setMenteState(state);
-  UI.toast('Reflexión guardada · solo tú la ves', 'success');
-  document.getElementById('journal-input').value = '';
-  renderDashboard();
-}
+// ============================================================
+// ABRIR CHAT MANDO CON CONTEXTO MENTE PRE-CARGADO
+// ============================================================
+function abrirChatConContexto() {
+  const pulso = calcularPulsoInterno();
+  const c = pulso.contexto;
+  const yaCheckIn = getMenteState().estados_diarios.find(e => e.fecha === new Date().toISOString().slice(0, 10));
 
-function abrirAgregarEstrategia() {
-  const modal = document.createElement('div');
-  modal.className = 'g2c-modal-backdrop active';
-  modal.id = 'modal-est';
-  modal.innerHTML = `
-    <div class="g2c-modal" onclick="event.stopPropagation()" style="max-width:420px;">
-      <div class="g2c-modal-handle"></div>
-      <div class="g2c-modal-eyebrow"><div class="dot" style="background:rgba(180,220,170,1);"></div><div class="label">Nueva estrategia</div></div>
-      <div class="g2c-modal-title">Agregar a tu biblioteca</div>
-      <div class="form-field">
-        <div class="field-label">NOMBRE</div>
-        <input type="text" class="field-input" id="est-nombre" placeholder="Ej: Caminar al atardecer" autofocus style="font-size:16px !important;">
-      </div>
-      <div class="form-field">
-        <div class="field-label">CUÁNDO LA USAS</div>
-        <input type="text" class="field-input" id="est-contexto" placeholder="Ej: cuando termino día pesado" style="font-size:16px !important;">
-      </div>
-      <div class="g2c-modal-actions">
-        <button class="btn" onclick="document.getElementById('modal-est').remove()">Cancelar</button>
-        <button class="btn primary-orange" onclick="guardarEstrategia()">Agregar</button>
-      </div>
-    </div>
-  `;
-  modal.addEventListener('click', () => document.getElementById('modal-est').remove());
-  document.body.appendChild(modal);
-}
+  // Inyectar contexto en sessionStorage para que index lo lea
+  const contexto = {
+    fuente: 'mente',
+    pulso,
+    estado_hoy: yaCheckIn ? yaCheckIn.estado : null,
+    timestamp: Date.now()
+  };
+  try { sessionStorage.setItem('mando_contexto_mente', JSON.stringify(contexto)); } catch (e) {}
 
-function guardarEstrategia() {
-  const nombre = document.getElementById('est-nombre').value.trim();
-  const contexto = document.getElementById('est-contexto').value.trim();
-  if (!nombre) return UI.toast('Falta nombre', 'error');
-  const state = getMenteState();
-  state.estrategias.push({
-    id: 'est_' + Date.now(),
-    nombre,
-    categoria: 'custom',
-    contexto: contexto || 'sin contexto',
-    efectividad: 0.5,
-    usos: 0,
-    createdAt: Date.now()
-  });
-  setMenteState(state);
-  UI.toast('Estrategia agregada', 'success');
-  document.getElementById('modal-est').remove();
-  renderDashboard();
+  // Pre-cargar el primer mensaje al usuario para arrancar conversación
+  const prompt = yaCheckIn
+    ? `Hablemos. Hoy me siento ${yaCheckIn.estado}. Mi pulso: estrés ${pulso.estres}, ansiedad ${pulso.ansiedad}, energía ${pulso.energia}, foco ${pulso.foco}. ¿Qué me sugieres con esta carga operativa?`
+    : `Hablemos. Mi pulso ahora: estrés ${pulso.estres}, ansiedad ${pulso.ansiedad}, energía ${pulso.energia}, foco ${pulso.foco}. Tengo ${c.pendientes_altas} pendientes alta y ${c.cobros_vencidos} cobros vencidos. ¿Por dónde arrancamos?`;
+
+  location.href = 'index.html?msg=' + encodeURIComponent(prompt);
 }
 </script>
 
