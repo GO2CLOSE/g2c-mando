@@ -658,34 +658,39 @@ body:has(.quick-choices-dock) .chat-thread {
 /* === Input chat (3 estados) === */
 .chat-input-wrap {
   position: fixed;
-  bottom: calc(var(--pad-bottom-nav) + 64px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--pad-bottom-nav) + 16px + env(safe-area-inset-bottom, 0px));
   left: var(--pad-side);
   right: var(--pad-side);
+  width: auto;
+  box-sizing: border-box;
   z-index: 50;
-  transition: bottom 0.2s ease-out;
-  /* En iOS, cuando se abre teclado, JS ajusta vía .keyboard-open */
+  transition: bottom 0.22s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .chat-input-wrap.keyboard-open {
   bottom: var(--keyboard-bottom, 8px) !important;
-  /* Cuando teclado abierto, baja al edge del viewport visible */
 }
 .chat-input {
-  background: rgba(15,20,25,0.98);
-  backdrop-filter: blur(10px);
+  background: rgba(15,20,25,0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 0.5px solid var(--border-mid);
-  border-radius: var(--radius-input);
-  padding: 10px 13px;
+  border-radius: 22px;
+  padding: 9px 8px 9px 16px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
 }
 .chat-input.active {
   border-color: rgba(255,79,0,0.4);
-  box-shadow: 0 0 0 3px rgba(255,79,0,0.06);
+  box-shadow: 0 0 0 3px rgba(255,79,0,0.08), 0 4px 16px rgba(0,0,0,0.3);
 }
 .chat-input input {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
   outline: none;
@@ -778,25 +783,39 @@ body:has(.quick-choices-dock) .chat-thread {
   background: rgba(15,20,25,0.95);
   backdrop-filter: blur(10px);
   border-top: 0.5px solid rgba(244,243,239,0.08);
-  padding: 10px 8px calc(18px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 6px calc(18px + env(safe-area-inset-bottom, 0px));
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
+  gap: 2px;
   z-index: 100;
 }
 .bottom-nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px 2px;
+  gap: 3px;
+  padding: 6px 0;
   cursor: pointer;
   text-decoration: none;
   color: var(--text-mute);
+  min-width: 0; /* Crítico: permite shrink en grid */
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 .bottom-nav-item.active { color: var(--g2c-primary); font-weight: 500; }
 .bottom-nav-item .nav-label {
-  font-size: 9px;
+  font-size: 9.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.bottom-nav-item svg {
+  flex-shrink: 0;
+}
+@media (max-width: 360px) {
+  .bottom-nav-item .nav-label { font-size: 8.5px; }
 }
 
 /* === Footer G2C (en cada módulo) === */

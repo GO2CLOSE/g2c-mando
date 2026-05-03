@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0F1419">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mando">
 <title>Mando · G2C</title>
@@ -288,19 +289,52 @@ function buildLocalBriefing() {
   const clientes = Store.get(Store.KEYS.CLIENTES, []);
   const pendientes = Store.get(Store.KEYS.PENDIENTES, []).filter(p => !p.done);
   const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
-  const finanzas = Store.get(Store.KEYS.FINANZAS, {});
+  const cuentasCobrar = Store.get('alan_mando_cuentas_cobrar', []).filter(c => !c.cobrado);
+  const cuentasPagar = Store.get('alan_mando_cuentas_pagar', []).filter(c => !c.pagado);
+  const cobrosRec = Store.get('alan_mando_cobros_recurrentes', []).filter(c => c.activo);
+  const pagosRec = Store.get('alan_mando_pagos_recurrentes', []).filter(p => p.activo);
 
-  const vencidos = clientes.filter(c => c.status === 'vencido');
+  const ahora = Date.now();
+  const en7d = ahora + 7 * 86400000;
+
+  // Cobros vencidos / próximos
+  const cobrosVencidos = cuentasCobrar.filter(c => c.fecha_esperada && c.fecha_esperada < ahora);
+  const cobrosProximos = cuentasCobrar.filter(c => c.fecha_esperada && c.fecha_esperada >= ahora && c.fecha_esperada <= en7d);
+  const recProximos = cobrosRec.filter(c => c.proximo_cobro && c.proximo_cobro <= en7d);
+
+  // Pagos próximos
+  const pagosProximos = cuentasPagar.filter(p => p.fecha && p.fecha <= en7d);
+  const recPagoProximos = pagosRec.filter(p => p.proximo_pago && p.proximo_pago <= en7d);
+
+  // Pendientes urgentes
   const altas = pendientes.filter(p => p.prioridad === 'alta');
-  const proxTocada = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now()).sort((a, b) => a.ts - b.ts)[0];
+  const vencidosPend = pendientes.filter(p => p.fecha_limite && p.fecha_limite < ahora);
+
+  // Tocadas próximas
+  const proxTocada = eventos.filter(e => e.tipo === 'tocada' && e.ts > ahora).sort((a, b) => a.ts - b.ts)[0];
 
   const partes = [];
-  if (vencidos.length) partes.push(`${vencidos.length} cobro${vencidos.length > 1 ? 's' : ''} vencido${vencidos.length > 1 ? 's' : ''}`);
+  if (cobrosVencidos.length) {
+    const monto = cobrosVencidos.reduce((s, c) => s + (c.monto || 0), 0);
+    partes.push(`${cobrosVencidos.length} cobro${cobrosVencidos.length > 1 ? 's' : ''} vencido${cobrosVencidos.length > 1 ? 's' : ''} (${Util.fmtMoneyK(monto)})`);
+  }
+  if (cobrosProximos.length || recProximos.length) {
+    const total = cobrosProximos.length + recProximos.length;
+    const monto = [...cobrosProximos, ...recProximos.map(r => ({monto: r.monto}))].reduce((s, c) => s + (c.monto || 0), 0);
+    partes.push(`${total} cobro${total > 1 ? 's' : ''} esta semana (${Util.fmtMoneyK(monto)})`);
+  }
+  if (pagosProximos.length || recPagoProximos.length) {
+    const total = pagosProximos.length + recPagoProximos.length;
+    partes.push(`${total} pago${total > 1 ? 's' : ''} a tu cargo`);
+  }
+  if (vencidosPend.length) partes.push(`${vencidosPend.length} pendiente${vencidosPend.length > 1 ? 's' : ''} VENCIDO${vencidosPend.length > 1 ? 'S' : ''}`);
   if (altas.length) partes.push(`${altas.length} pendiente${altas.length > 1 ? 's' : ''} alta prioridad`);
-  if (proxTocada) partes.push(`tocada en ${Util.daysUntil(proxTocada.ts)} días`);
+  if (proxTocada) partes.push(`tocada "${proxTocada.titulo || 'sin nombre'}" en ${Util.daysUntil(proxTocada.ts)} días`);
 
-  if (partes.length === 0) return 'Día limpio · sin urgencias detectadas. Aprovecha para trabajo profundo o prospección.';
-  return 'Hoy: ' + partes.join(' · ') + '.';
+  if (partes.length === 0) {
+    return 'Día limpio · sin urgencias detectadas. Aprovecha para trabajo profundo o prospección de clientes nuevos.';
+  }
+  return partes.join(' · ') + '. ¿Por dónde arrancamos?';
 }
 
 // ============================================================

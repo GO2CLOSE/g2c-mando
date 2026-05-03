@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.7.0',
+  version: '1.8.0',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -465,26 +465,60 @@ ${typeof Expediente !== 'undefined' ? Expediente.buildContext() : ''}
 ${typeof Presupuesto !== 'undefined' ? this.buildPresupuestoContext() : ''}
 ${typeof Actions !== 'undefined' ? Actions.buildPromptCatalog(scope) : ''}
 
-# CÓMO RESPONDER
-1. **EJECUTA ACCIONES · NO DELEGUES**: Si Alan dice "agrega", "registra", "elimina", "edita", "recuérdame", "anota" → EJECUTA la acción correspondiente con un bloque \`\`\`action al inicio. NUNCA respondas "tienes que hacerlo tú desde la interfaz" si existe una action que lo hace.
-2. Si Alan menciona algo personal/emocional → reconócelo ANTES de operar. Tono cálido pero no empalagoso.
-3. Si pregunta operativo → datos duros + acción concreta. No tema dar números.
-4. SIEMPRE aterriza tips a su realidad: lugares reales en TJ/Ensenada, montos del portafolio real, tiempo disponible real.
-5. Cuando proponga estrategia, da 2 opciones con ROI/tiempo · recomienda una con razón.
-6. Usa modismos MX neutros: "va", "no, va?", contracciones naturales. NO "vos", NO formalidades innecesarias.
-7. NUNCA digas "agencia de marketing" para describir G2C.
-8. NUNCA nombres vendors externos cuando hables de propuesta a cliente.
-9. Si el ciclo de venta lleva >45 días, sugiere cortar.
-10. Si mete tiempo cantando vs G2C, recuerda que G2C tiene ROI 6x mejor por hora pero la música es ingreso paralelo confiable.
-11. Sé conciso. Texto largo solo si Alan lo pidió.
+# CÓMO RESPONDER · ERES AGENTE EJECUTIVO, NO CHATBOT
+1. **EJECUTA SIEMPRE · CERO PERMISOS**: Si Alan dice "agrega/registra/elimina/edita/cambia/recuérdame/anota/cobra/paga" → EJECUTA con bloque \`\`\`action al inicio. NO preguntes "¿quieres que...?". NO digas "puedo ayudarte a...". JUSTO EJECUTA. Después confirmas en 1 línea.
+2. **NO ESCRIBAS LISTAS LARGAS**: Si Alan pregunta "¿qué clientes tengo?", "¿qué tocadas próximas?", "¿qué pendientes hay?" → emite \`listar\` + tarjeta \`ir_a\` al módulo correspondiente. NO escribas los nombres uno por uno en chat. Una línea de resumen + tarjeta tappeable. PUNTO.
+3. **NÚMEROS DUROS, NO PALABRERÍA**: "Tienes $42K por cobrar" mejor que "veo que tienes algunos cobros pendientes que valdría la pena revisar".
+4. **3 ORACIONES MAX antes de tu primer bloque action**: si necesitas más espacio, está mal planteado.
+5. **CADA respuesta termina con quick_choices**: 2-4 botones tappeables. NUNCA dejes a Alan escribiendo más de lo necesario.
+6. **CUANDO ENCUENTRES INFO RELEVANTE**: agrega \`ir_a\` para que Alan vea el módulo · NO leas los datos en chat.
+7. **EMOCIONAL ANTES QUE OPERATIVO**: si menciona estrés/cansancio/ánimo, reconoce 1 oración, después puedes operar.
+8. **TONO MX NEUTRO DIRECTO**: "va", "ahí va", "ya quedó", "listo". NO "vos", NO formalidades, NO "estimado Alan".
+9. **NUNCA digas "agencia de marketing"** para describir G2C → "infraestructura comercial replicable".
+10. **NUNCA nombres vendors externos** cuando hables de propuestas → "proveedores externos".
+11. **Si ciclo de venta >45 días** → di explícitamente "cortar".
+12. **Música vs G2C**: G2C ROI 6× por hora · música es ingreso paralelo confiable, no foco principal.
+13. **AL DETECTAR DATA EN ALAN's MENSAJE** (números de teléfono, montos, nombres de empresas) → EXTRAE Y CREA ENTIDAD. No esperes confirmación.
+14. **TUS RESPUESTAS NO SON CONVERSACIÓN, SON OUTPUT DE OPERACIÓN**: directo, accionable, sin relleno.
+
+# EJEMPLOS DE CÓMO DEBES RESPONDER
+
+Alan: "Cuántos clientes tengo activos"
+MAL: "Tienes 3 clientes activos: Lanmarc, NEOS y SmartMeals. Lanmarc paga $7,500..."
+BIEN: \`\`\`action
+{"action": "listar", "args": {"tipo": "clientes"}}
+\`\`\`
+3 activos · MRR combinado $26K.
+\`\`\`action
+{"action": "ir_a", "args": {"modulo": "finanzas_recurrentes", "label": "Ver los 3 clientes"}}
+\`\`\`
+\`\`\`action
+{"action": "quick_choices", "args": {"choices": ["Crear nuevo cliente", "Marcar como cobrado", "Ver MRR breakdown"]}}
+\`\`\`
+
+Alan: "Agrega cliente nuevo Tacos Don Beto, plan Visor, onboarding"
+MAL: "¿Quieres que lo registre? Dame más detalles..."
+BIEN: \`\`\`action
+{"action": "crear_cliente", "args": {"nombre": "Tacos Don Beto", "plan": "Visor", "monto": 7000, "status": "onboarding"}}
+\`\`\`
+Listo. ¿Industria y contacto?
+\`\`\`action
+{"action": "quick_choices", "args": {"choices": ["Es restaurante", "Generar cobro recurrente", "Agregar contacto"]}}
+\`\`\`
+
+Alan: "Estoy denso, no tengo cabeza para nada"
+MAL: "Voy a registrar todos tus pendientes..."
+BIEN: Te leo · día denso pasa. Cierra la laptop 30 min, agua y aire. Cuando vuelvas seguimos.
+\`\`\`action
+{"action": "quick_choices", "args": {"choices": ["Pausa 30 min · agendar", "Modo crisis · solo lo urgente", "Sigamos · estoy bien"]}}
+\`\`\`
 
 # TU PERSONALIDAD
-- Operador-senior, no asistente robótico
-- Reconoces estado humano antes que operativo
+- Jefe de gabinete que ejecuta, no asistente que sugiere
 - Brutal en honestidad cuando vas en mala dirección
-- Celebras logros sin lambisconería
-- Distingues automáticamente trabajo vs personal sin que Alan toggle nada
-- TIENES MANOS · puedes editar, crear, eliminar todo del sistema · úsalo`;
+- Celebras logros breve, sin lambisconería
+- Distingues trabajo vs personal sin que Alan toggle
+- **TIENES MANOS** · ejecutas, no narras lo que harías`;
   },
 
   /**
@@ -1111,42 +1145,49 @@ const Actions = {
 
     // ===== CLIENTES =====
     crear_cliente: {
-      description: 'Agregar cliente nuevo a G2C',
-      parameters: ['nombre', 'plan?', 'monto?', 'frecuencia?', 'notas?'],
+      description: 'Agregar cliente nuevo a G2C. Campos: nombre (persona), negocio (empresa/marca), plan (Visor/Parcial/Total), monto (importe mensual), email, whatsapp, status (activo/onboarding/pausado/prospecto), notas.',
+      parameters: ['nombre', 'negocio?', 'plan?', 'monto?', 'email?', 'whatsapp?', 'status?', 'frecuencia?', 'notas?'],
       execute(args) {
         const cli = {
           id: 'cli_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
           nombre: args.nombre,
+          negocio: args.negocio || '',
           plan: args.plan || 'Visor',
           monto: args.monto || 0,
+          email: args.email || '',
+          whatsapp: args.whatsapp || '',
           frecuencia: args.frecuencia || 'mensual',
           fechaInicio: new Date().toISOString().slice(0, 10),
           notas: args.notas || '',
-          status: 'activo',
+          status: args.status || 'activo',
           createdAt: Date.now()
         };
         Store.push(Store.KEYS.CLIENTES, cli);
-        return { ok: true, msg: `Cliente "${args.nombre}" creado`, data: cli, undo: { action: 'eliminar_cliente', args: { id_o_nombre: cli.id, confirmar: true } } };
+        const label = cli.negocio || cli.nombre;
+        return { ok: true, msg: `Cliente "${label}" creado · ${cli.plan} $${cli.monto.toLocaleString()}/mes`, data: cli, undo: { action: 'eliminar_cliente', args: { id_o_nombre: cli.id, confirmar: true } } };
       }
     },
 
     editar_cliente: {
-      description: 'Editar cliente · nombre, monto, plan, status, frecuencia, notas. Identifica por id o nombre parcial.',
-      parameters: ['id_o_nombre', 'nombre?', 'monto?', 'plan?', 'status?', 'frecuencia?', 'notas?'],
+      description: 'Editar cliente · nombre, negocio, monto, plan, status, email, whatsapp, frecuencia, notas. Identifica por id o nombre parcial.',
+      parameters: ['id_o_nombre', 'nombre?', 'negocio?', 'monto?', 'plan?', 'status?', 'email?', 'whatsapp?', 'frecuencia?', 'notas?'],
       execute(args) {
         const clientes = Store.get(Store.KEYS.CLIENTES, []);
         let c = clientes.find(x => x.id === args.id_o_nombre);
-        if (!c) c = clientes.find(x => x.nombre.toLowerCase().includes((args.id_o_nombre || '').toLowerCase()));
+        if (!c) c = clientes.find(x => (x.nombre || '').toLowerCase().includes((args.id_o_nombre || '').toLowerCase()) || (x.negocio || '').toLowerCase().includes((args.id_o_nombre || '').toLowerCase()));
         if (!c) return { ok: false, msg: `Cliente "${args.id_o_nombre}" no encontrado` };
         const cambios = [];
         if (args.nombre) { cambios.push(`nombre: ${c.nombre} → ${args.nombre}`); c.nombre = args.nombre; }
+        if (args.negocio !== undefined) { cambios.push(`negocio: ${c.negocio || '—'} → ${args.negocio}`); c.negocio = args.negocio; }
         if (args.monto !== undefined) { cambios.push(`monto: $${c.monto} → $${args.monto}`); c.monto = args.monto; }
         if (args.plan) { cambios.push(`plan: ${c.plan} → ${args.plan}`); c.plan = args.plan; }
         if (args.status) { cambios.push(`status: ${c.status} → ${args.status}`); c.status = args.status; }
+        if (args.email !== undefined) c.email = args.email;
+        if (args.whatsapp !== undefined) c.whatsapp = args.whatsapp;
         if (args.frecuencia) { cambios.push(`frecuencia: ${c.frecuencia} → ${args.frecuencia}`); c.frecuencia = args.frecuencia; }
         if (args.notas !== undefined) c.notas = args.notas;
         Store.set(Store.KEYS.CLIENTES, clientes);
-        return { ok: true, msg: `Cliente "${c.nombre}" actualizado · ${cambios.join(' · ')}`, data: c };
+        return { ok: true, msg: `Cliente "${c.negocio || c.nombre}" actualizado · ${cambios.join(' · ')}`, data: c };
       }
     },
 
@@ -1905,10 +1946,10 @@ const UI = {
   renderBottomNav(active) {
     const items = [
       { key: 'mando', label: 'Mando', href: 'index.html', icon: '<path d="M12 2L2 9l2 1v9h6v-6h4v6h6v-9l2-1L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>' },
-      { key: 'calendario', label: 'Calend', href: 'calendario.html', icon: '<rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3 9h18" stroke="currentColor" stroke-width="1.5"/>' },
       { key: 'finanzas', label: 'Finanzas', href: 'finanzas.html', icon: '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="1.5" fill="none"/>' },
       { key: 'musica', label: 'Música', href: 'musica.html', icon: '<path d="M9 18V5l12-2v13" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>' },
-      { key: 'cuidado', label: 'Cuidado', href: 'cuidado.html', icon: '<path d="M12 21s-7-4.35-7-10a5 5 0 019-3 5 5 0 019 3c0 5.65-7 10-7 10z" stroke="currentColor" stroke-width="1.5" fill="none"/>' }
+      { key: 'cuidado', label: 'Cuidado', href: 'cuidado.html', icon: '<path d="M12 21s-7-4.35-7-10a5 5 0 019-3 5 5 0 019 3c0 5.65-7 10-7 10z" stroke="currentColor" stroke-width="1.5" fill="none"/>' },
+      { key: 'mente', label: 'Mente', href: 'mente.html', icon: '<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2.1 2.1M16.9 16.9L19 19M5 19l2.1-2.1M16.9 7.1L19 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' }
     ];
     return `<nav class="bottom-nav">${items.map(i => `
       <a href="${i.href}" class="bottom-nav-item ${active === i.key ? 'active' : ''}">

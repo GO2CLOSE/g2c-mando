@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0F1419">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mando">
 <title>Finanzas · Mando</title>
@@ -45,7 +46,7 @@
 (async function init() {
   if (!Auth.enforce()) return;
   document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
-  document.getElementById('chat-input-host').innerHTML = UI.renderChatInput('Pregunta o registra movimiento...');
+  // REMOVIDO v1.8: chat unificado en Mando · UI.renderChatInput('Pregunta o registra movimiento...');
   document.getElementById('footer-host').innerHTML = UI.renderFooter();
   document.getElementById('nav-host').innerHTML = UI.renderBottomNav('finanzas');
 
@@ -58,7 +59,7 @@
   });
 
   renderTab('resumen');
-  UI.bindChatInput(handleChatMessage);
+  // REMOVIDO v1.8: UI.bindChatInput(handleChatMessage);
 })();
 
 function renderTab(tab) {
@@ -1691,7 +1692,136 @@ function eliminarObjetivo(id) {
 }
 
 function agregarCliente() {
-  UI.toast('Form de cliente · próx versión · usa el chat: "agrega cliente X plan total"', 'info');
+  // Cerrar modal si ya existe
+  document.querySelectorAll('.g2c-modal-backdrop').forEach(m => m.remove());
+
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-cliente-nuevo';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()" style="max-width:520px;">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot" style="background:#FF4F00;"></div><div class="label">Nuevo cliente G2C</div></div>
+      <div class="g2c-modal-title">Crear cliente</div>
+
+      <div class="form-field">
+        <div class="field-label">NOMBRE DEL CLIENTE</div>
+        <input type="text" class="field-input" id="cli-nombre" placeholder="Ej: Alan Ramírez" autocomplete="off" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">NEGOCIO</div>
+        <input type="text" class="field-input" id="cli-negocio" placeholder="Ej: NEOS Regenerative Clinic" autocomplete="off" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">TIER</div>
+        <div class="g2c-quick-grid" style="grid-template-columns:repeat(3,1fr);" id="cli-tier-grid">
+          <button type="button" class="g2c-quick-btn" data-tier="visor" data-monto="7000">
+            <div style="font-weight:600;">Visor</div>
+            <div style="font-size:9px;color:rgba(244,243,239,0.55);margin-top:1px;">$7K/mes</div>
+          </button>
+          <button type="button" class="g2c-quick-btn active" data-tier="parcial" data-monto="12000">
+            <div style="font-weight:600;">Parcial</div>
+            <div style="font-size:9px;color:rgba(244,243,239,0.55);margin-top:1px;">$12K/mes</div>
+          </button>
+          <button type="button" class="g2c-quick-btn" data-tier="total" data-monto="16000">
+            <div style="font-weight:600;">Total</div>
+            <div style="font-size:9px;color:rgba(244,243,239,0.55);margin-top:1px;">$16K/mes</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">IMPORTE MENSUAL ($)</div>
+        <input type="number" class="field-input" id="cli-monto" value="12000" placeholder="12000" inputmode="numeric" style="font-size:16px !important;">
+        <div style="font-size:10px;color:rgba(244,243,239,0.45);margin-top:4px;">Tap en tier ajusta el monto · puedes editarlo manual</div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">CORREO ELECTRÓNICO</div>
+        <input type="email" class="field-input" id="cli-email" placeholder="cliente@dominio.com" autocomplete="off" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">TELÉFONO WHATSAPP</div>
+        <input type="tel" class="field-input" id="cli-whats" placeholder="+52 664 123 4567" inputmode="tel" autocomplete="off" style="font-size:16px !important;">
+      </div>
+
+      <div style="background:rgba(180,220,170,0.06);border:0.5px solid rgba(180,220,170,0.2);border-radius:8px;padding:9px 11px;font-size:10px;color:rgba(180,220,170,0.95);margin-top:10px;line-height:1.4;">
+        Al crear: se genera cobro recurrente mensual + ficha del cliente. Puedes generar liga de cobro después desde la card.
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalClienteNuevo()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarClienteNuevo()">Crear cliente</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalClienteNuevo);
+  document.body.appendChild(modal);
+
+  // Tier toggle · sincroniza monto
+  modal.querySelectorAll('[data-tier]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      modal.querySelectorAll('[data-tier]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('cli-monto').value = btn.dataset.monto;
+    });
+  });
+}
+
+function cerrarModalClienteNuevo() {
+  const m = document.getElementById('modal-cliente-nuevo');
+  if (m) m.remove();
+}
+
+function guardarClienteNuevo() {
+  const nombre = document.getElementById('cli-nombre').value.trim();
+  const negocio = document.getElementById('cli-negocio').value.trim();
+  const monto = parseFloat(document.getElementById('cli-monto').value) || 0;
+  const email = document.getElementById('cli-email').value.trim();
+  const whats = document.getElementById('cli-whats').value.trim();
+  const tierBtn = document.querySelector('#cli-tier-grid .active');
+  const tier = tierBtn ? tierBtn.dataset.tier : 'parcial';
+  const planNombre = tier === 'visor' ? 'Visor' : tier === 'total' ? 'Total' : 'Parcial';
+
+  if (!nombre) return UI.toast('Falta nombre del cliente', 'error');
+  if (!negocio) return UI.toast('Falta nombre del negocio', 'error');
+  if (!monto || monto <= 0) return UI.toast('Monto inválido', 'error');
+
+  // Crear cliente
+  const r = Actions.execute('crear_cliente', {
+    nombre,
+    negocio,
+    plan: planNombre,
+    monto,
+    email,
+    whatsapp: whats,
+    status: 'activo'
+  });
+
+  if (!r.ok) return UI.toast(r.msg || 'Error creando cliente', 'error');
+
+  // Auto-generar cobro recurrente mensual
+  if (typeof Recurrentes !== 'undefined') {
+    try {
+      Recurrentes.crearCobro({
+        cliente_nombre: negocio || nombre,
+        concepto: `${planNombre} · ${negocio}`,
+        monto,
+        fecha_inicio: Date.now() + 30 * 86400000, // Siguiente cobro en 30 días
+        frecuencia: 'mensual'
+      });
+    } catch (e) {
+      console.warn('No se pudo crear cobro recurrente:', e);
+    }
+  }
+
+  UI.toast(`Cliente "${negocio || nombre}" creado · cobro recurrente $${monto.toLocaleString()} activo`, 'success');
+  cerrarModalClienteNuevo();
+  renderTab(document.querySelector('.tab.active').dataset.tab);
 }
 
 // ============================================================

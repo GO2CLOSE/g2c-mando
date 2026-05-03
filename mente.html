@@ -5,113 +5,80 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0F1419">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mando">
-<title>Cuerpo + Mente · Mando</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="apple-mobile-web-app-title" content="Mente">
+<title>Mente · Mando</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
-.food-card {
-  background: rgba(244,243,239,0.025);
-  border: 0.5px solid var(--border-soft);
-  border-radius: 11px;
-  padding: 12px;
-  margin-bottom: 6px;
-}
-.food-name { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
-.food-reason { font-size: 10px; color: var(--text-tertiary); line-height: 1.5; }
-.food-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
-.food-tag { font-size: 8px; background: rgba(180,220,170,0.1); border: 0.5px solid rgba(180,220,170,0.25); color: rgba(180,220,170,0.95); padding: 2px 6px; border-radius: 3px; letter-spacing: 0.04em; text-transform: uppercase; }
-
-.ejercicio-day {
-  background: rgba(244,243,239,0.025);
-  border: 0.5px solid var(--border-soft);
-  border-radius: 11px;
-  padding: 12px;
-  margin-bottom: 6px;
-  display: flex;
-  gap: 11px;
-}
-.ejercicio-dia-label {
-  width: 48px;
-  flex-shrink: 0;
-  font-size: 10px;
-  color: rgba(255,150,80,0.95);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.ejercicio-foco { font-size: 11px; font-weight: 500; margin-bottom: 3px; }
-.ejercicio-detalle { font-size: 10px; color: var(--text-tertiary); line-height: 1.5; }
-
-.ocio-card {
-  background: rgba(180,220,170,0.04);
-  border: 0.5px solid rgba(180,220,170,0.2);
-  border-radius: 11px;
-  padding: 13px;
-  margin-bottom: 8px;
-}
-.ocio-name { font-size: 13px; font-weight: 500; margin-bottom: 4px; color: rgba(200,230,200,0.95); }
-.ocio-desc { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; }
-
-.proy-result {
-  background: rgba(255,79,0,0.05);
-  border: 0.5px solid rgba(255,79,0,0.25);
-  border-radius: 12px;
-  padding: 14px;
-  margin: 12px 0;
-}
-.proy-meta { font-size: 9px; color: rgba(255,150,80,0.95); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
-.proy-value { font-size: 24px; font-weight: 500; color: rgba(255,170,110,0.95); }
-.proy-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
-
-.escenario-card {
-  background: rgba(244,243,239,0.025);
-  border: 0.5px solid var(--border-soft);
-  border-radius: 9px;
-  padding: 11px;
-  margin-bottom: 6px;
-}
+.estado-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
+.estado-btn { background: rgba(244,243,239,0.03); border: 0.5px solid var(--border-soft); border-radius: 11px; padding: 12px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+.estado-btn.selected { background: rgba(255,79,0,0.15); border-color: rgba(255,79,0,0.5); }
+.estado-emoji { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+.estado-label { font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(244,243,239,0.7); }
+.estado-btn.selected .estado-label { color: rgba(255,170,110,0.98); font-weight: 500; }
+.patron-card { background: rgba(150,210,230,0.05); border: 0.5px solid rgba(150,210,230,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+.patron-eyebrow { font-size: 9px; color: rgba(150,210,230,0.95); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; margin-bottom: 6px; }
+.patron-text { font-size: 12px; color: var(--text-primary); line-height: 1.55; }
+.estrategia-card { background: rgba(180,220,170,0.04); border: 0.5px solid rgba(180,220,170,0.18); border-radius: 11px; padding: 11px 13px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.estrategia-nombre { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+.estrategia-meta { font-size: 10px; color: rgba(244,243,239,0.55); }
+.efectividad-bar { width: 60px; height: 4px; background: rgba(244,243,239,0.08); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+.efectividad-fill { height: 100%; background: linear-gradient(90deg, rgba(180,220,170,0.85), rgba(120,200,220,0.85)); border-radius: 2px; }
+.energia-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.energia-card { background: rgba(244,243,239,0.03); border: 0.5px solid var(--border-soft); border-radius: 12px; padding: 12px; }
+.energia-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(244,243,239,0.55); margin-bottom: 6px; }
+.energia-value { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.energia-meta { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
+.reflexion-prompt { background: linear-gradient(135deg, rgba(255,79,0,0.08), rgba(255,79,0,0.02)); border: 0.5px solid rgba(255,79,0,0.25); border-radius: 14px; padding: 14px 15px; margin-bottom: 10px; }
+.reflexion-eyebrow { font-size: 9px; color: rgba(255,170,110,0.95); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; margin-bottom: 8px; }
+.reflexion-text { font-size: 14px; font-family: 'DM Serif Display', serif; font-weight: 400; line-height: 1.4; color: var(--text-primary); letter-spacing: -0.01em; }
+.journal-textarea { width: 100%; background: rgba(244,243,239,0.03); border: 0.5px solid var(--border-soft); border-radius: 11px; padding: 12px 14px; font-family: inherit; font-size: 14px; color: var(--text-primary); resize: vertical; min-height: 110px; outline: none; box-sizing: border-box; line-height: 1.55; }
+.journal-textarea:focus { border-color: rgba(255,79,0,0.4); box-shadow: 0 0 0 3px rgba(255,79,0,0.06); }
 </style>
 </head>
 <body>
 
 <div id="status-bar"></div>
 
-<header class="module-header">
-  <div class="module-eyebrow">
-    <div class="dot" style="background:rgba(180,220,170,1);"></div>
-    <div class="label" style="color:rgba(200,230,200,0.85);">Cuerpo · mente · ocio</div>
+<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+  <div style="display:flex;align-items:center;gap:11px;">
+    <div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(180,220,170,0.18),rgba(120,200,220,0.12));border:0.5px solid rgba(180,220,170,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="3" stroke="rgba(180,220,170,0.95)" stroke-width="1.5"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2.1 2.1M16.9 16.9L19 19M5 19l2.1-2.1M16.9 7.1L19 5" stroke="rgba(180,220,170,0.95)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div style="font-size:9px;color:rgba(180,220,170,0.85);letter-spacing:0.18em;text-transform:uppercase;font-weight:500;">Mente</div>
+      <div style="font-family:'DM Serif Display', serif;font-size:24px;font-weight:400;letter-spacing:-0.02em;">Cómo estás</div>
+    </div>
   </div>
-  <div class="module-title">Tu sistema personal</div>
-  <div class="module-subtitle">Alimentos · ejercicio · vicios con enfoque · proyecciones</div>
 </header>
 
-<div class="tab-row">
-  <div class="tab active" data-tab="cuerpo">Cuerpo</div>
-  <div class="tab" data-tab="ejercicio">Ejercicio</div>
-  <div class="tab" data-tab="ocio">Ocio</div>
-  <div class="tab" data-tab="proyecciones">Proyecciones</div>
+<div class="tabs">
+  <div class="tab active" data-tab="estado">Estado</div>
+  <div class="tab" data-tab="patrones">Patrones</div>
+  <div class="tab" data-tab="estrategias">Estrategias</div>
+  <div class="tab" data-tab="reflexion">Reflexión</div>
 </div>
 
-<div id="content" style="margin-top:14px;"></div>
+<div id="tab-content"></div>
 
 <div id="footer-host"></div>
 <div id="nav-host"></div>
 
 <script src="shared.js"></script>
 <script>
-(async function init() {
+(function init() {
   if (!Auth.enforce()) return;
   document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
   document.getElementById('footer-host').innerHTML = UI.renderFooter();
-  document.getElementById('nav-host').innerHTML = UI.renderBottomNav('mando');
+  document.getElementById('nav-host').innerHTML = UI.renderBottomNav('mente');
 
-  bindTabs();
-  renderTab('cuerpo');
-})();
-
-function bindTabs() {
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
@@ -119,248 +86,286 @@ function bindTabs() {
       renderTab(t.dataset.tab);
     });
   });
+  renderTab('estado');
+})();
+
+const MENTE_KEY = 'alan_mando_mente_state';
+function getMenteState() {
+  return Store.get(MENTE_KEY, {
+    estados_diarios: [],
+    estrategias: [
+      { id: 'sw1', nombre: 'Swimming 30 min AM', categoria: 'físico', efectividad: 0.85, contexto: 'estrés cierre mes', usos: 0 },
+      { id: 'mu1', nombre: 'Ensayo musical 2hrs', categoria: 'creativo', efectividad: 0.92, contexto: 'reset emocional post-laboral', usos: 0 },
+      { id: 'pa1', nombre: 'Caminar con Pepe 20 min', categoria: 'físico', efectividad: 0.7, contexto: 'desconectar entre tareas', usos: 0 },
+      { id: 'me1', nombre: 'Meditación 10 min app', categoria: 'mental', efectividad: 0.55, contexto: 'TDAH AM', usos: 0 },
+      { id: 'pi1', nombre: 'Piscina larga sábado', categoria: 'físico', efectividad: 0.95, contexto: 'fin de semana reset', usos: 0 }
+    ],
+    journal: []
+  });
 }
+function setMenteState(s) { Store.set(MENTE_KEY, s); }
 
 function renderTab(tab) {
-  const c = document.getElementById('content');
-  switch (tab) {
-    case 'cuerpo': c.innerHTML = renderCuerpo(); break;
-    case 'ejercicio': c.innerHTML = renderEjercicio(); break;
-    case 'ocio': c.innerHTML = renderOcio(); break;
-    case 'proyecciones': c.innerHTML = renderProyecciones(); bindProyecciones(); break;
-  }
+  const c = document.getElementById('tab-content');
+  if (tab === 'estado') return renderEstado(c);
+  if (tab === 'patrones') return renderPatrones(c);
+  if (tab === 'estrategias') return renderEstrategias(c);
+  if (tab === 'reflexion') return renderReflexion(c);
 }
 
-// ============================================================
-// CUERPO · alimentos seguros curados
-// ============================================================
-function renderCuerpo() {
-  const profile = Body.PROFILE;
-  const alimentos = Body.ALIMENTOS_SEGUROS;
+function renderEstado(c) {
+  const s = getMenteState();
+  const hoy = new Date().toISOString().slice(0, 10);
+  const yaCheckIn = s.estados_diarios.find(e => e.fecha === hoy);
 
-  let html = `
-    <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:12px;padding:13px;margin-bottom:14px;">
-      <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">tu contexto · usado por toda sugerencia</div>
-      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">
-        ${profile.condiciones.join(' · ')}<br>
-        Medicación: ${profile.medicacion.join(' · ')}<br>
-        Evitar: ${profile.no_tolera.join(' · ')}
-      </div>
-    </div>
-  `;
-
-  const secciones = [
-    { key: 'desayuno', label: 'desayunos · arrancan bien con Ritalin' },
-    { key: 'comida', label: 'comidas · sin picante, igual de ricas' },
-    { key: 'cena', label: 'cenas · ligeras para dormir bien' },
-    { key: 'snacks', label: 'snacks · evitan picos glucémicos' },
-    { key: 'cafe_alternativas', label: 'café · alternativas que no te crashan' }
+  const estados = [
+    { key: 'inspirado', label: 'Inspirado', color: '#FF7A00', emoji: '◆' },
+    { key: 'bien', label: 'Bien', color: '#7AC68A', emoji: '●' },
+    { key: 'neutro', label: 'Neutro', color: '#8A9CA8', emoji: '○' },
+    { key: 'cansado', label: 'Cansado', color: '#D4A574', emoji: '◐' },
+    { key: 'denso', label: 'Denso', color: '#C56A6A', emoji: '◑' }
   ];
 
-  secciones.forEach(s => {
-    html += `
-      <div class="section-eyebrow"><div><div class="label">${s.label}</div></div></div>
-      <div style="margin-bottom:14px;">
-        ${alimentos[s.key].map(a => `
-          <div class="food-card">
-            <div class="food-name">${Util.esc(a.nombre)}</div>
-            <div class="food-reason">${Util.esc(a.razon)}</div>
-            <div class="food-tags">${a.tags.map(t => `<div class="food-tag">${t}</div>`).join('')}</div>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  });
+  const ultimos7 = s.estados_diarios.slice(-7);
+  const counts = { inspirado: 0, bien: 0, neutro: 0, cansado: 0, denso: 0 };
+  ultimos7.forEach(e => { counts[e.estado] = (counts[e.estado] || 0) + 1; });
+  const dominante = Object.entries(counts).sort(([,a],[,b]) => b - a)[0];
 
-  html += `
-    <div style="background:rgba(255,79,0,0.04);border:0.5px solid rgba(255,79,0,0.25);border-radius:12px;padding:13px;margin-top:8px;">
-      <div style="font-size:9px;color:rgba(255,150,80,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">evitar · disparadores conocidos</div>
-      ${alimentos.evitar.map(e => `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:4px;">· ${Util.esc(e)}</div>`).join('')}
+  c.innerHTML = `
+    <div class="reflexion-prompt">
+      <div class="reflexion-eyebrow">CHECK-IN DEL DÍA</div>
+      <div class="reflexion-text">${yaCheckIn ? '¿Cambió algo desde tu check-in?' : '¿Cómo estás entrando al día?'}</div>
     </div>
-  `;
-
-  return html;
-}
-
-// ============================================================
-// EJERCICIO · rutina con motivación TDAH/TOC
-// ============================================================
-function renderEjercicio() {
-  const ej = Body.EJERCICIO;
-
-  let html = `
-    <div style="background:rgba(180,220,170,0.04);border:0.5px solid rgba(180,220,170,0.2);border-radius:12px;padding:13px;margin-bottom:14px;">
-      <div style="font-size:9px;color:rgba(200,230,200,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">tu plan semanal · gym casa + Pepe + natación</div>
-      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">
-        Diseñado para tu perfil: 30 min máx por sesión · ritmo TDAH-friendly · usa el TOC a tu favor (rutina rígida = ventaja).
-      </div>
-    </div>
-  `;
-
-  ej.gym_casa_30min.forEach(d => {
-    html += `
-      <div class="ejercicio-day">
-        <div class="ejercicio-dia-label">${d.dia.slice(0, 3)}</div>
-        <div style="flex:1;">
-          <div class="ejercicio-foco">${Util.esc(d.foco)}</div>
-          <div class="ejercicio-detalle">${Util.esc(d.ejercicios)}</div>
-        </div>
-      </div>
-    `;
-  });
-
-  html += `
-    <div class="section-eyebrow" style="margin-top:18px;"><div><div class="label">motivación · cuando no haya ganas</div></div></div>
-    <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:12px;padding:13px;">
-      ${Object.entries(ej.motivacion).map(([k, v]) => `
-        <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:0.5px solid rgba(244,243,239,0.05);">
-          <div style="font-size:9px;color:rgba(255,150,80,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:4px;">${k}</div>
-          <div style="font-size:12px;color:var(--text-secondary);line-height:1.55;">${Util.esc(v)}</div>
+    <div class="estado-grid">
+      ${estados.map(e => `
+        <div class="estado-btn ${yaCheckIn?.estado === e.key ? 'selected' : ''}" data-estado="${e.key}">
+          <div class="estado-emoji" style="background:${e.color}22;color:${e.color};">${e.emoji}</div>
+          <div class="estado-label">${e.label}</div>
         </div>
       `).join('')}
     </div>
-  `;
+    <div class="form-field">
+      <div class="field-label">NOTA RÁPIDA (opcional)</div>
+      <textarea class="journal-textarea" id="estado-nota" placeholder="¿Qué pasa hoy? Una línea basta..." style="min-height:60px;font-size:14px;">${yaCheckIn?.nota || ''}</textarea>
+    </div>
+    <button class="btn primary-orange" style="width:100%;margin-top:8px;" id="btn-guardar-estado">${yaCheckIn ? 'Actualizar check-in' : 'Registrar check-in'}</button>
 
-  return html;
-}
-
-// ============================================================
-// OCIO · vicios con enfoque
-// ============================================================
-function renderOcio() {
-  const acts = Ocio.ACTIVIDADES;
-
-  let html = `
-    <div style="background:rgba(180,220,170,0.04);border:0.5px solid rgba(180,220,170,0.2);border-radius:12px;padding:13px;margin-bottom:14px;">
-      <div style="font-size:9px;color:rgba(200,230,200,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">disfrutar · pero con conciencia</div>
-      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">
-        No son juegos · es darle dirección a lo que ya disfrutas. Trackear gastos en marihuana se hace solo: cualquier movimiento con la palabra "marihuana" se marca con icono verde en el listado.
+    <div class="section-eyebrow" style="margin-top:18px;">
+      <div>
+        <div class="label" style="color:rgba(244,243,239,0.55);">tu semana</div>
+        <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">${ultimos7.length} de 7 check-ins</div>
       </div>
     </div>
+
+    ${ultimos7.length ? `
+      <div class="energia-grid">
+        <div class="energia-card">
+          <div class="energia-label">DOMINANTE 7D</div>
+          <div class="energia-value" style="text-transform:capitalize;">${dominante[0]}</div>
+          <div class="energia-meta">${dominante[1]} de ${ultimos7.length} días</div>
+        </div>
+        <div class="energia-card">
+          <div class="energia-label">CONSISTENCIA</div>
+          <div class="energia-value">${Math.round((ultimos7.length / 7) * 100)}%</div>
+          <div class="energia-meta">check-ins esta semana</div>
+        </div>
+      </div>
+    ` : `
+      <div style="text-align:center;padding:24px 12px;color:var(--text-tertiary);font-size:12px;">
+        Sin check-ins · empieza hoy para que Mente aprenda tus patrones
+      </div>
+    `}
   `;
 
-  Object.entries(acts).forEach(([key, act]) => {
-    html += `
-      <div class="ocio-card">
-        <div class="ocio-name">${Util.esc(act.nombre)}</div>
-        <div class="ocio-desc">${Util.esc(act.descripcion)}</div>
-        ${act.sugerencias.map(s => `
-          <div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:5px;">
-            <div style="color:rgba(180,220,170,0.7);font-size:14px;line-height:1;flex-shrink:0;">·</div>
-            <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;">${Util.esc(s)}</div>
-          </div>
-        `).join('')}
-      </div>
-    `;
+  c.querySelectorAll('.estado-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      c.querySelectorAll('.estado-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
   });
 
-  return html;
+  document.getElementById('btn-guardar-estado').addEventListener('click', () => {
+    const selected = c.querySelector('.estado-btn.selected');
+    if (!selected) return UI.toast('Selecciona un estado primero', 'error');
+    const estado = selected.dataset.estado;
+    const nota = document.getElementById('estado-nota').value.trim();
+    const state = getMenteState();
+    state.estados_diarios = state.estados_diarios.filter(e => e.fecha !== hoy);
+    state.estados_diarios.push({ fecha: hoy, estado, nota, ts: Date.now() });
+    if (state.estados_diarios.length > 90) state.estados_diarios = state.estados_diarios.slice(-90);
+    setMenteState(state);
+    UI.toast('Check-in registrado · Mente aprende de ti', 'success');
+    renderEstado(c);
+  });
 }
 
-// ============================================================
-// PROYECCIONES FINANCIERAS
-// ============================================================
-function renderProyecciones() {
-  return `
-    <div style="background:rgba(244,213,128,0.06);border:0.5px solid rgba(244,213,128,0.25);border-radius:12px;padding:13px;margin-bottom:14px;">
-      <div style="font-size:9px;color:rgba(244,213,128,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">qué quieres lograr</div>
-      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:11px;">
-        Pon una meta económica · Mando cruza tu MRR + tocadas + gastos y te dice cuántos meses tomaría · qué escenarios la aceleran.
-      </div>
+function renderPatrones(c) {
+  const s = getMenteState();
+  const pendientes = Store.get(Store.KEYS.PENDIENTES, []).filter(p => !p.done);
+  const ultimos14 = s.estados_diarios.slice(-14);
+  const denses = ultimos14.filter(e => e.estado === 'denso' || e.estado === 'cansado').length;
+  const positivos = ultimos14.filter(e => e.estado === 'bien' || e.estado === 'inspirado').length;
 
-      <div class="form-field" style="margin-bottom:10px;">
-        <div class="field-label">META MONETARIA ($)</div>
-        <input type="number" class="field-input" id="proy-meta" placeholder="Ej: 350000 (para un Mazda CX-5)" style="font-size:16px !important;">
-      </div>
+  const patrones = [];
+  if (denses >= 5) patrones.push({ eyebrow: 'CARGA OPERATIVA ALTA', text: `${denses} de tus últimos 14 días los reportaste como cansado o denso. Cuando esto pasa, tus estrategias de "swimming AM" y "ensayo musical" históricamente bajaron tu carga 30%. Considera bloquearlas en agenda.` });
+  if (pendientes.length >= 5 && ultimos14.some(e => e.estado === 'denso')) patrones.push({ eyebrow: 'PENDIENTES ACUMULADOS', text: `Tienes ${pendientes.length} pendientes activos. Tu cabeza carga peso de cosas no hechas, no de cosas difíciles. Cierra 2 de los más viejos hoy aunque sean pequeños · alivio inmediato.` });
+  if (ultimos14.length < 5) patrones.push({ eyebrow: 'POCA SEÑAL', text: `Solo ${ultimos14.length} check-ins en últimos 14 días. Mente necesita data para ayudarte · 1 tap diario es suficiente, toma 5 segundos.` });
+  if (positivos >= 7) patrones.push({ eyebrow: 'RACHA POSITIVA', text: `${positivos} de últimos 14 días en bien/inspirado. Lo que sea que estás haciendo, sigue · documenta qué cambió en tu rutina para replicarlo.` });
+  if (patrones.length === 0) patrones.push({ eyebrow: 'EN APRENDIZAJE', text: 'Necesito 7+ check-ins continuos para empezar a detectar patrones. Mantén el hábito · pronto verás correlaciones útiles.' });
 
-      <div class="form-field">
-        <div class="field-label">¿CUÁNTO YA TIENES AHORRADO?</div>
-        <input type="number" class="field-input" id="proy-actual" placeholder="0" style="font-size:16px !important;">
+  c.innerHTML = `
+    <div class="section-eyebrow" style="margin-top:0;">
+      <div>
+        <div class="label" style="color:rgba(150,210,230,0.85);">patrones que detecto</div>
+        <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">cruzo finanzas · pendientes · estado</div>
       </div>
-
-      <button class="btn primary-orange full" onclick="calcularProyeccion()" style="margin-top:10px;">Calcular proyección</button>
     </div>
+    ${patrones.map(p => `
+      <div class="patron-card">
+        <div class="patron-eyebrow">${p.eyebrow}</div>
+        <div class="patron-text">${p.text}</div>
+      </div>
+    `).join('')}
 
-    <div id="proy-output"></div>
+    <div class="section-eyebrow" style="margin-top:18px;">
+      <div><div class="label" style="color:rgba(244,243,239,0.55);">contexto que entiendo</div></div>
+    </div>
+    <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px 15px;font-size:11px;line-height:1.7;color:var(--text-primary);">
+      <div><strong>TDAH</strong> · necesitas Ritalin AM para regulación · sin dosis, día denso garantizado</div>
+      <div><strong>TOC</strong> · perfeccionismo aumenta cuando hay 3+ pendientes acumulados</div>
+      <div><strong>Estrés crónico</strong> · ciclo de venta &gt;45 días dispara cortisol · cortar es estrategia</div>
+      <div><strong>Reset musical</strong> · 1 tocada o ensayo por semana baseline · &lt; eso = irritabilidad</div>
+      <div><strong>Pepe</strong> · caminar con tu perro 20 min = mejor ROI emocional/tiempo</div>
+    </div>
   `;
 }
 
-function bindProyecciones() {
-  // ya bindado en HTML
+function renderEstrategias(c) {
+  const s = getMenteState();
+  const sorted = [...s.estrategias].sort((a, b) => b.efectividad - a.efectividad);
+
+  c.innerHTML = `
+    <div class="section-eyebrow" style="margin-top:0;">
+      <div>
+        <div class="label" style="color:rgba(180,220,170,0.85);">estrategias validadas</div>
+        <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">marca la que usaste hoy · sube efectividad</div>
+      </div>
+    </div>
+    ${sorted.map(e => `
+      <div class="estrategia-card">
+        <div style="flex:1;">
+          <div class="estrategia-nombre">${Util.esc(e.nombre)}</div>
+          <div class="estrategia-meta">${Util.esc(e.contexto)} · ${e.usos} usos</div>
+          <div class="efectividad-bar"><div class="efectividad-fill" style="width:${Math.round(e.efectividad * 100)}%;"></div></div>
+        </div>
+        <button class="btn" data-estrategia-id="${e.id}" style="font-size:10px;padding:6px 10px;flex-shrink:0;">Usé hoy</button>
+      </div>
+    `).join('')}
+
+    <div class="section-eyebrow" style="margin-top:18px;">
+      <div><div class="label" style="color:rgba(244,243,239,0.55);">agregar estrategia</div></div>
+    </div>
+    <div class="form-field">
+      <div class="field-label">NOMBRE</div>
+      <input type="text" class="field-input" id="est-nombre" placeholder="Ej: Caminar 30 min al atardecer" style="font-size:16px !important;">
+    </div>
+    <div class="form-field">
+      <div class="field-label">CUÁNDO LA USAS</div>
+      <input type="text" class="field-input" id="est-contexto" placeholder="Ej: cuando termino día laboral pesado" style="font-size:16px !important;">
+    </div>
+    <button class="btn primary-orange" style="width:100%;" id="btn-add-estrategia">Agregar estrategia</button>
+  `;
+
+  c.querySelectorAll('[data-estrategia-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const state = getMenteState();
+      const e = state.estrategias.find(x => x.id === btn.dataset.estrategiaId);
+      if (e) {
+        e.usos++;
+        e.efectividad = Math.min(1, e.efectividad + 0.02);
+        setMenteState(state);
+        UI.toast(`${e.nombre} · marcada · efectividad ${Math.round(e.efectividad * 100)}%`, 'success');
+        renderEstrategias(c);
+      }
+    });
+  });
+
+  document.getElementById('btn-add-estrategia').addEventListener('click', () => {
+    const nombre = document.getElementById('est-nombre').value.trim();
+    const contexto = document.getElementById('est-contexto').value.trim();
+    if (!nombre) return UI.toast('Falta nombre', 'error');
+    const state = getMenteState();
+    state.estrategias.push({
+      id: 'est_' + Date.now(),
+      nombre,
+      categoria: 'custom',
+      contexto: contexto || 'sin contexto',
+      efectividad: 0.5,
+      usos: 0,
+      createdAt: Date.now()
+    });
+    setMenteState(state);
+    UI.toast('Estrategia agregada', 'success');
+    renderEstrategias(c);
+  });
 }
 
-function calcularProyeccion() {
-  const meta = parseFloat(document.getElementById('proy-meta').value) || 0;
-  const actual = parseFloat(document.getElementById('proy-actual').value) || 0;
+function renderReflexion(c) {
+  const s = getMenteState();
+  const journal = (s.journal || []).slice(-10).reverse();
 
-  if (!meta) {
-    UI.toast('Pon la meta primero', 'error');
-    return;
-  }
+  const prompts = [
+    '¿Qué te tiene la cabeza ocupada ahorita?',
+    '¿Qué decisión llevas postpuesta más de 3 días?',
+    '¿Qué pequeña cosa te haría sentir mejor en este momento?',
+    '¿De qué te vas a arrepentir si no actúas esta semana?',
+    '¿Qué te está costando energía y no vale la pena?',
+    '¿Qué te dió alegría real hoy (aunque sea chico)?',
+    '¿Qué patrón estás repitiendo y ya no te sirve?',
+    '¿Qué quisieras decir en voz alta pero no dices?'
+  ];
+  const prompt = prompts[Math.floor((Date.now() / 86400000) % prompts.length)];
 
-  const r = Proyecciones.calcular(meta, { ahorroActual: actual });
-  const out = document.getElementById('proy-output');
+  c.innerHTML = `
+    <div class="reflexion-prompt">
+      <div class="reflexion-eyebrow">PROMPT DE HOY</div>
+      <div class="reflexion-text">${prompt}</div>
+    </div>
+    <div class="form-field">
+      <div class="field-label">RESPONDE LIBRE</div>
+      <textarea class="journal-textarea" id="journal-text" placeholder="Sin filtro · sin formato · solo escribe..."></textarea>
+    </div>
+    <button class="btn primary-orange" style="width:100%;" id="btn-guardar-journal">Guardar reflexión</button>
 
-  let html = '';
-
-  if (!r.meses_a_meta || r.meses_a_meta < 0) {
-    html += `
-      <div class="proy-result" style="background:rgba(255,79,0,0.08);">
-        <div class="proy-meta">no factible al ritmo actual</div>
-        <div style="font-size:14px;color:rgba(255,170,110,0.95);font-weight:500;">Tus ingresos netos no permiten ahorrar para esta meta.</div>
-        <div class="proy-sub">Ingresos: ${Util.fmtMoney(r.ingreso_mensual_estimado)}/mes · Gastos: ${Util.fmtMoney(r.gastos_mensuales_estimado)}/mes</div>
-        <div class="proy-sub" style="margin-top:8px;">Necesitas reducir gastos o subir ingresos antes de proyectar.</div>
-      </div>
-    `;
-  } else {
-    const fechaLabel = r.fecha_estimada ? new Date(r.fecha_estimada).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : '';
-    html += `
-      <div class="proy-result">
-        <div class="proy-meta">a este ritmo · llegas en</div>
-        <div class="proy-value">${r.meses_a_meta} ${r.meses_a_meta === 1 ? 'mes' : 'meses'}</div>
-        <div class="proy-sub">Aprox: ${fechaLabel}</div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:0.5px solid rgba(255,79,0,0.15);">
-          <div>
-            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;">ingreso/mes</div>
-            <div style="font-size:13px;color:rgba(180,220,170,0.95);font-weight:500;margin-top:2px;">${Util.fmtMoney(r.ingreso_mensual_estimado)}</div>
-          </div>
-          <div>
-            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;">ahorro/mes</div>
-            <div style="font-size:13px;color:rgba(150,210,230,0.95);font-weight:500;margin-top:2px;">${Util.fmtMoney(r.ahorro_mensual_disponible)}</div>
-          </div>
+    ${journal.length ? `
+      <div class="section-eyebrow" style="margin-top:18px;">
+        <div>
+          <div class="label" style="color:rgba(244,243,239,0.55);">últimas reflexiones</div>
+          <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">${journal.length} entradas · solo tú las ves</div>
         </div>
-
-        ${r.tip ? `<div style="background:rgba(255,213,80,0.08);border:0.5px solid rgba(244,213,128,0.25);border-radius:8px;padding:10px;margin-top:12px;font-size:11px;color:rgba(244,213,128,0.95);">⚠ ${Util.esc(r.tip)}</div>` : ''}
       </div>
-    `;
+      ${journal.map(j => `
+        <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:11px 13px;margin-bottom:6px;">
+          <div style="font-size:9px;color:rgba(244,243,239,0.5);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;">${Util.fmtDate(j.ts)}</div>
+          <div style="font-size:11px;color:rgba(244,243,239,0.85);line-height:1.55;font-style:italic;">"${Util.esc(j.text)}"</div>
+        </div>
+      `).join('')}
+    ` : ''}
+  `;
 
-    if (r.escenarios.length) {
-      html += `
-        <div class="section-eyebrow"><div><div class="label">escenarios para acelerar</div></div></div>
-      `;
-      r.escenarios.forEach(e => {
-        html += `
-          <div class="escenario-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div>
-                <div style="font-size:12px;font-weight:500;">${Util.esc(e.nombre)}</div>
-                <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">+${Util.fmtMoney(e.delta_mensual)}/mes</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:13px;font-weight:500;color:rgba(180,220,170,0.95);">${e.meses_resultado} meses</div>
-                <div style="font-size:9px;color:rgba(180,220,170,0.7);">ahorras ${e.ahorro_meses}m</div>
-              </div>
-            </div>
-          </div>
-        `;
-      });
-    }
-  }
-
-  out.innerHTML = html;
-  out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('btn-guardar-journal').addEventListener('click', () => {
+    const text = document.getElementById('journal-text').value.trim();
+    if (!text) return UI.toast('Escribe algo primero', 'error');
+    const state = getMenteState();
+    state.journal = state.journal || [];
+    state.journal.push({ ts: Date.now(), prompt, text });
+    if (state.journal.length > 200) state.journal = state.journal.slice(-200);
+    setMenteState(state);
+    UI.toast('Reflexión guardada · solo tú la ves', 'success');
+    renderReflexion(c);
+  });
 }
 </script>
+
 </body>
 </html>

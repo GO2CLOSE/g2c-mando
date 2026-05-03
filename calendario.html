@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0F1419">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mando">
 <title>Calendario · Mando</title>
@@ -67,12 +68,12 @@ let anioActual = new Date().getFullYear();
 (async function init() {
   if (!Auth.enforce()) return;
   document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
-  document.getElementById('chat-input-host').innerHTML = UI.renderChatInput('Pregunta sobre tu agenda...');
+  // REMOVIDO v1.8: chat unificado en Mando · UI.renderChatInput('Pregunta sobre tu agenda...');
   document.getElementById('footer-host').innerHTML = UI.renderFooter();
   document.getElementById('nav-host').innerHTML = UI.renderBottomNav('calendario');
 
   renderCalendario();
-  UI.bindChatInput(t => location.href = 'chat.html?msg=' + encodeURIComponent(t) + '&scope=calendario');
+  // REMOVIDO v1.8: UI.bindChatInput(t => location.href = 'chat.html?msg=' + encodeURIComponent(t) + '&scope=calendario');
 })();
 
 function cambiarMes(dir) {
