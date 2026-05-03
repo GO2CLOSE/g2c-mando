@@ -339,6 +339,24 @@ async function handleSend(text) {
           return;
         }
 
+        // Caso 0c: lista_visual → cards visuales en lugar de texto plano
+        if (b.name === 'lista_visual') {
+          const r = Actions.execute(b.name, b.args);
+          if (r.ok && r.data) {
+            cards.push({ type: 'lista_visual', ...r.data });
+          }
+          return;
+        }
+
+        // Caso 0d: tarjeta_resumen → big number destacado
+        if (b.name === 'tarjeta_resumen') {
+          const r = Actions.execute(b.name, b.args);
+          if (r.ok && r.data) {
+            cards.push({ type: 'resumen', ...r.data });
+          }
+          return;
+        }
+
         // Caso 1: la acción es "sugerir" → IA propone, generamos tarjeta de aprobación
         if (b.name === 'sugerir') {
           const r = Actions.execute(b.name, b.args);
@@ -512,6 +530,73 @@ function appendAIWithCards({ text, tone = 'operador', cards = [] }) {
         </div>
       `;
       wrap.style.cssText = 'margin: 4px 0 8px; max-width: 92%; align-self: flex-start;';
+    } else if (card.type === 'lista_visual') {
+      // Cards visuales tipo briefing · NO listas de texto plano
+      const c = card.color || '#FF4F00';
+      const itemsHtml = card.vacio ? `
+        <div style="padding: 14px 12px; text-align: center; color: rgba(244,243,239,0.45); font-size: 11px;">
+          Sin items · todo limpio
+        </div>
+      ` : card.items.map(it => `
+        <div onclick="${card.modulo_link ? `window.location.href='${card.modulo_link === 'pendientes' ? 'pendientes.html' : card.modulo_link === 'musica' ? 'musica.html' : card.modulo_link === 'finanzas_objetivos' ? 'finanzas.html?tab=objetivos' : 'finanzas.html'}'` : ''}" style="
+          padding: 10px 12px;
+          border-bottom: 0.5px solid rgba(244,243,239,0.05);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          ${card.modulo_link ? 'cursor: pointer; -webkit-tap-highlight-color: transparent;' : ''}
+        ">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 12px; font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+              ${it.urgente ? `<div style="width: 6px; height: 6px; background: ${c}; border-radius: 50%; flex-shrink: 0;"></div>` : ''}
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(it.principal)}</span>
+            </div>
+            ${it.secundario ? `<div style="font-size: 10px; color: rgba(244,243,239,0.5); margin-top: 2px;">${escapeHtml(it.secundario)}</div>` : ''}
+          </div>
+          ${it.tag ? `<div style="font-size: 10px; color: ${c}; font-weight: 500; flex-shrink: 0; font-variant-numeric: tabular-nums;">${escapeHtml(it.tag)}</div>` : ''}
+        </div>
+      `).join('');
+
+      wrap.innerHTML = `
+        <div style="
+          background: linear-gradient(135deg, ${c}11, ${c}03);
+          border: 0.5px solid ${c}33;
+          border-radius: 13px;
+          overflow: hidden;
+          margin: 4px 0 8px;
+        ">
+          <div style="padding: 11px 13px 9px; border-bottom: 0.5px solid ${c}1a;">
+            <div style="font-size: 9px; color: ${c}cc; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; margin-bottom: 4px;">${card.tipo}</div>
+            <div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">${escapeHtml(card.titulo)}</div>
+            ${card.subtitulo ? `<div style="font-size: 11px; color: rgba(244,243,239,0.55); margin-top: 2px;">${escapeHtml(card.subtitulo)}</div>` : ''}
+          </div>
+          ${itemsHtml}
+        </div>
+      `;
+      wrap.style.cssText = 'margin: 4px 0 8px; max-width: 92%; align-self: flex-start; width: 92%;';
+    } else if (card.type === 'resumen') {
+      // Big number destacado
+      const colors = {
+        orange: { bg: 'rgba(255,79,0,0.08)', border: 'rgba(255,79,0,0.3)', text: 'rgba(255,170,110,0.95)' },
+        green: { bg: 'rgba(180,220,170,0.06)', border: 'rgba(180,220,170,0.25)', text: 'rgba(180,220,170,0.95)' },
+        cyan: { bg: 'rgba(120,200,220,0.06)', border: 'rgba(120,200,220,0.3)', text: 'rgba(180,220,240,0.95)' },
+        red: { bg: 'rgba(255,100,100,0.06)', border: 'rgba(255,100,100,0.3)', text: 'rgba(255,160,160,0.95)' }
+      };
+      const col = colors[card.color] || colors.orange;
+      wrap.innerHTML = `
+        <div style="
+          background: ${col.bg};
+          border: 0.5px solid ${col.border};
+          border-radius: 13px;
+          padding: 13px 15px;
+        ">
+          <div style="font-size: 9px; color: ${col.text}; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; margin-bottom: 5px;">${escapeHtml(card.titulo)}</div>
+          <div style="font-size: 24px; font-weight: 500; color: var(--text-primary); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1;">${escapeHtml(card.valor)}</div>
+          ${card.contexto ? `<div style="font-size: 10px; color: rgba(244,243,239,0.55); margin-top: 4px;">${escapeHtml(card.contexto)}</div>` : ''}
+        </div>
+      `;
+      wrap.style.cssText = 'margin: 4px 0 8px; max-width: 92%; align-self: flex-start; width: 92%;';
     }
   });
 

@@ -11,40 +11,159 @@
 <title>Mente · Mando</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
-.estado-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
-.estado-btn { background: rgba(244,243,239,0.03); border: 0.5px solid var(--border-soft); border-radius: 11px; padding: 12px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
-.estado-btn.selected { background: rgba(255,79,0,0.15); border-color: rgba(255,79,0,0.5); }
-.estado-emoji { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+.mente-hero {
+  background: radial-gradient(circle at top right, rgba(180,220,170,0.08), rgba(120,200,220,0.04) 70%);
+  border: 0.5px solid rgba(180,220,170,0.18);
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.ring-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.ring-svg {
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 12px rgba(180,220,170,0.15));
+}
+.ring-content {
+  flex: 1;
+  min-width: 0;
+}
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 3px;
+  margin-top: 4px;
+}
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: rgba(244,243,239,0.04);
+  transition: transform 0.15s;
+}
+.heatmap-cell.l1 { background: rgba(180,220,170,0.25); }
+.heatmap-cell.l2 { background: rgba(180,220,170,0.5); }
+.heatmap-cell.l3 { background: rgba(180,220,170,0.75); }
+.heatmap-cell.l4 { background: rgba(180,220,170,1); }
+.heatmap-cell.cansado { background: rgba(212,165,116,0.7); }
+.heatmap-cell.denso { background: rgba(197,106,106,0.85); }
+.heatmap-cell.inspirado { background: rgba(255,122,0,0.9); }
+
+.estado-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.estado-btn { background: rgba(244,243,239,0.03); border: 0.5px solid var(--border-soft); border-radius: 12px; padding: 14px 4px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+.estado-btn.selected { background: rgba(255,79,0,0.15); border-color: rgba(255,79,0,0.5); transform: scale(1.03); }
+.estado-emoji { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
 .estado-label { font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(244,243,239,0.7); }
 .estado-btn.selected .estado-label { color: rgba(255,170,110,0.98); font-weight: 500; }
-.patron-card { background: rgba(150,210,230,0.05); border: 0.5px solid rgba(150,210,230,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
-.patron-eyebrow { font-size: 9px; color: rgba(150,210,230,0.95); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; margin-bottom: 6px; }
-.patron-text { font-size: 12px; color: var(--text-primary); line-height: 1.55; }
-.estrategia-card { background: rgba(180,220,170,0.04); border: 0.5px solid rgba(180,220,170,0.18); border-radius: 11px; padding: 11px 13px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.estrategia-nombre { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
-.estrategia-meta { font-size: 10px; color: rgba(244,243,239,0.55); }
-.efectividad-bar { width: 60px; height: 4px; background: rgba(244,243,239,0.08); border-radius: 2px; overflow: hidden; margin-top: 4px; }
-.efectividad-fill { height: 100%; background: linear-gradient(90deg, rgba(180,220,170,0.85), rgba(120,200,220,0.85)); border-radius: 2px; }
-.energia-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-.energia-card { background: rgba(244,243,239,0.03); border: 0.5px solid var(--border-soft); border-radius: 12px; padding: 12px; }
-.energia-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(244,243,239,0.55); margin-bottom: 6px; }
-.energia-value { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-.energia-meta { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
-.reflexion-prompt { background: linear-gradient(135deg, rgba(255,79,0,0.08), rgba(255,79,0,0.02)); border: 0.5px solid rgba(255,79,0,0.25); border-radius: 14px; padding: 14px 15px; margin-bottom: 10px; }
-.reflexion-eyebrow { font-size: 9px; color: rgba(255,170,110,0.95); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; margin-bottom: 8px; }
-.reflexion-text { font-size: 14px; font-family: 'DM Serif Display', serif; font-weight: 400; line-height: 1.4; color: var(--text-primary); letter-spacing: -0.01em; }
-.journal-textarea { width: 100%; background: rgba(244,243,239,0.03); border: 0.5px solid var(--border-soft); border-radius: 11px; padding: 12px 14px; font-family: inherit; font-size: 14px; color: var(--text-primary); resize: vertical; min-height: 110px; outline: none; box-sizing: border-box; line-height: 1.55; }
-.journal-textarea:focus { border-color: rgba(255,79,0,0.4); box-shadow: 0 0 0 3px rgba(255,79,0,0.06); }
+
+.metric-card {
+  background: rgba(244,243,239,0.03);
+  border: 0.5px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 14px;
+}
+.metric-eyebrow { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(244,243,239,0.55); margin-bottom: 6px; font-weight: 500; }
+.metric-value { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.metric-meta { font-size: 10px; color: var(--text-tertiary); margin-top: 3px; }
+
+.sparkline-svg { width: 100%; height: 36px; margin-top: 8px; }
+
+.estrategia-row {
+  background: rgba(180,220,170,0.04);
+  border: 0.5px solid rgba(180,220,170,0.18);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.estrategia-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(rgba(180,220,170,0.85) var(--pct), rgba(244,243,239,0.06) var(--pct));
+  position: relative;
+}
+.estrategia-circle::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: #14181F;
+  border-radius: 50%;
+}
+.estrategia-circle-inner {
+  position: relative;
+  z-index: 1;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(180,220,170,0.95);
+}
+.estrategia-info { flex: 1; min-width: 0; }
+.estrategia-titulo { font-size: 12px; font-weight: 500; }
+.estrategia-ctx { font-size: 10px; color: rgba(244,243,239,0.5); margin-top: 2px; }
+
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.section-sub {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+}
+
+.journal-input {
+  width: 100%;
+  background: rgba(244,243,239,0.03);
+  border: 0.5px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 14px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  resize: vertical;
+  min-height: 90px;
+  outline: none;
+  box-sizing: border-box;
+  line-height: 1.55;
+}
+.journal-input:focus { border-color: rgba(255,79,0,0.4); box-shadow: 0 0 0 3px rgba(255,79,0,0.06); }
+
+.empty-hero {
+  background: rgba(244,243,239,0.025);
+  border: 0.5px dashed rgba(244,243,239,0.15);
+  border-radius: 14px;
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.6;
+}
 </style>
 </head>
 <body>
 
 <div id="status-bar"></div>
 
-<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
   <div style="display:flex;align-items:center;gap:11px;">
     <div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(180,220,170,0.18),rgba(120,200,220,0.12));border:0.5px solid rgba(180,220,170,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -54,19 +173,12 @@
     </div>
     <div>
       <div style="font-size:9px;color:rgba(180,220,170,0.85);letter-spacing:0.18em;text-transform:uppercase;font-weight:500;">Mente</div>
-      <div style="font-family:'DM Serif Display', serif;font-size:24px;font-weight:400;letter-spacing:-0.02em;">Cómo estás</div>
+      <div style="font-family:'DM Serif Display', serif;font-size:24px;font-weight:400;letter-spacing:-0.02em;">Tu pulso interno</div>
     </div>
   </div>
 </header>
 
-<div class="tabs">
-  <div class="tab active" data-tab="estado">Estado</div>
-  <div class="tab" data-tab="patrones">Patrones</div>
-  <div class="tab" data-tab="estrategias">Estrategias</div>
-  <div class="tab" data-tab="reflexion">Reflexión</div>
-</div>
-
-<div id="tab-content"></div>
+<div id="dashboard"></div>
 
 <div id="footer-host"></div>
 <div id="nav-host"></div>
@@ -78,15 +190,7 @@
   document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
   document.getElementById('footer-host').innerHTML = UI.renderFooter();
   document.getElementById('nav-host').innerHTML = UI.renderBottomNav('mente');
-
-  document.querySelectorAll('.tab').forEach(t => {
-    t.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      renderTab(t.dataset.tab);
-    });
-  });
-  renderTab('estado');
+  renderDashboard();
 })();
 
 const MENTE_KEY = 'alan_mando_mente_state';
@@ -105,177 +209,245 @@ function getMenteState() {
 }
 function setMenteState(s) { Store.set(MENTE_KEY, s); }
 
-function renderTab(tab) {
-  const c = document.getElementById('tab-content');
-  if (tab === 'estado') return renderEstado(c);
-  if (tab === 'patrones') return renderPatrones(c);
-  if (tab === 'estrategias') return renderEstrategias(c);
-  if (tab === 'reflexion') return renderReflexion(c);
-}
+const ESTADOS = {
+  inspirado: { label: 'Inspirado', color: '#FF7A00', score: 5 },
+  bien: { label: 'Bien', color: '#7AC68A', score: 4 },
+  neutro: { label: 'Neutro', color: '#8A9CA8', score: 3 },
+  cansado: { label: 'Cansado', color: '#D4A574', score: 2 },
+  denso: { label: 'Denso', color: '#C56A6A', score: 1 }
+};
 
-function renderEstado(c) {
+function renderDashboard() {
   const s = getMenteState();
+  const c = document.getElementById('dashboard');
   const hoy = new Date().toISOString().slice(0, 10);
   const yaCheckIn = s.estados_diarios.find(e => e.fecha === hoy);
 
-  const estados = [
-    { key: 'inspirado', label: 'Inspirado', color: '#FF7A00', emoji: '◆' },
-    { key: 'bien', label: 'Bien', color: '#7AC68A', emoji: '●' },
-    { key: 'neutro', label: 'Neutro', color: '#8A9CA8', emoji: '○' },
-    { key: 'cansado', label: 'Cansado', color: '#D4A574', emoji: '◐' },
-    { key: 'denso', label: 'Denso', color: '#C56A6A', emoji: '◑' }
-  ];
+  const estadosArr = Object.entries(ESTADOS).map(([k, v]) => ({ key: k, ...v }));
 
-  const ultimos7 = s.estados_diarios.slice(-7);
-  const counts = { inspirado: 0, bien: 0, neutro: 0, cansado: 0, denso: 0 };
-  ultimos7.forEach(e => { counts[e.estado] = (counts[e.estado] || 0) + 1; });
-  const dominante = Object.entries(counts).sort(([,a],[,b]) => b - a)[0];
+  // ===== HERO · estado del día + ring de score promedio =====
+  const ultimos30 = s.estados_diarios.slice(-30);
+  const scoreAvg = ultimos30.length ? ultimos30.reduce((sum, e) => sum + (ESTADOS[e.estado]?.score || 3), 0) / ultimos30.length : 0;
+  const ringPct = scoreAvg > 0 ? (scoreAvg / 5) * 100 : 0;
+  const ringColor = scoreAvg >= 4 ? '#7AC68A' : scoreAvg >= 3 ? '#8A9CA8' : scoreAvg >= 2 ? '#D4A574' : '#C56A6A';
+  const circumference = 2 * Math.PI * 40;
+  const dashOffset = circumference * (1 - ringPct / 100);
 
-  c.innerHTML = `
-    <div class="reflexion-prompt">
-      <div class="reflexion-eyebrow">CHECK-IN DEL DÍA</div>
-      <div class="reflexion-text">${yaCheckIn ? '¿Cambió algo desde tu check-in?' : '¿Cómo estás entrando al día?'}</div>
-    </div>
-    <div class="estado-grid">
-      ${estados.map(e => `
-        <div class="estado-btn ${yaCheckIn?.estado === e.key ? 'selected' : ''}" data-estado="${e.key}">
-          <div class="estado-emoji" style="background:${e.color}22;color:${e.color};">${e.emoji}</div>
-          <div class="estado-label">${e.label}</div>
-        </div>
-      `).join('')}
-    </div>
-    <div class="form-field">
-      <div class="field-label">NOTA RÁPIDA (opcional)</div>
-      <textarea class="journal-textarea" id="estado-nota" placeholder="¿Qué pasa hoy? Una línea basta..." style="min-height:60px;font-size:14px;">${yaCheckIn?.nota || ''}</textarea>
-    </div>
-    <button class="btn primary-orange" style="width:100%;margin-top:8px;" id="btn-guardar-estado">${yaCheckIn ? 'Actualizar check-in' : 'Registrar check-in'}</button>
-
-    <div class="section-eyebrow" style="margin-top:18px;">
-      <div>
-        <div class="label" style="color:rgba(244,243,239,0.55);">tu semana</div>
-        <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">${ultimos7.length} de 7 check-ins</div>
-      </div>
-    </div>
-
-    ${ultimos7.length ? `
-      <div class="energia-grid">
-        <div class="energia-card">
-          <div class="energia-label">DOMINANTE 7D</div>
-          <div class="energia-value" style="text-transform:capitalize;">${dominante[0]}</div>
-          <div class="energia-meta">${dominante[1]} de ${ultimos7.length} días</div>
-        </div>
-        <div class="energia-card">
-          <div class="energia-label">CONSISTENCIA</div>
-          <div class="energia-value">${Math.round((ultimos7.length / 7) * 100)}%</div>
-          <div class="energia-meta">check-ins esta semana</div>
+  const ringHero = `
+    <div class="mente-hero">
+      <div class="ring-container">
+        <svg class="ring-svg" viewBox="0 0 96 96">
+          <circle cx="48" cy="48" r="40" fill="none" stroke="rgba(244,243,239,0.06)" stroke-width="6"/>
+          ${ringPct > 0 ? `<circle cx="48" cy="48" r="40" fill="none" stroke="${ringColor}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 48 48)" style="transition: stroke-dashoffset 1s ease-out;"/>` : ''}
+          <text x="48" y="50" text-anchor="middle" dominant-baseline="middle" fill="${ringColor}" font-size="22" font-weight="600" font-family="Inter">
+            ${scoreAvg > 0 ? scoreAvg.toFixed(1) : '—'}
+          </text>
+          <text x="48" y="64" text-anchor="middle" fill="rgba(244,243,239,0.5)" font-size="8" font-family="Inter">/ 5</text>
+        </svg>
+        <div class="ring-content">
+          <div style="font-size:9px;color:rgba(180,220,170,0.85);letter-spacing:0.15em;text-transform:uppercase;font-weight:500;margin-bottom:4px;">PROMEDIO 30D</div>
+          <div style="font-size:18px;font-weight:500;letter-spacing:-0.01em;line-height:1.2;">
+            ${scoreAvg >= 4 ? 'Vas bien · sostén' : scoreAvg >= 3 ? 'Estable · sin tendencia clara' : scoreAvg >= 2 ? 'Carga acumulada' : scoreAvg > 0 ? 'Necesitas reset' : 'Empieza a registrar'}
+          </div>
+          <div style="font-size:11px;color:rgba(244,243,239,0.55);margin-top:4px;">${ultimos30.length} de 30 check-ins</div>
         </div>
       </div>
-    ` : `
-      <div style="text-align:center;padding:24px 12px;color:var(--text-tertiary);font-size:12px;">
-        Sin check-ins · empieza hoy para que Mente aprenda tus patrones
-      </div>
-    `}
+    </div>
   `;
 
+  // ===== CHECK-IN DEL DÍA =====
+  const checkin = `
+    <div style="margin-bottom:18px;">
+      <div class="section-title">${yaCheckIn ? '¿Cambió algo?' : '¿Cómo estás hoy?'}</div>
+      <div class="section-sub">tap = registra · 5 segundos</div>
+      <div class="estado-grid">
+        ${estadosArr.map(e => `
+          <div class="estado-btn ${yaCheckIn?.estado === e.key ? 'selected' : ''}" data-estado="${e.key}">
+            <div class="estado-emoji" style="background:${e.color}26;color:${e.color};">${e.label[0]}</div>
+            <div class="estado-label">${e.label}</div>
+          </div>
+        `).join('')}
+      </div>
+      <textarea class="journal-input" id="estado-nota" placeholder="Una línea (opcional) — ¿qué pasa hoy?" style="margin-top:10px;min-height:50px;">${yaCheckIn?.nota || ''}</textarea>
+      <button class="btn primary-orange" style="width:100%;margin-top:8px;" id="btn-guardar-estado">${yaCheckIn ? 'Actualizar check-in' : 'Registrar check-in'}</button>
+    </div>
+  `;
+
+  // ===== HEATMAP 60 DÍAS =====
+  let heatmap = '';
+  if (s.estados_diarios.length > 0) {
+    const dias = [];
+    for (let i = 59; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86400000);
+      const fecha = d.toISOString().slice(0, 10);
+      const e = s.estados_diarios.find(x => x.fecha === fecha);
+      dias.push({ fecha, estado: e?.estado || null });
+    }
+    heatmap = `
+      <div style="margin-bottom:18px;">
+        <div class="section-title">Últimos 60 días</div>
+        <div class="section-sub">cada cuadrito · un día · color = estado</div>
+        <div class="heatmap-grid">
+          ${dias.map(d => {
+            if (!d.estado) return `<div class="heatmap-cell" title="${d.fecha} · sin check-in"></div>`;
+            const e = ESTADOS[d.estado];
+            const cls = d.estado === 'inspirado' ? 'inspirado' : d.estado === 'bien' ? 'l4' : d.estado === 'neutro' ? 'l2' : d.estado === 'cansado' ? 'cansado' : 'denso';
+            return `<div class="heatmap-cell ${cls}" title="${d.fecha} · ${e.label}"></div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;font-size:9px;color:rgba(244,243,239,0.5);">
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:rgba(255,122,0,0.9);"></div>inspirado</div>
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:rgba(180,220,170,1);"></div>bien</div>
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:rgba(212,165,116,0.7);"></div>cansado</div>
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:rgba(197,106,106,0.85);"></div>denso</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ===== SPARKLINE últimos 14 días =====
+  let sparkline = '';
+  const ult14 = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const fecha = d.toISOString().slice(0, 10);
+    const e = s.estados_diarios.find(x => x.fecha === fecha);
+    ult14.push(e ? ESTADOS[e.estado].score : null);
+  }
+  const valores = ult14.filter(v => v !== null);
+  if (valores.length >= 2) {
+    const max = 5, min = 1;
+    const w = 320, h = 36;
+    const stepX = w / (ult14.length - 1);
+    const points = ult14.map((v, i) => {
+      const x = i * stepX;
+      const y = v !== null ? h - ((v - min) / (max - min)) * h : null;
+      return { x, y };
+    });
+    const validPoints = points.filter(p => p.y !== null);
+    const path = validPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+    const lastPoint = validPoints[validPoints.length - 1];
+
+    sparkline = `
+      <div class="metric-card" style="margin-bottom:8px;">
+        <div class="metric-eyebrow">TENDENCIA 14D</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <div class="metric-value">${valores[valores.length-1].toFixed(1)}</div>
+          <div style="font-size:11px;color:${valores[valores.length-1] >= valores[0] ? 'rgba(180,220,170,0.95)' : 'rgba(212,165,116,0.95)'};">
+            ${valores[valores.length-1] >= valores[0] ? '↗' : '↘'} ${Math.abs(valores[valores.length-1] - valores[0]).toFixed(1)} pts
+          </div>
+        </div>
+        <svg class="sparkline-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(180,220,170,0.4)"/>
+              <stop offset="100%" stop-color="rgba(180,220,170,0)"/>
+            </linearGradient>
+          </defs>
+          <path d="${path} L ${lastPoint.x} ${h} L ${validPoints[0].x} ${h} Z" fill="url(#sparkGrad)"/>
+          <path d="${path}" fill="none" stroke="rgba(180,220,170,0.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          ${validPoints.map(p => `<circle cx="${p.x}" cy="${p.y}" r="2" fill="rgba(180,220,170,1)"/>`).join('')}
+        </svg>
+      </div>
+    `;
+  }
+
+  // ===== METRIC GRID =====
+  const counts = { inspirado: 0, bien: 0, neutro: 0, cansado: 0, denso: 0 };
+  ultimos30.forEach(e => { counts[e.estado] = (counts[e.estado] || 0) + 1; });
+  const consistencia = Math.min(100, Math.round((ultimos30.length / 30) * 100));
+
+  const metrics = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
+      ${sparkline ? '' : '<!-- spark va arriba -->'}
+      <div class="metric-card">
+        <div class="metric-eyebrow">CONSISTENCIA 30D</div>
+        <div class="metric-value">${consistencia}%</div>
+        <div class="metric-meta">${ultimos30.length} días registrados</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-eyebrow">DÍAS BUENOS 30D</div>
+        <div class="metric-value">${counts.bien + counts.inspirado}</div>
+        <div class="metric-meta">de ${ultimos30.length} con check-in</div>
+      </div>
+    </div>
+  `;
+
+  // ===== ESTRATEGIAS · top 3 =====
+  const sorted = [...s.estrategias].sort((a, b) => b.efectividad - a.efectividad).slice(0, 3);
+  const estrategias = `
+    <div style="margin-bottom:18px;">
+      <div class="section-title">Tus 3 estrategias top</div>
+      <div class="section-sub">marca cuál usaste hoy · sube efectividad</div>
+      ${sorted.map(e => `
+        <div class="estrategia-row">
+          <div class="estrategia-circle" style="--pct:${Math.round(e.efectividad * 100)}%;">
+            <div class="estrategia-circle-inner">${Math.round(e.efectividad * 100)}</div>
+          </div>
+          <div class="estrategia-info">
+            <div class="estrategia-titulo">${Util.esc(e.nombre)}</div>
+            <div class="estrategia-ctx">${Util.esc(e.contexto)} · ${e.usos} usos</div>
+          </div>
+          <button class="btn" data-estrategia-id="${e.id}" style="font-size:10px;padding:7px 11px;flex-shrink:0;">Hoy</button>
+        </div>
+      `).join('')}
+      <button class="btn" style="width:100%;font-size:11px;margin-top:6px;" onclick="abrirAgregarEstrategia()">+ Agregar estrategia</button>
+    </div>
+  `;
+
+  // ===== PATRONES =====
+  const ultimos14 = s.estados_diarios.slice(-14);
+  const denses = ultimos14.filter(e => e.estado === 'denso' || e.estado === 'cansado').length;
+  const positivos14 = ultimos14.filter(e => e.estado === 'bien' || e.estado === 'inspirado').length;
+  let patron = '';
+  if (denses >= 5) {
+    patron = `<div class="metric-card" style="background:rgba(212,165,116,0.06);border-color:rgba(212,165,116,0.25);"><div class="metric-eyebrow" style="color:rgba(212,165,116,0.95);">PATRÓN DETECTADO</div><div style="font-size:13px;line-height:1.5;color:var(--text-primary);margin-top:4px;">${denses} de 14 días en cansado/denso. Tu estrategia "Swimming AM" + "Ensayo musical" suele bajar carga 30%. Bloquea una en agenda esta semana.</div></div>`;
+  } else if (positivos14 >= 7) {
+    patron = `<div class="metric-card" style="background:rgba(180,220,170,0.06);border-color:rgba(180,220,170,0.25);"><div class="metric-eyebrow" style="color:rgba(180,220,170,0.95);">RACHA POSITIVA</div><div style="font-size:13px;line-height:1.5;color:var(--text-primary);margin-top:4px;">${positivos14} de 14 días en bien/inspirado. Lo que sea que estás haciendo · sigue. Documenta qué cambió.</div></div>`;
+  } else if (ultimos14.length < 5) {
+    patron = `<div class="metric-card" style="background:rgba(150,210,230,0.04);border-color:rgba(150,210,230,0.2);"><div class="metric-eyebrow" style="color:rgba(150,210,230,0.95);">EN APRENDIZAJE</div><div style="font-size:13px;line-height:1.5;color:var(--text-primary);margin-top:4px;">Solo ${ultimos14.length} check-ins recientes. Mente necesita 7+ días para detectar correlaciones reales · 5 segs/día.</div></div>`;
+  }
+
+  // ===== JOURNAL · prompt rotativo =====
+  const prompts = [
+    '¿Qué te tiene la cabeza ocupada ahorita?',
+    '¿Qué decisión llevas postpuesta más de 3 días?',
+    '¿Qué pequeña cosa te haría sentir mejor en este momento?',
+    '¿De qué te vas a arrepentir si no actúas esta semana?',
+    '¿Qué te está costando energía y no vale la pena?',
+    '¿Qué te dió alegría real hoy (aunque sea chico)?'
+  ];
+  const prompt = prompts[Math.floor((Date.now() / 86400000) % prompts.length)];
+  const journalCard = `
+    <div style="margin-bottom:14px;">
+      <div class="section-title">Reflexión</div>
+      <div class="section-sub">${prompt}</div>
+      <textarea class="journal-input" id="journal-input" placeholder="Sin filtro · sin formato · solo escribe..."></textarea>
+      <button class="btn" style="width:100%;margin-top:8px;font-size:11px;" onclick="guardarJournal('${prompt.replace(/'/g, "\\'")}')">Guardar reflexión</button>
+      ${(s.journal || []).length ? `<div style="font-size:10px;color:rgba(244,243,239,0.5);margin-top:6px;text-align:center;">${s.journal.length} reflexiones guardadas</div>` : ''}
+    </div>
+  `;
+
+  c.innerHTML = ringHero + checkin + (sparkline || '') + metrics + heatmap + (patron || '') + estrategias + journalCard;
+
+  // Bindings
   c.querySelectorAll('.estado-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       c.querySelectorAll('.estado-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
     });
   });
-
   document.getElementById('btn-guardar-estado').addEventListener('click', () => {
-    const selected = c.querySelector('.estado-btn.selected');
-    if (!selected) return UI.toast('Selecciona un estado primero', 'error');
-    const estado = selected.dataset.estado;
-    const nota = document.getElementById('estado-nota').value.trim();
+    const sel = c.querySelector('.estado-btn.selected');
+    if (!sel) return UI.toast('Selecciona un estado primero', 'error');
     const state = getMenteState();
     state.estados_diarios = state.estados_diarios.filter(e => e.fecha !== hoy);
-    state.estados_diarios.push({ fecha: hoy, estado, nota, ts: Date.now() });
-    if (state.estados_diarios.length > 90) state.estados_diarios = state.estados_diarios.slice(-90);
+    state.estados_diarios.push({ fecha: hoy, estado: sel.dataset.estado, nota: document.getElementById('estado-nota').value.trim(), ts: Date.now() });
+    if (state.estados_diarios.length > 365) state.estados_diarios = state.estados_diarios.slice(-365);
     setMenteState(state);
     UI.toast('Check-in registrado · Mente aprende de ti', 'success');
-    renderEstado(c);
+    renderDashboard();
   });
-}
-
-function renderPatrones(c) {
-  const s = getMenteState();
-  const pendientes = Store.get(Store.KEYS.PENDIENTES, []).filter(p => !p.done);
-  const ultimos14 = s.estados_diarios.slice(-14);
-  const denses = ultimos14.filter(e => e.estado === 'denso' || e.estado === 'cansado').length;
-  const positivos = ultimos14.filter(e => e.estado === 'bien' || e.estado === 'inspirado').length;
-
-  const patrones = [];
-  if (denses >= 5) patrones.push({ eyebrow: 'CARGA OPERATIVA ALTA', text: `${denses} de tus últimos 14 días los reportaste como cansado o denso. Cuando esto pasa, tus estrategias de "swimming AM" y "ensayo musical" históricamente bajaron tu carga 30%. Considera bloquearlas en agenda.` });
-  if (pendientes.length >= 5 && ultimos14.some(e => e.estado === 'denso')) patrones.push({ eyebrow: 'PENDIENTES ACUMULADOS', text: `Tienes ${pendientes.length} pendientes activos. Tu cabeza carga peso de cosas no hechas, no de cosas difíciles. Cierra 2 de los más viejos hoy aunque sean pequeños · alivio inmediato.` });
-  if (ultimos14.length < 5) patrones.push({ eyebrow: 'POCA SEÑAL', text: `Solo ${ultimos14.length} check-ins en últimos 14 días. Mente necesita data para ayudarte · 1 tap diario es suficiente, toma 5 segundos.` });
-  if (positivos >= 7) patrones.push({ eyebrow: 'RACHA POSITIVA', text: `${positivos} de últimos 14 días en bien/inspirado. Lo que sea que estás haciendo, sigue · documenta qué cambió en tu rutina para replicarlo.` });
-  if (patrones.length === 0) patrones.push({ eyebrow: 'EN APRENDIZAJE', text: 'Necesito 7+ check-ins continuos para empezar a detectar patrones. Mantén el hábito · pronto verás correlaciones útiles.' });
-
-  c.innerHTML = `
-    <div class="section-eyebrow" style="margin-top:0;">
-      <div>
-        <div class="label" style="color:rgba(150,210,230,0.85);">patrones que detecto</div>
-        <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">cruzo finanzas · pendientes · estado</div>
-      </div>
-    </div>
-    ${patrones.map(p => `
-      <div class="patron-card">
-        <div class="patron-eyebrow">${p.eyebrow}</div>
-        <div class="patron-text">${p.text}</div>
-      </div>
-    `).join('')}
-
-    <div class="section-eyebrow" style="margin-top:18px;">
-      <div><div class="label" style="color:rgba(244,243,239,0.55);">contexto que entiendo</div></div>
-    </div>
-    <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px 15px;font-size:11px;line-height:1.7;color:var(--text-primary);">
-      <div><strong>TDAH</strong> · necesitas Ritalin AM para regulación · sin dosis, día denso garantizado</div>
-      <div><strong>TOC</strong> · perfeccionismo aumenta cuando hay 3+ pendientes acumulados</div>
-      <div><strong>Estrés crónico</strong> · ciclo de venta &gt;45 días dispara cortisol · cortar es estrategia</div>
-      <div><strong>Reset musical</strong> · 1 tocada o ensayo por semana baseline · &lt; eso = irritabilidad</div>
-      <div><strong>Pepe</strong> · caminar con tu perro 20 min = mejor ROI emocional/tiempo</div>
-    </div>
-  `;
-}
-
-function renderEstrategias(c) {
-  const s = getMenteState();
-  const sorted = [...s.estrategias].sort((a, b) => b.efectividad - a.efectividad);
-
-  c.innerHTML = `
-    <div class="section-eyebrow" style="margin-top:0;">
-      <div>
-        <div class="label" style="color:rgba(180,220,170,0.85);">estrategias validadas</div>
-        <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">marca la que usaste hoy · sube efectividad</div>
-      </div>
-    </div>
-    ${sorted.map(e => `
-      <div class="estrategia-card">
-        <div style="flex:1;">
-          <div class="estrategia-nombre">${Util.esc(e.nombre)}</div>
-          <div class="estrategia-meta">${Util.esc(e.contexto)} · ${e.usos} usos</div>
-          <div class="efectividad-bar"><div class="efectividad-fill" style="width:${Math.round(e.efectividad * 100)}%;"></div></div>
-        </div>
-        <button class="btn" data-estrategia-id="${e.id}" style="font-size:10px;padding:6px 10px;flex-shrink:0;">Usé hoy</button>
-      </div>
-    `).join('')}
-
-    <div class="section-eyebrow" style="margin-top:18px;">
-      <div><div class="label" style="color:rgba(244,243,239,0.55);">agregar estrategia</div></div>
-    </div>
-    <div class="form-field">
-      <div class="field-label">NOMBRE</div>
-      <input type="text" class="field-input" id="est-nombre" placeholder="Ej: Caminar 30 min al atardecer" style="font-size:16px !important;">
-    </div>
-    <div class="form-field">
-      <div class="field-label">CUÁNDO LA USAS</div>
-      <input type="text" class="field-input" id="est-contexto" placeholder="Ej: cuando termino día laboral pesado" style="font-size:16px !important;">
-    </div>
-    <button class="btn primary-orange" style="width:100%;" id="btn-add-estrategia">Agregar estrategia</button>
-  `;
-
   c.querySelectorAll('[data-estrategia-id]').forEach(btn => {
     btn.addEventListener('click', () => {
       const state = getMenteState();
@@ -284,86 +456,71 @@ function renderEstrategias(c) {
         e.usos++;
         e.efectividad = Math.min(1, e.efectividad + 0.02);
         setMenteState(state);
-        UI.toast(`${e.nombre} · marcada · efectividad ${Math.round(e.efectividad * 100)}%`, 'success');
-        renderEstrategias(c);
+        UI.toast(`${e.nombre} · ${Math.round(e.efectividad * 100)}% efectividad`, 'success');
+        renderDashboard();
       }
     });
   });
-
-  document.getElementById('btn-add-estrategia').addEventListener('click', () => {
-    const nombre = document.getElementById('est-nombre').value.trim();
-    const contexto = document.getElementById('est-contexto').value.trim();
-    if (!nombre) return UI.toast('Falta nombre', 'error');
-    const state = getMenteState();
-    state.estrategias.push({
-      id: 'est_' + Date.now(),
-      nombre,
-      categoria: 'custom',
-      contexto: contexto || 'sin contexto',
-      efectividad: 0.5,
-      usos: 0,
-      createdAt: Date.now()
-    });
-    setMenteState(state);
-    UI.toast('Estrategia agregada', 'success');
-    renderEstrategias(c);
-  });
 }
 
-function renderReflexion(c) {
-  const s = getMenteState();
-  const journal = (s.journal || []).slice(-10).reverse();
+function guardarJournal(prompt) {
+  const text = document.getElementById('journal-input').value.trim();
+  if (!text) return UI.toast('Escribe algo primero', 'error');
+  const state = getMenteState();
+  state.journal = state.journal || [];
+  state.journal.push({ ts: Date.now(), prompt, text });
+  if (state.journal.length > 200) state.journal = state.journal.slice(-200);
+  setMenteState(state);
+  UI.toast('Reflexión guardada · solo tú la ves', 'success');
+  document.getElementById('journal-input').value = '';
+  renderDashboard();
+}
 
-  const prompts = [
-    '¿Qué te tiene la cabeza ocupada ahorita?',
-    '¿Qué decisión llevas postpuesta más de 3 días?',
-    '¿Qué pequeña cosa te haría sentir mejor en este momento?',
-    '¿De qué te vas a arrepentir si no actúas esta semana?',
-    '¿Qué te está costando energía y no vale la pena?',
-    '¿Qué te dió alegría real hoy (aunque sea chico)?',
-    '¿Qué patrón estás repitiendo y ya no te sirve?',
-    '¿Qué quisieras decir en voz alta pero no dices?'
-  ];
-  const prompt = prompts[Math.floor((Date.now() / 86400000) % prompts.length)];
-
-  c.innerHTML = `
-    <div class="reflexion-prompt">
-      <div class="reflexion-eyebrow">PROMPT DE HOY</div>
-      <div class="reflexion-text">${prompt}</div>
-    </div>
-    <div class="form-field">
-      <div class="field-label">RESPONDE LIBRE</div>
-      <textarea class="journal-textarea" id="journal-text" placeholder="Sin filtro · sin formato · solo escribe..."></textarea>
-    </div>
-    <button class="btn primary-orange" style="width:100%;" id="btn-guardar-journal">Guardar reflexión</button>
-
-    ${journal.length ? `
-      <div class="section-eyebrow" style="margin-top:18px;">
-        <div>
-          <div class="label" style="color:rgba(244,243,239,0.55);">últimas reflexiones</div>
-          <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">${journal.length} entradas · solo tú las ves</div>
-        </div>
+function abrirAgregarEstrategia() {
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-est';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()" style="max-width:420px;">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot" style="background:rgba(180,220,170,1);"></div><div class="label">Nueva estrategia</div></div>
+      <div class="g2c-modal-title">Agregar a tu biblioteca</div>
+      <div class="form-field">
+        <div class="field-label">NOMBRE</div>
+        <input type="text" class="field-input" id="est-nombre" placeholder="Ej: Caminar al atardecer" autofocus style="font-size:16px !important;">
       </div>
-      ${journal.map(j => `
-        <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:11px 13px;margin-bottom:6px;">
-          <div style="font-size:9px;color:rgba(244,243,239,0.5);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;">${Util.fmtDate(j.ts)}</div>
-          <div style="font-size:11px;color:rgba(244,243,239,0.85);line-height:1.55;font-style:italic;">"${Util.esc(j.text)}"</div>
-        </div>
-      `).join('')}
-    ` : ''}
+      <div class="form-field">
+        <div class="field-label">CUÁNDO LA USAS</div>
+        <input type="text" class="field-input" id="est-contexto" placeholder="Ej: cuando termino día pesado" style="font-size:16px !important;">
+      </div>
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="document.getElementById('modal-est').remove()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarEstrategia()">Agregar</button>
+      </div>
+    </div>
   `;
+  modal.addEventListener('click', () => document.getElementById('modal-est').remove());
+  document.body.appendChild(modal);
+}
 
-  document.getElementById('btn-guardar-journal').addEventListener('click', () => {
-    const text = document.getElementById('journal-text').value.trim();
-    if (!text) return UI.toast('Escribe algo primero', 'error');
-    const state = getMenteState();
-    state.journal = state.journal || [];
-    state.journal.push({ ts: Date.now(), prompt, text });
-    if (state.journal.length > 200) state.journal = state.journal.slice(-200);
-    setMenteState(state);
-    UI.toast('Reflexión guardada · solo tú la ves', 'success');
-    renderReflexion(c);
+function guardarEstrategia() {
+  const nombre = document.getElementById('est-nombre').value.trim();
+  const contexto = document.getElementById('est-contexto').value.trim();
+  if (!nombre) return UI.toast('Falta nombre', 'error');
+  const state = getMenteState();
+  state.estrategias.push({
+    id: 'est_' + Date.now(),
+    nombre,
+    categoria: 'custom',
+    contexto: contexto || 'sin contexto',
+    efectividad: 0.5,
+    usos: 0,
+    createdAt: Date.now()
   });
+  setMenteState(state);
+  UI.toast('Estrategia agregada', 'success');
+  document.getElementById('modal-est').remove();
+  renderDashboard();
 }
 </script>
 

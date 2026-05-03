@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.8.0',
+  version: '1.9.0',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -1683,7 +1683,7 @@ const Actions = {
 
     // ===== NAVEGACIÓN · cuando IA encuentra algo y quiere mandar a Alan a verlo =====
     ir_a: {
-      description: 'Cuando encuentres data relevante (cliente, pendiente, tocada, evento, etc) y quieras que Alan VEA el módulo donde está, agrega esta acción · sale tarjeta con botón "Ver →". Modulos válidos: finanzas, finanzas_recurrentes, finanzas_proyecciones, musica, calendario, pendientes, cuidado, config. Para deep-link a item específico, agrega item_id.',
+      description: 'Cuando encuentres data relevante (cliente, pendiente, tocada, evento, etc) y quieras que Alan VEA el módulo donde está, agrega esta acción · sale tarjeta con botón "Ver →". Modulos válidos: finanzas, finanzas_recurrentes, finanzas_proyecciones, musica, calendario, pendientes, cuidado, mente, config. Para deep-link a item específico, agrega item_id.',
       parameters: ['modulo', 'item_id?', 'label?'],
       execute(args) {
         const modulos = {
@@ -1696,6 +1696,7 @@ const Actions = {
           calendario: { url: 'calendario.html', label: 'Ver calendario' },
           pendientes: { url: 'pendientes.html', label: 'Ver pendientes' },
           cuidado: { url: 'cuidado.html', label: 'Ver cuidado' },
+          mente: { url: 'mente.html', label: 'Ver Mente' },
           cuidado_perfil: { url: 'cuidado.html?tab=perfil', label: 'Ver perfil' },
           cuidado_ejercicio: { url: 'cuidado.html?tab=ejercicio', label: 'Ver ejercicio' },
           cuidado_dieta: { url: 'cuidado.html?tab=dieta', label: 'Ver dieta' },
@@ -1710,6 +1711,125 @@ const Actions = {
           url += (url.includes('?') ? '&' : '?') + 'highlight=' + encodeURIComponent(args.item_id);
         }
         return { ok: true, msg: '', data: { url, label: args.label || m.label }, is_navigation: true };
+      }
+    },
+
+    // ===== LISTA VISUAL · cards bonitas en lugar de texto plano =====
+    lista_visual: {
+      description: 'OBLIGATORIO cuando Alan pida ver/listar/cuáles son sus pendientes/cobros/clientes/tocadas. Genera tarjetas visuales tappeables · NO escribas la lista en texto plano. Tipos: pendientes, cobros, pagos, clientes, tocadas, canciones, objetivos. Limit max 5 items por lista visual.',
+      parameters: ['tipo', 'titulo?', 'subtitulo?'],
+      execute(args) {
+        const tipo = args.tipo;
+        const items = [];
+        let titulo = args.titulo;
+        let color = '#FF4F00';
+        let modulo_link = null;
+
+        if (tipo === 'pendientes') {
+          const all = (Store.get(Store.KEYS.PENDIENTES, []) || []).filter(p => !p.done);
+          items.push(...all.slice(0, 5).map(p => ({
+            id: p.id,
+            principal: p.titulo || p.descripcion || 'Sin título',
+            secundario: p.prioridad === 'alta' ? '★ alta' : p.prioridad || '',
+            tag: p.fecha_limite ? new Date(p.fecha_limite).toLocaleDateString('es-MX', {day:'numeric', month:'short'}) : '',
+            urgente: p.prioridad === 'alta'
+          })));
+          titulo = titulo || `${all.length} pendientes activos`;
+          color = '#7AC8DC';
+          modulo_link = 'pendientes';
+        } else if (tipo === 'cobros') {
+          const cxc = (Store.get('alan_mando_cuentas_cobrar', []) || []).filter(c => !c.cobrado);
+          const rec = (Store.get('alan_mando_cobros_recurrentes', []) || []).filter(c => c.activo);
+          [...cxc, ...rec].slice(0, 5).forEach(c => {
+            items.push({
+              id: c.id,
+              principal: c.cliente_nombre || c.cliente || c.concepto || 'Sin nombre',
+              secundario: c.concepto || c.cliente_nombre || '',
+              tag: c.monto ? '$' + Math.round(c.monto).toLocaleString() : '',
+              urgente: c.fecha_esperada && c.fecha_esperada < Date.now()
+            });
+          });
+          titulo = titulo || `${cxc.length + rec.length} cobros activos`;
+          color = '#7AC68A';
+          modulo_link = 'finanzas';
+        } else if (tipo === 'pagos') {
+          const cxp = (Store.get('alan_mando_cuentas_pagar', []) || []).filter(p => !p.pagado);
+          const rec = (Store.get('alan_mando_pagos_recurrentes', []) || []).filter(p => p.activo);
+          [...cxp, ...rec].slice(0, 5).forEach(p => {
+            items.push({
+              id: p.id,
+              principal: p.proveedor_nombre || p.proveedor || p.concepto || 'Sin nombre',
+              secundario: p.concepto || p.proveedor_nombre || '',
+              tag: p.monto ? '$' + Math.round(p.monto).toLocaleString() : '',
+              urgente: p.fecha && p.fecha < Date.now()
+            });
+          });
+          titulo = titulo || `${cxp.length + rec.length} pagos activos`;
+          color = '#D4A574';
+          modulo_link = 'finanzas';
+        } else if (tipo === 'clientes') {
+          const all = Store.get(Store.KEYS.CLIENTES, []) || [];
+          items.push(...all.slice(0, 5).map(c => ({
+            id: c.id,
+            principal: c.negocio || c.nombre,
+            secundario: `${c.plan || 'Plan'} · ${c.status || 'activo'}`,
+            tag: c.monto ? '$' + Math.round(c.monto).toLocaleString() : '',
+            urgente: c.status === 'vencido'
+          })));
+          titulo = titulo || `${all.length} clientes`;
+          color = '#FF7A00';
+          modulo_link = 'finanzas';
+        } else if (tipo === 'tocadas') {
+          const ev = (Store.get(Store.KEYS.EVENTOS_MUSICA, []) || []).filter(e => e.tipo === 'tocada' && e.ts > Date.now()).sort((a, b) => a.ts - b.ts);
+          items.push(...ev.slice(0, 5).map(e => ({
+            id: e.id,
+            principal: e.titulo || e.lugar || 'Tocada sin nombre',
+            secundario: e.lugar || '',
+            tag: new Date(e.ts).toLocaleDateString('es-MX', {weekday:'short', day:'numeric', month:'short'}),
+            urgente: e.ts < Date.now() + 86400000 * 3
+          })));
+          titulo = titulo || `${ev.length} tocadas próximas`;
+          color = '#7AC8DC';
+          modulo_link = 'musica';
+        } else if (tipo === 'canciones') {
+          const c = Store.get(Store.KEYS.CANCIONES, []) || [];
+          items.push(...c.slice(0, 5).map(s => ({
+            id: s.id,
+            principal: s.titulo || 'Sin título',
+            secundario: s.artista || '',
+            tag: s.tono || '',
+            urgente: false
+          })));
+          titulo = titulo || `${c.length} canciones`;
+          color = '#7AC8DC';
+          modulo_link = 'musica';
+        } else if (tipo === 'objetivos') {
+          const all = (Store.get(Store.KEYS.OBJETIVOS, []) || []).filter(o => !o.cumplido);
+          items.push(...all.slice(0, 5).map(o => ({
+            id: o.id,
+            principal: o.titulo || 'Objetivo sin nombre',
+            secundario: o.kpi ? `KPI: ${o.kpi}` : '',
+            tag: o.deadline ? new Date(o.deadline).toLocaleDateString('es-MX', {day:'numeric', month:'short'}) : '',
+            urgente: false
+          })));
+          titulo = titulo || `${all.length} objetivos activos`;
+          color = '#FF7A00';
+          modulo_link = 'finanzas_objetivos';
+        }
+
+        if (items.length === 0) {
+          return { ok: true, msg: '', data: { tipo, titulo: titulo || 'Sin items', items: [], color, vacio: true, modulo_link }, is_lista_visual: true };
+        }
+        return { ok: true, msg: '', data: { tipo, titulo, subtitulo: args.subtitulo, items, color, modulo_link }, is_lista_visual: true };
+      }
+    },
+
+    // ===== TARJETA RESUMEN ·  Para mostrar números grandes destacados =====
+    tarjeta_resumen: {
+      description: 'Para mostrar UN número/dato importante destacado · ej. "MRR actual $26K". 3 args: titulo (corto), valor (grande), contexto (línea pequeña abajo).',
+      parameters: ['titulo', 'valor', 'contexto?', 'color?'],
+      execute(args) {
+        return { ok: true, msg: '', data: { titulo: args.titulo, valor: args.valor, contexto: args.contexto || '', color: args.color || 'orange' }, is_resumen: true };
       }
     }
   },
@@ -1776,16 +1896,17 @@ const Actions = {
 
     txt += '\n## REGLAS DURAS\n';
     txt += '1. PEDIDO EXPLÍCITO ("agrega", "edita", "elimina", "cambia", "recuérdame") → EJECUTA con bloque action · NUNCA digas "hazlo tú desde la interfaz".\n';
-    txt += '2. SIEMPRE termina con bloque quick_choices con 2-4 botones · NUNCA dejes a Alan sin opciones tappeables.\n';
-    txt += '3. INFERENCIA → usa "sugerir" · NO ejecutes directo.\n';
-    txt += '4. ELIMINACIONES → primera vez sin "confirmar:true" · sistema pedirá confirmación · TÚ no insistas.\n';
-    txt += '5. EDICIONES → usa id_o_nombre/id_o_titulo con búsqueda parcial case-insensitive.\n';
-    txt += '6. FECHAS → ISO YYYY-MM-DDTHH:mm:00 zona MX. Calcula con base en la hora actual de arriba.\n';
-    txt += '7. SI NO HAY DATA → "listar" primero o pregunta UNA cosa puntual (PERO con quick_choices al final).\n';
-    txt += '8. NUNCA digas "no puedo editar/eliminar X" · TODO se puede.\n';
-    txt += '9. RESPUESTAS CORTAS · máximo 3 oraciones de texto + bloques action. Alan tiene poco tiempo.\n';
-    txt += '10. CERO sugerencias de "escríbele a alguien" o "habla con tu contador" · ejecuta o sugiere acción del sistema.\n';
-    txt += '11. CUANDO ENCUENTRES ALGO RELEVANTE (cliente, tocada, pendiente, evento) agrega "ir_a" para que Alan VEA el módulo · sale tarjeta tappeable.\n\n';
+    txt += '2. **CADA respuesta termina SIEMPRE con quick_choices** (2-4 botones) · NUNCA dejes a Alan sin opciones tappeables.\n';
+    txt += '3. **CUANDO ALAN PIDA "lista de X" / "qué X tengo" / "muéstrame X" / "cuáles son mis X"** → usa SIEMPRE `lista_visual` · NUNCA escribas los items uno por uno en texto. UN bloque `lista_visual` reemplaza una lista bullets.\n';
+    txt += '4. **CUANDO MENCIONES UN NÚMERO/MONTO IMPORTANTE** ("MRR $26K", "tienes $42K por cobrar") → usa `tarjeta_resumen` con valor grande. NO lo dejes en texto plano.\n';
+    txt += '5. INFERENCIA → usa "sugerir" · NO ejecutes directo.\n';
+    txt += '6. ELIMINACIONES → primera vez sin "confirmar:true" · sistema pedirá confirmación.\n';
+    txt += '7. EDICIONES → usa id_o_nombre/id_o_titulo con búsqueda parcial case-insensitive.\n';
+    txt += '8. FECHAS → ISO YYYY-MM-DDTHH:mm:00 zona MX.\n';
+    txt += '9. NUNCA digas "no puedo editar/eliminar X" · TODO se puede.\n';
+    txt += '10. **TEXTO MÁXIMO 2 ORACIONES** antes del primer bloque action. Si necesitas más, pasa a cards.\n';
+    txt += '11. CERO "¿quieres que...?" · ejecuta directo · cero permisos.\n';
+    txt += '12. CUANDO ENCUENTRES algo relevante agrega "ir_a" para que Alan VEA el módulo.\n\n';
 
     txt += '## EJEMPLOS COMPLETOS DE RESPUESTA\n\n';
 
@@ -1800,18 +1921,49 @@ const Actions = {
     txt += '{"action": "quick_choices", "args": {"choices": ["Aplica ya", "Desde próximo cobro", "Ver historial"]}}\n';
     txt += '```\n\n';
 
-    txt += '### Ejemplo 2 · Encuentro de info + ir_a\n';
-    txt += 'Alan: "qué tocadas tengo esta semana"\n';
-    txt += 'Tu respuesta (después de listar mentalmente):\n\n';
+    txt += '### Ejemplo 2 · Pidió ver lista (usar lista_visual + ir_a · NO escribir items)\n';
+    txt += 'Alan: "lista de tareas" / "qué pendientes tengo" / "muéstrame mis pendientes"\n';
+    txt += 'TU respuesta debe ser EXACTAMENTE así (NO escribir nombres):\n\n';
+    txt += 'Acá están tus pendientes activos:\n\n';
     txt += '```action\n';
-    txt += '{"action": "listar", "args": {"tipo": "tocadas"}}\n';
-    txt += '```\n\n';
-    txt += 'Tienes Tocada Tilly\'s sábado 9 mayo + Estadio Toros jueves. Total proyectado: $3,400.\n\n';
-    txt += '```action\n';
-    txt += '{"action": "ir_a", "args": {"modulo": "musica", "label": "Ver las 2 tocadas"}}\n';
+    txt += '{"action": "lista_visual", "args": {"tipo": "pendientes", "subtitulo": "ordenados por prioridad"}}\n';
     txt += '```\n\n';
     txt += '```action\n';
-    txt += '{"action": "quick_choices", "args": {"choices": ["Armar setlist", "Confirmar pagos", "Agregar otra"]}}\n';
+    txt += '{"action": "ir_a", "args": {"modulo": "pendientes", "label": "Ver todos los pendientes"}}\n';
+    txt += '```\n\n';
+    txt += '```action\n';
+    txt += '{"action": "quick_choices", "args": {"choices": ["Cerrar el más urgente", "Crear nuevo", "Cuáles son alta"]}}\n';
+    txt += '```\n\n';
+
+    txt += '### Ejemplo 3 · Pidió cobros (lista_visual + tarjeta_resumen)\n';
+    txt += 'Alan: "qué debo cobrar"\n';
+    txt += 'Tu respuesta:\n\n';
+    txt += 'Acá los cobros activos:\n\n';
+    txt += '```action\n';
+    txt += '{"action": "tarjeta_resumen", "args": {"titulo": "POR COBRAR", "valor": "$42,500", "contexto": "5 clientes activos · 2 vencidos", "color": "orange"}}\n';
+    txt += '```\n\n';
+    txt += '```action\n';
+    txt += '{"action": "lista_visual", "args": {"tipo": "cobros"}}\n';
+    txt += '```\n\n';
+    txt += '```action\n';
+    txt += '{"action": "ir_a", "args": {"modulo": "finanzas_recurrentes", "label": "Ver todos los cobros"}}\n';
+    txt += '```\n\n';
+    txt += '```action\n';
+    txt += '{"action": "quick_choices", "args": {"choices": ["Generar liga el más viejo", "Recordatorios WhatsApp", "Crear cobro nuevo"]}}\n';
+    txt += '```\n\n';
+
+    txt += '### Ejemplo 4 · Conversación abierta · usa cards no texto\n';
+    txt += 'Alan: "cómo estoy esta semana"\n';
+    txt += 'Tu respuesta:\n\n';
+    txt += 'Tu semana en números:\n\n';
+    txt += '```action\n';
+    txt += '{"action": "tarjeta_resumen", "args": {"titulo": "MRR ACTUAL", "valor": "$26,000", "contexto": "+12% vs mes pasado", "color": "green"}}\n';
+    txt += '```\n\n';
+    txt += '```action\n';
+    txt += '{"action": "lista_visual", "args": {"tipo": "pendientes", "titulo": "Pendientes urgentes"}}\n';
+    txt += '```\n\n';
+    txt += '```action\n';
+    txt += '{"action": "quick_choices", "args": {"choices": ["Ver dashboard completo", "Plan de la semana", "Foco hoy"]}}\n';
     txt += '```\n';
     return txt;
   },
@@ -4388,6 +4540,138 @@ const ProactivIA = {
 
   diaActualKey() {
     return new Date().toISOString().slice(0, 10);
+  },
+
+  /**
+   * Genera sugerencias accionables tipo card para mostrar en el home.
+   * Cada sugerencia tiene: titulo, descripcion, accion (texto del botón), prompt (lo que se manda al chat al tocar).
+   */
+  sugerenciasParaHome() {
+    const sugerencias = [];
+    const ahora = Date.now();
+    const en7d = ahora + 7 * 86400000;
+
+    // 1. Cobros vencidos
+    const cxc = (Store.get('alan_mando_cuentas_cobrar', []) || []).filter(c => !c.cobrado);
+    const cobrosVencidos = cxc.filter(c => c.fecha_esperada && c.fecha_esperada < ahora);
+    if (cobrosVencidos.length) {
+      const monto = cobrosVencidos.reduce((s, c) => s + (c.monto || 0), 0);
+      sugerencias.push({
+        tipo: 'cobro_urgente',
+        color: '#C56A6A',
+        eyebrow: 'COBRO VENCIDO',
+        titulo: `${cobrosVencidos.length} cobro${cobrosVencidos.length > 1 ? 's' : ''} pendiente${cobrosVencidos.length > 1 ? 's' : ''} · $${Math.round(monto).toLocaleString()}`,
+        descripcion: `${cobrosVencidos[0].cliente_nombre || 'Cliente'} ${cobrosVencidos.length > 1 ? `+ ${cobrosVencidos.length - 1} más` : ''} llevan días vencidos. Acción inmediata.`,
+        accion: 'Generar recordatorio WhatsApp',
+        prompt: `Genera recordatorio para los ${cobrosVencidos.length} cobros vencidos`
+      });
+    }
+
+    // 2. Cobros próximos (recurrentes)
+    const cobrosRec = (Store.get('alan_mando_cobros_recurrentes', []) || []).filter(c => c.activo);
+    const proximos = cobrosRec.filter(c => c.proximo_cobro && c.proximo_cobro >= ahora && c.proximo_cobro <= en7d);
+    if (proximos.length && cobrosVencidos.length === 0) {
+      const monto = proximos.reduce((s, c) => s + (c.monto || 0), 0);
+      sugerencias.push({
+        tipo: 'cobro_proximo',
+        color: '#7AC68A',
+        eyebrow: 'COBROS ESTA SEMANA',
+        titulo: `$${Math.round(monto).toLocaleString()} entrarán en ${proximos.length} cobro${proximos.length > 1 ? 's' : ''}`,
+        descripcion: `Liga de cobro lista para enviar · automatiza recordatorios 3 días antes`,
+        accion: 'Ver cobros recurrentes',
+        prompt: 'Muéstrame los cobros recurrentes próximos'
+      });
+    }
+
+    // 3. Pagos próximos
+    const cxp = (Store.get('alan_mando_cuentas_pagar', []) || []).filter(p => !p.pagado);
+    const pagosProx = cxp.filter(p => p.fecha && p.fecha <= en7d);
+    if (pagosProx.length) {
+      const monto = pagosProx.reduce((s, p) => s + (p.monto || 0), 0);
+      sugerencias.push({
+        tipo: 'pago_proximo',
+        color: '#D4A574',
+        eyebrow: 'PAGOS A TU CARGO',
+        titulo: `$${Math.round(monto).toLocaleString()} salen en ${pagosProx.length} pago${pagosProx.length > 1 ? 's' : ''}`,
+        descripcion: `Verifica que tengas saldo · prioridad por fecha`,
+        accion: 'Ver pagos próximos',
+        prompt: 'Muéstrame los pagos próximos'
+      });
+    }
+
+    // 4. Pendientes urgentes vencidos
+    const pendientes = (Store.get(Store.KEYS.PENDIENTES, []) || []).filter(p => !p.done);
+    const vencidos = pendientes.filter(p => p.fecha_limite && p.fecha_limite < ahora);
+    const altas = pendientes.filter(p => p.prioridad === 'alta');
+    if (vencidos.length) {
+      sugerencias.push({
+        tipo: 'pendiente_vencido',
+        color: '#FF7A00',
+        eyebrow: 'PENDIENTE VENCIDO',
+        titulo: `${vencidos.length} pendiente${vencidos.length > 1 ? 's' : ''} sin cerrar`,
+        descripcion: `Tu cabeza carga peso. Cierra el más viejo aunque sea pequeño · alivio inmediato.`,
+        accion: 'Ver pendientes vencidos',
+        prompt: 'Muéstrame mis pendientes vencidos'
+      });
+    } else if (altas.length >= 3) {
+      sugerencias.push({
+        tipo: 'pendiente_alta',
+        color: '#7AC8DC',
+        eyebrow: 'PRIORIDAD ALTA',
+        titulo: `${altas.length} pendientes urgentes esperando`,
+        descripcion: `Bloquea 90 min de foco profundo · cierra los 3 más viejos`,
+        accion: 'Ver pendientes alta',
+        prompt: 'Muéstrame los pendientes de alta prioridad'
+      });
+    }
+
+    // 5. Tocada próxima sin setlist
+    const ev = (Store.get(Store.KEYS.EVENTOS_MUSICA, []) || []).filter(e => e.tipo === 'tocada' && e.ts > ahora && e.ts <= ahora + 14 * 86400000);
+    const sinSetlist = ev.filter(t => !t.set_list || t.set_list.length === 0);
+    if (sinSetlist.length) {
+      sugerencias.push({
+        tipo: 'setlist',
+        color: '#7AC8DC',
+        eyebrow: 'TOCADA SIN SETLIST',
+        titulo: `${sinSetlist[0].titulo || sinSetlist[0].lugar || 'Tocada'} en ${Math.ceil((sinSetlist[0].ts - ahora) / 86400000)} días`,
+        descripcion: `Sin setlist armado · arma uno con tu repertorio`,
+        accion: 'Ir a música',
+        prompt: 'Ayúdame a armar el setlist'
+      });
+    }
+
+    // 6. Mente · sin check-in hoy
+    const menteState = Store.get('alan_mando_mente_state', { estados_diarios: [] });
+    const hoyKey = new Date().toISOString().slice(0, 10);
+    const yaCheckIn = menteState.estados_diarios.find(e => e.fecha === hoyKey);
+    if (!yaCheckIn) {
+      sugerencias.push({
+        tipo: 'mente_checkin',
+        color: '#7AC68A',
+        eyebrow: 'PULSO INTERNO',
+        titulo: 'Sin check-in hoy',
+        descripcion: `5 segundos · Mente aprende cómo amaneces y cruza con tu carga operativa`,
+        accion: 'Hacer check-in',
+        prompt: 'Quiero hacer mi check-in de Mente'
+      });
+    }
+
+    // 7. Pago cliente nuevo · si no hay clientes activos
+    const clientes = Store.get(Store.KEYS.CLIENTES, []) || [];
+    if (clientes.length === 0) {
+      sugerencias.push({
+        tipo: 'sin_clientes',
+        color: '#FF4F00',
+        eyebrow: 'PROSPECTAR',
+        titulo: 'Sin clientes activos',
+        descripcion: `Define 3 prospects esta semana · usa el portafolio G2C`,
+        accion: 'Crear cliente',
+        prompt: 'Quiero crear un cliente nuevo'
+      });
+    }
+
+    // Limitar a top 3 más urgentes
+    return sugerencias.slice(0, 3);
   }
 };
 

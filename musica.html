@@ -194,26 +194,82 @@ async function armarSetIA(tocadaId) {
   }
 }
 
-function reproducir(cancionId) {
+async function reproducir(cancionId) {
   const c = Store.get(Store.KEYS.CANCIONES, []).find(x => x.id === cancionId);
-  if (!c || !c.youtube_id) {
-    UI.toast('Esta canción no tiene YouTube ID cacheado', 'error');
-    return;
+  if (!c) return UI.toast('Canción no encontrada', 'error');
+
+  let ytId = c.youtube_id;
+
+  // Si no tiene YouTube ID, auto-buscar
+  if (!ytId) {
+    UI.toast('Buscando en YouTube...', 'info');
+    try {
+      const q = encodeURIComponent(`${c.artista} ${c.titulo} official`);
+      const res = await fetch(`${G2C.api.proxy}/api/youtube?q=${q}`);
+      const data = await res.json();
+      if (data.results && data.results.length > 0) {
+        ytId = data.results[0].videoId;
+        // Guardar para próxima vez
+        const todas = Store.get(Store.KEYS.CANCIONES, []);
+        const idx = todas.findIndex(x => x.id === cancionId);
+        if (idx >= 0) {
+          todas[idx].youtube_id = ytId;
+          Store.set(Store.KEYS.CANCIONES, todas);
+        }
+        UI.toast('Video encontrado · cacheado', 'success');
+      } else {
+        UI.toast('No se encontró video en YouTube', 'error');
+        return;
+      }
+    } catch (e) {
+      console.error('YouTube error:', e);
+      UI.toast('YouTube API no disponible · revisa Configuración', 'error');
+      return;
+    }
   }
+
   const player = document.getElementById('yt-player');
   player.style.display = 'block';
   document.getElementById('yt-title').textContent = c.titulo + ' · ' + c.artista;
   document.getElementById('yt-meta').textContent = `${c.tonalidad || ''} · ${c.duracion || ''}`;
-  document.getElementById('yt-iframe-host').innerHTML = `<iframe src="https://www.youtube.com/embed/${c.youtube_id}?autoplay=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+  // youtube-nocookie + playsinline para iOS PWA
+  document.getElementById('yt-iframe-host').innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&playsinline=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
 
   Store.set('alan_mando_current_song', { id: c.id, titulo: c.titulo, artista: c.artista, progress: 0 });
+
+  // Scroll al player
+  player.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function verLetra(id) {
+async function verLetra(id) {
   const cancion = Store.get(Store.KEYS.CANCIONES, []).find(c => c.id === id);
   if (!cancion) return UI.toast('Canción no encontrada', 'error');
 
-  const letra = Lyrics.byCancionId(id);
+  let letra = Lyrics.byCancionId(id);
+
+  // AUTO-BUSCAR letra desde lrclib.net si no existe
+  let letraAutoCargada = false;
+  if (!letra) {
+    UI.toast('Buscando letra automáticamente...', 'info');
+    try {
+      const q = encodeURIComponent(`${cancion.artista} ${cancion.titulo}`);
+      const res = await fetch(`https://lrclib.net/api/search?q=${q}`);
+      const results = await res.json();
+      if (results && results.length > 0) {
+        const best = results[0];
+        const contenido = best.syncedLyrics || best.plainLyrics;
+        if (contenido) {
+          const formato = best.syncedLyrics ? 'lrc' : 'plain';
+          Lyrics.save(id, contenido, formato);
+          letra = Lyrics.byCancionId(id);
+          letraAutoCargada = true;
+          UI.toast(`Letra encontrada · ${formato === 'lrc' ? 'sincronizada' : 'texto plano'}`, 'success');
+        }
+      }
+    } catch (e) {
+      console.warn('Error buscando letra:', e);
+    }
+  }
 
   const modal = document.createElement('div');
   modal.className = 'g2c-modal-backdrop active';
@@ -229,46 +285,29 @@ function verLetra(id) {
 
       ${letra ? `
         <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:9px;padding:11px;margin-bottom:10px;">
-          <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">${letra.formato === 'lrc' ? 'LRC SINCRONIZADO' : 'TEXTO PLANO'} · ${letra.lineas.length} líneas</div>
+          <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">${letra.formato === 'lrc' ? 'LRC SINCRONIZADO' : 'TEXTO PLANO'} · ${letra.lineas.length} líneas${letraAutoCargada ? ' · auto desde lrclib' : ''}</div>
           <pre style="font-size:12px;color:var(--text-secondary);white-space:pre-wrap;font-family:'Inter',sans-serif;line-height:1.6;max-height:200px;overflow-y:auto;margin:0;">${Util.esc(letra.contenido.slice(0, 800))}${letra.contenido.length > 800 ? '...' : ''}</pre>
         </div>
       ` : `
         <div style="background:rgba(244,213,128,0.06);border:0.5px solid rgba(244,213,128,0.2);border-radius:9px;padding:11px;margin-bottom:10px;font-size:11px;color:rgba(244,213,128,0.95);">
-          Sin letra cargada · agrega una abajo para usar Modo Escena
+          Sin letra encontrada · pega manual abajo o intenta otra búsqueda
         </div>
       `}
 
       <div class="form-field">
-        <div class="field-label">PEGA LA LETRA AQUÍ</div>
-        <textarea class="field-input field-textarea" id="lyrics-content" placeholder="Pega la letra plana o formato LRC sincronizado:&#10;[00:23.40]Línea con timestamp&#10;[00:27.10]Otra línea&#10;&#10;O simplemente texto plano sin timestamps." style="font-size:14px !important;min-height:140px;font-family:'Inter',sans-serif;">${letra ? Util.esc(letra.contenido) : ''}</textarea>
-        <div style="font-size:9px;color:var(--text-tertiary);margin-top:5px;">
-          Formato LRC se detecta automáticamente. Para letras sincronizadas usa <a href="https://lrclib.net/search?q=${encodeURIComponent(cancion.titulo + ' ' + cancion.artista)}" target="_blank" style="color:rgba(150,210,230,0.95);">lrclib.net</a> o <a href="https://www.lyricsfreak.com" target="_blank" style="color:rgba(150,210,230,0.95);">lyricsfreak</a>.
-        </div>
-      </div>
-
-      <div class="form-field">
-        <div class="field-label">O SUBE ARCHIVO .LRC / .TXT</div>
-        <input type="file" id="lyrics-file" accept=".lrc,.txt,text/plain" class="field-input" style="font-size:14px !important;">
+        <div class="field-label">EDITAR LETRA (opcional)</div>
+        <textarea class="field-input field-textarea" id="lyrics-content" placeholder="Pega letra plana o LRC..." style="font-size:14px !important;min-height:120px;font-family:'Inter',sans-serif;">${letra ? Util.esc(letra.contenido) : ''}</textarea>
       </div>
 
       <div class="g2c-modal-actions">
-        <button class="btn" onclick="cerrarModalLetra()">Cancelar</button>
-        ${letra ? `<button class="btn" onclick="eliminarLetra('${id}')" style="background:rgba(255,79,0,0.08);border-color:rgba(255,79,0,0.25);color:rgba(255,170,110,0.95);">Eliminar</button>` : ''}
+        <button class="btn" onclick="cerrarModalLetra()">Cerrar</button>
+        ${letra ? `<button class="btn" onclick="modoEscena('${id}'); cerrarModalLetra();" style="background:rgba(120,200,220,0.15);border-color:rgba(120,200,220,0.35);color:rgba(180,220,240,0.95);">Modo escena</button>` : ''}
         <button class="btn primary-cyan" onclick="guardarLetra('${id}')">Guardar</button>
       </div>
     </div>
   `;
   modal.addEventListener('click', cerrarModalLetra);
   document.body.appendChild(modal);
-
-  // Bind file upload
-  document.getElementById('lyrics-file').addEventListener('change', async (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    const text = await f.text();
-    document.getElementById('lyrics-content').value = text;
-    UI.toast('Archivo cargado · revisa y guarda', 'info');
-  });
 }
 
 function cerrarModalLetra() {
@@ -300,25 +339,56 @@ function eliminarLetra(cancionId) {
 // ============================================================
 let escenaState = { cancionId: null, letra: null, currentLine: 0, autoScroll: true, ytPlayer: null, scrollTimer: null };
 
-function modoEscena(id) {
+async function modoEscena(id) {
   const cancion = Store.get(Store.KEYS.CANCIONES, []).find(c => c.id === id);
   if (!cancion) return UI.toast('Canción no encontrada', 'error');
 
-  const letra = Lyrics.byCancionId(id);
+  let letra = Lyrics.byCancionId(id);
+  let ytId = cancion.youtube_id;
+
+  // Si no tiene letra, intentar auto-buscar
   if (!letra) {
-    UI.toast('Esta canción no tiene letra · agrégala primero', 'error');
-    setTimeout(() => verLetra(id), 800);
-    return;
+    UI.toast('Buscando letra automáticamente...', 'info');
+    try {
+      const q = encodeURIComponent(`${cancion.artista} ${cancion.titulo}`);
+      const res = await fetch(`https://lrclib.net/api/search?q=${q}`);
+      const results = await res.json();
+      if (results && results.length > 0) {
+        const best = results[0];
+        const contenido = best.syncedLyrics || best.plainLyrics;
+        if (contenido) {
+          const formato = best.syncedLyrics ? 'lrc' : 'plain';
+          Lyrics.save(id, contenido, formato);
+          letra = Lyrics.byCancionId(id);
+        }
+      }
+    } catch (e) { console.warn('Letra error:', e); }
   }
 
-  escenaState = { cancionId: id, letra, currentLine: 0, autoScroll: true };
+  // Si no tiene YouTube, intentar auto-buscar
+  if (!ytId) {
+    UI.toast('Buscando video...', 'info');
+    try {
+      const q = encodeURIComponent(`${cancion.artista} ${cancion.titulo} official`);
+      const res = await fetch(`${G2C.api.proxy}/api/youtube?q=${q}`);
+      const data = await res.json();
+      if (data.results && data.results.length > 0) {
+        ytId = data.results[0].videoId;
+        const todas = Store.get(Store.KEYS.CANCIONES, []);
+        const idx = todas.findIndex(x => x.id === id);
+        if (idx >= 0) { todas[idx].youtube_id = ytId; Store.set(Store.KEYS.CANCIONES, todas); }
+      }
+    } catch (e) { console.warn('YouTube error:', e); }
+  }
+
+  escenaState = { cancionId: id, letra, currentLine: 0, autoScroll: !!letra };
 
   const escena = document.createElement('div');
   escena.id = 'modo-escena';
   escena.style.cssText = 'position:fixed;inset:0;z-index:300;background:linear-gradient(180deg,#0a0e14,#0F1419);display:flex;flex-direction:column;color:white;';
 
-  const tieneLRC = letra.formato === 'lrc';
-  const tieneYT = !!cancion.youtube_id;
+  const tieneLRC = letra && letra.formato === 'lrc';
+  const tieneYT = !!ytId;
 
   escena.innerHTML = `
     <div style="padding:18px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid rgba(244,243,239,0.1);background:rgba(15,20,25,0.95);">
@@ -328,48 +398,51 @@ function modoEscena(id) {
         <div style="font-size:11px;color:rgba(244,243,239,0.5);margin-top:1px;">${Util.esc(cancion.artista)} ${cancion.tonalidad ? '· ' + Util.esc(cancion.tonalidad) : ''}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
-        <button onclick="toggleAutoScroll()" id="autoscroll-btn" style="background:rgba(120,200,220,0.18);border:0.5px solid rgba(120,200,220,0.4);color:rgba(150,210,230,0.95);padding:8px 12px;border-radius:7px;font-size:11px;cursor:pointer;">Auto</button>
+        ${letra ? `<button onclick="toggleAutoScroll()" id="autoscroll-btn" style="background:rgba(120,200,220,0.18);border:0.5px solid rgba(120,200,220,0.4);color:rgba(150,210,230,0.95);padding:8px 12px;border-radius:7px;font-size:11px;cursor:pointer;">Auto</button>` : ''}
         <button onclick="cerrarEscena()" style="background:rgba(255,79,0,0.18);border:0.5px solid rgba(255,79,0,0.4);color:rgba(255,170,110,0.95);width:36px;height:36px;border-radius:7px;font-size:14px;cursor:pointer;">×</button>
       </div>
     </div>
 
     ${tieneYT ? `
       <div style="padding:10px 20px;background:rgba(15,20,25,0.6);border-bottom:0.5px solid rgba(244,243,239,0.06);">
-        <iframe id="escena-yt" src="https://www.youtube.com/embed/${cancion.youtube_id}?enablejsapi=1&autoplay=0" style="width:100%;height:54px;border:0;border-radius:6px;"></iframe>
+        <iframe id="escena-yt" src="https://www.youtube-nocookie.com/embed/${ytId}?enablejsapi=1&autoplay=1&playsinline=1&rel=0" style="width:100%;height:200px;border:0;border-radius:6px;" allow="autoplay; encrypted-media" allowfullscreen></iframe>
       </div>
     ` : ''}
 
     <div id="escena-letra" style="flex:1;overflow-y:auto;padding:60px 24px;text-align:center;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;">
-      ${letra.lineas.map((l, i) => `
+      ${letra ? letra.lineas.map((l, i) => `
         <div class="escena-line" data-line="${i}" data-time="${l.time || 0}" style="font-size:22px;font-weight:500;line-height:1.5;margin-bottom:18px;color:rgba(244,243,239,0.45);transition:all 0.4s ease;letter-spacing:-0.01em;">
           ${Util.esc(l.text) || '&nbsp;'}
         </div>
-      `).join('')}
+      `).join('') : `
+        <div style="margin-top:40px;padding:30px;background:rgba(244,213,128,0.06);border:0.5px solid rgba(244,213,128,0.2);border-radius:14px;color:rgba(244,213,128,0.95);">
+          <div style="font-size:14px;font-weight:500;margin-bottom:8px;">Sin letra cacheada</div>
+          <div style="font-size:11px;color:rgba(244,243,239,0.6);line-height:1.5;margin-bottom:14px;">Toca la canción con el video, o agrega letra manual desde el botón letra.</div>
+          <button onclick="cerrarEscena(); setTimeout(() => verLetra('${id}'), 200);" style="background:rgba(120,200,220,0.18);border:0.5px solid rgba(120,200,220,0.4);color:rgba(150,210,230,0.95);padding:9px 16px;border-radius:8px;font-size:12px;cursor:pointer;">Buscar letra</button>
+        </div>
+      `}
       <div style="height:50vh;"></div>
     </div>
 
     <div style="padding:14px 20px;background:rgba(15,20,25,0.95);border-top:0.5px solid rgba(244,243,239,0.06);display:flex;justify-content:space-between;align-items:center;">
       <div style="font-size:10px;color:rgba(244,243,239,0.4);">
-        ${tieneLRC ? 'Sincronizado · sigue el audio' : 'Texto plano · scroll manual'}
+        ${letra ? (tieneLRC ? 'Sincronizado · sigue el audio' : 'Texto plano · scroll manual') : 'Sin letra · solo video'}
       </div>
       <div style="display:flex;gap:6px;">
-        <button onclick="prevLine()" style="background:rgba(244,243,239,0.05);border:0.5px solid rgba(244,243,239,0.1);color:white;width:38px;height:38px;border-radius:7px;font-size:14px;cursor:pointer;">↑</button>
-        <button onclick="nextLine()" style="background:rgba(244,243,239,0.05);border:0.5px solid rgba(244,243,239,0.1);color:white;width:38px;height:38px;border-radius:7px;font-size:14px;cursor:pointer;">↓</button>
+        ${letra ? `
+          <button onclick="prevLine()" style="background:rgba(244,243,239,0.05);border:0.5px solid rgba(244,243,239,0.1);color:white;width:38px;height:38px;border-radius:7px;font-size:14px;cursor:pointer;">↑</button>
+          <button onclick="nextLine()" style="background:rgba(244,243,239,0.05);border:0.5px solid rgba(244,243,239,0.1);color:white;width:38px;height:38px;border-radius:7px;font-size:14px;cursor:pointer;">↓</button>
+        ` : ''}
       </div>
     </div>
   `;
   document.body.appendChild(escena);
   document.body.style.overflow = 'hidden';
 
-  // Iniciar en línea 0
-  highlightLine(0);
-
-  // Si es LRC con YouTube, intenta sincronizar
-  if (tieneLRC && tieneYT) {
-    setTimeout(initYouTubeSync, 1000);
-  } else if (escenaState.autoScroll) {
-    // Auto-scroll temporizado simple para texto plano (cada 4 segundos)
-    iniciarAutoScrollSimple();
+  if (letra) {
+    highlightLine(0);
+    if (tieneLRC && tieneYT) setTimeout(initYouTubeSync, 1000);
+    else if (escenaState.autoScroll) iniciarAutoScrollSimple();
   }
 }
 
@@ -450,17 +523,16 @@ function modoEscenaSet() {
   const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
   const proxima = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now()).sort((a, b) => a.ts - b.ts)[0];
   if (!proxima || !proxima.set_list || !proxima.set_list.length) {
-    UI.toast('No hay set list de tocada próxima', 'error');
+    UI.toast('No hay set list de tocada próxima · arma una primero', 'error');
     return;
   }
   const cancionesDelSet = proxima.set_list.map(id => Store.get(Store.KEYS.CANCIONES, []).find(c => c.id === id)).filter(Boolean);
-  const conLetra = cancionesDelSet.filter(c => Lyrics.byCancionId(c.id));
-  if (!conLetra.length) {
-    UI.toast('Ninguna canción del set tiene letra cargada', 'error');
+  if (!cancionesDelSet.length) {
+    UI.toast('Set list vacío', 'error');
     return;
   }
-  // Inicia con la primera
-  modoEscena(conLetra[0].id);
+  // Inicia con la primera · auto-busca letra y video si no las tiene
+  modoEscena(cancionesDelSet[0].id);
 }
 
 function agregarCancion() {
@@ -497,9 +569,9 @@ function agregarCancion() {
       </div>
 
       <div class="form-field">
-        <div class="field-label">YOUTUBE ID (opcional)</div>
-        <input type="text" class="field-input" id="cancion-yt" placeholder="MYSVMgRr6pw" style="font-size:16px !important;">
-        <div style="font-size:9px;color:var(--text-tertiary);margin-top:4px;">El ID es la parte después de v= en youtube.com/watch?v=...</div>
+        <div class="field-label">YOUTUBE</div>
+        <input type="text" class="field-input" id="cancion-yt" placeholder="ID o link · auto-busca si dejas vacío" style="font-size:16px !important;">
+        <div style="font-size:9px;color:var(--text-tertiary);margin-top:4px;">Pega link completo, ID, o déjalo vacío para auto-búsqueda</div>
       </div>
 
       <div class="g2c-modal-actions">
@@ -518,7 +590,28 @@ function cerrarModalCancion() {
   if (m) m.remove();
 }
 
-function guardarCancion() {
+// Extrae el videoId de cualquier formato de YouTube · link, embed, share, ID directo
+function extraerYouTubeId(input) {
+  if (!input) return '';
+  const s = input.trim();
+  // Si ya es un ID (11 chars alfanuméricos)
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+  // youtube.com/watch?v=ID
+  let m = s.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  // youtu.be/ID
+  m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  // youtube.com/embed/ID
+  m = s.match(/embed\/([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  // shorts/ID
+  m = s.match(/shorts\/([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  return s; // fallback: lo que sea (puede que ya sea válido)
+}
+
+async function guardarCancion() {
   const titulo = document.getElementById('cancion-titulo').value.trim();
   const artista = document.getElementById('cancion-artista').value.trim();
   if (!titulo || !artista) {
@@ -527,7 +620,27 @@ function guardarCancion() {
   }
   const tonalidad = document.getElementById('cancion-tonalidad').value.trim();
   const duracion = document.getElementById('cancion-duracion').value.trim();
-  const ytId = document.getElementById('cancion-yt').value.trim();
+  let ytInput = document.getElementById('cancion-yt').value.trim();
+  let ytId = extraerYouTubeId(ytInput);
+
+  // Si no metió ID/link, AUTO-BUSCAR via Worker
+  if (!ytId) {
+    UI.toast('Buscando en YouTube...', 'info');
+    try {
+      const q = encodeURIComponent(`${artista} ${titulo} official`);
+      const res = await fetch(`${G2C.api.proxy}/api/youtube?q=${q}`);
+      const data = await res.json();
+      if (data.results && data.results.length > 0) {
+        ytId = data.results[0].videoId;
+        UI.toast(`Match: ${data.results[0].titulo.slice(0, 40)}...`, 'success');
+      } else {
+        UI.toast('Sin resultados en YouTube · canción guardada sin video', 'info');
+      }
+    } catch (e) {
+      console.warn('YouTube search error:', e);
+      UI.toast('YouTube API no disponible · guardando sin video', 'info');
+    }
+  }
 
   Store.push(Store.KEYS.CANCIONES, {
     titulo, artista, tonalidad, duracion, youtube_id: ytId, dominio: 'aprendiendo'

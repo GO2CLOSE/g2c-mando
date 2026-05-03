@@ -1,8 +1,8 @@
 // G2C Mando · Service Worker
-// v1.8 · Push notifications + cache versionado
+// v1.9 · Push notifications + cache versionado
 
-const SW_VERSION = 'g2c-mando-sw-v1.8';
-const CACHE_NAME = 'g2c-mando-cache-v1.8';
+const SW_VERSION = 'g2c-mando-sw-v1.9';
+const CACHE_NAME = 'g2c-mando-cache-v1.9';
 
 // Archivos críticos para cache offline
 const CACHE_URLS = [
