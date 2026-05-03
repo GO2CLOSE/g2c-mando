@@ -144,6 +144,12 @@
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;" id="push-actions"></div>
   </div>
+
+  <!-- Preferencias de notificación · qué recibir -->
+  <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;margin-top:8px;">
+    <div style="font-size:9px;color:rgba(244,243,239,0.55);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:10px;">qué notificaciones quieres recibir</div>
+    <div id="notif-prefs-list"></div>
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -282,6 +288,7 @@
   renderConnections();
   renderAttachments();
   await renderPush();
+  renderNotifPrefs();
   renderStats();
   loadFiscalData();
   loadSATCalendar();
@@ -1072,6 +1079,76 @@ async function desuscribir() {
   await Push.unsubscribe();
   UI.toast('Desactivadas', 'info');
   setTimeout(renderPush, 500);
+}
+
+// ============================================================
+// PREFERENCIAS DE NOTIFICACIÓN
+// ============================================================
+function renderNotifPrefs() {
+  const host = document.getElementById('notif-prefs-list');
+  if (!host) return;
+
+  const prefs = NotifPrefs.get();
+  const grupos = {};
+  NotifPrefs.CATALOG.forEach(item => {
+    if (!grupos[item.categoria]) grupos[item.categoria] = [];
+    grupos[item.categoria].push(item);
+  });
+
+  const labelGrupo = {
+    finanzas: { label: 'Finanzas', color: 'rgba(180,220,170,0.95)' },
+    musica: { label: 'Música', color: 'rgba(200,180,220,0.95)' },
+    sat: { label: 'SAT · fiscal', color: 'rgba(244,213,128,0.95)' },
+    tareas: { label: 'Tareas y pendientes', color: 'rgba(150,210,230,0.95)' },
+    salud: { label: 'Cuidado personal', color: 'rgba(255,170,180,0.95)' },
+    ia: { label: 'ProactivIA', color: 'rgba(255,150,80,0.95)' }
+  };
+
+  let html = '';
+  Object.entries(grupos).forEach(([cat, items]) => {
+    const meta = labelGrupo[cat] || { label: cat, color: 'var(--text-secondary)' };
+    html += `
+      <div style="margin-bottom:14px;">
+        <div style="font-size:9px;color:${meta.color};letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">${meta.label}</div>
+        ${items.map(item => `
+          <div onclick="toggleNotifPref('${item.id}')" style="display:flex;align-items:center;gap:11px;padding:10px;background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:8px;margin-bottom:4px;cursor:pointer;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:500;">${Util.esc(item.label)}</div>
+              <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;line-height:1.4;">${Util.esc(item.desc)}</div>
+            </div>
+            <div class="notif-toggle ${prefs[item.id] ? 'on' : 'off'}" style="
+              flex-shrink:0;
+              width:38px;
+              height:22px;
+              background:${prefs[item.id] ? 'rgba(180,220,170,0.4)' : 'rgba(244,243,239,0.08)'};
+              border:0.5px solid ${prefs[item.id] ? 'rgba(180,220,170,0.6)' : 'var(--border-mid)'};
+              border-radius:11px;
+              position:relative;
+              transition:all 0.2s;
+            ">
+              <div style="
+                position:absolute;
+                top:1px;
+                left:${prefs[item.id] ? '17px' : '1px'};
+                width:18px;
+                height:18px;
+                background:${prefs[item.id] ? 'rgba(200,230,200,1)' : 'rgba(244,243,239,0.6)'};
+                border-radius:50%;
+                transition:left 0.2s, background 0.2s;
+              "></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  });
+
+  host.innerHTML = html;
+}
+
+function toggleNotifPref(id) {
+  NotifPrefs.toggle(id);
+  renderNotifPrefs();
 }
 
 // ============================================================

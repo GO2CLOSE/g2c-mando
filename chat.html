@@ -246,13 +246,201 @@ async function handleSend(text) {
     responseText = res.content?.[0]?.text || 'Sin respuesta del cerebro · reintenta.';
   }
 
-  conversationHistory.push({ role: 'assistant', content: responseText, tone });
+  // ============================================================
+  // EJECUTAR ACCIONES · SUGERENCIAS · CONFIRMACIONES
+  // ============================================================
+  let cards = [];
+  let executedOk = 0;
+  let executedFail = 0;
+
+  if (!res.error && typeof Actions !== 'undefined') {
+    const blocks = Actions.parseFromResponse(responseText);
+    if (blocks.length) {
+      const feedbackLines = [];
+      blocks.forEach(b => {
+        // Caso 1: la acción es "sugerir" → IA propone, generamos tarjeta de aprobación
+        if (b.name === 'sugerir') {
+          const r = Actions.execute(b.name, b.args);
+          if (r.ok && r.data) {
+            cards.push({ type: 'suggestion', sugerencia: r.data });
+          }
+          return;
+        }
+
+        // Caso 2: ejecución normal
+        const r = Actions.execute(b.name, b.args);
+
+        // Caso 2a: requires_confirm → crear tarjeta de confirmación
+        if (r.requires_confirm) {
+          cards.push({ type: 'confirm', mensaje: r.msg, accion: r.action, args: r.args });
+          return;
+        }
+
+        if (r.ok) {
+          executedOk++;
+          feedbackLines.push(`✓ ${r.msg}`);
+          // Si tiene undo, agregar tarjeta de undo
+          if (r.undo) {
+            cards.push({ type: 'undo', mensaje: r.msg, accion: r.undo.action, args: r.undo.args });
+          }
+        } else {
+          executedFail++;
+          feedbackLines.push(`✗ ${r.msg}`);
+        }
+      });
+
+      responseText = Actions.stripFromResponse(responseText);
+      if (feedbackLines.length) {
+        responseText = feedbackLines.join('\n') + (responseText ? '\n\n' : '') + responseText;
+      }
+    }
+  }
+
+  conversationHistory.push({ role: 'assistant', content: responseText, tone, cards: cards });
   saveConversation();
 
-  appendAI({ text: responseText, tone });
+  appendAIWithCards({ text: responseText, tone, cards });
 
-  // Detectar si la respuesta sugiere acciones y mostrarlas como botones
+  if (executedOk > 0) {
+    UI.toast(`${executedOk} ${executedOk === 1 ? 'acción ejecutada' : 'acciones ejecutadas'}`, 'success');
+  }
+  if (executedFail > 0 && executedOk === 0) {
+    UI.toast(`${executedFail} acción falló`, 'error');
+  }
+
   if (!res.error) detectAndAddActions(responseText, intent);
+}
+
+/**
+ * Renderiza respuesta IA + tarjetas inline (sugerencias, confirmaciones, undo).
+ */
+function appendAIWithCards({ text, tone = 'operador', cards = [] }) {
+  appendAI({ text, tone });
+
+  if (!cards.length) return;
+  const container = document.getElementById('chat-messages') || document.querySelector('.chat-messages') || document.body;
+
+  cards.forEach((card, i) => {
+    const cardId = 'card_' + Date.now() + '_' + i;
+    const wrap = document.createElement('div');
+    wrap.id = cardId;
+    wrap.style.cssText = 'margin: 8px 0 12px; max-width: 92%; align-self: flex-start;';
+
+    if (card.type === 'suggestion') {
+      const accion = card.sugerencia.accion;
+      const argsTxt = JSON.stringify(card.sugerencia.args || {}, null, 0).slice(0, 200);
+      wrap.innerHTML = `
+        <div style="background: rgba(244,213,128,0.06); border: 0.5px solid rgba(244,213,128,0.3); border-radius: 11px; padding: 11px;">
+          <div style="font-size: 9px; color: rgba(244,213,128,0.95); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin-bottom: 6px;">★ Sugerencia</div>
+          <div style="font-size: 12px; color: var(--text-primary); margin-bottom: 4px; font-weight: 500;">${escapeHtml(accion.replace(/_/g, ' '))}</div>
+          ${card.sugerencia.razon ? `<div style="font-size: 11px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 9px;">${escapeHtml(card.sugerencia.razon)}</div>` : ''}
+          <div style="font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--text-tertiary); background: rgba(0,0,0,0.2); padding: 6px 8px; border-radius: 5px; margin-bottom: 10px; word-break: break-all;">${escapeHtml(argsTxt)}</div>
+          <div style="display: flex; gap: 6px;">
+            <button onclick="aprobarSugerencia('${card.sugerencia.id}', '${cardId}')" style="flex:1; background: rgba(180,220,170,0.18); border: 0.5px solid rgba(180,220,170,0.4); color: rgba(200,230,200,1); padding: 9px 12px; border-radius: 7px; font-size: 11px; font-weight: 500; cursor: pointer;">Aprobar</button>
+            <button onclick="rechazarSugerencia('${card.sugerencia.id}', '${cardId}')" style="flex:1; background: transparent; border: 0.5px solid var(--border-mid); color: var(--text-secondary); padding: 9px 12px; border-radius: 7px; font-size: 11px; cursor: pointer;">Rechazar</button>
+          </div>
+        </div>
+      `;
+    } else if (card.type === 'confirm') {
+      wrap.innerHTML = `
+        <div style="background: rgba(255,79,0,0.06); border: 0.5px solid rgba(255,79,0,0.3); border-radius: 11px; padding: 11px;">
+          <div style="font-size: 9px; color: rgba(255,150,80,0.95); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin-bottom: 6px;">⚠ Confirmar acción</div>
+          <div style="font-size: 12px; color: var(--text-primary); margin-bottom: 10px; line-height: 1.5;">${escapeHtml(card.mensaje)}</div>
+          <div style="display: flex; gap: 6px;">
+            <button onclick='confirmarDestructiva(${JSON.stringify(card.accion)}, ${JSON.stringify(card.args)}, "${cardId}")' style="flex:1; background: rgba(255,79,0,0.2); border: 0.5px solid rgba(255,79,0,0.5); color: rgba(255,170,110,1); padding: 9px 12px; border-radius: 7px; font-size: 11px; font-weight: 500; cursor: pointer;">Confirmar</button>
+            <button onclick="cancelarConfirm('${cardId}')" style="flex:1; background: transparent; border: 0.5px solid var(--border-mid); color: var(--text-secondary); padding: 9px 12px; border-radius: 7px; font-size: 11px; cursor: pointer;">Cancelar</button>
+          </div>
+        </div>
+      `;
+    } else if (card.type === 'undo') {
+      wrap.innerHTML = `
+        <div style="background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 9px; padding: 9px 11px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <div style="font-size: 11px; color: var(--text-secondary); flex: 1; min-width: 0;">${escapeHtml(card.mensaje)}</div>
+          <button onclick='deshacerAccion(${JSON.stringify(card.accion)}, ${JSON.stringify(card.args)}, "${cardId}")' style="background: transparent; border: 0.5px solid rgba(120,200,220,0.3); color: rgba(180,220,240,0.95); padding: 6px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 500; flex-shrink: 0;">↶ Deshacer</button>
+        </div>
+      `;
+    }
+
+    container.appendChild(wrap);
+  });
+
+  // Scroll abajo
+  if (container.scrollTop !== undefined) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+function aprobarSugerencia(sugId, cardId) {
+  const sugs = Store.get('alan_mando_sugerencias', []);
+  const sug = sugs.find(s => s.id === sugId);
+  if (!sug) return UI.toast('Sugerencia no encontrada', 'error');
+
+  const r = Actions.execute(sug.accion, sug.args);
+  marcarSugerencia(sugId, 'aprobada');
+
+  const card = document.getElementById(cardId);
+  if (card) {
+    if (r.ok) {
+      card.innerHTML = `<div style="background: rgba(180,220,170,0.08); border: 0.5px solid rgba(180,220,170,0.3); border-radius: 9px; padding: 10px; font-size: 11px; color: rgba(200,230,200,1);">✓ ${escapeHtml(r.msg)}</div>`;
+      UI.toast('Sugerencia aprobada · ejecutada', 'success');
+    } else {
+      card.innerHTML = `<div style="background: rgba(255,79,0,0.06); border: 0.5px solid rgba(255,79,0,0.3); border-radius: 9px; padding: 10px; font-size: 11px; color: rgba(255,170,110,1);">✗ ${escapeHtml(r.msg)}</div>`;
+      UI.toast('Falló al ejecutar', 'error');
+    }
+  }
+}
+
+function rechazarSugerencia(sugId, cardId) {
+  marcarSugerencia(sugId, 'rechazada');
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.innerHTML = `<div style="background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 9px; padding: 10px; font-size: 11px; color: var(--text-tertiary);">Sugerencia descartada</div>`;
+  }
+  UI.toast('Descartada', 'info');
+}
+
+function marcarSugerencia(id, status) {
+  const sugs = Store.get('alan_mando_sugerencias', []);
+  const s = sugs.find(x => x.id === id);
+  if (s) { s.status = status; s.resolved_at = Date.now(); Store.set('alan_mando_sugerencias', sugs); }
+}
+
+function confirmarDestructiva(accion, args, cardId) {
+  const r = Actions.execute(accion, args);
+  const card = document.getElementById(cardId);
+  if (card) {
+    if (r.ok) {
+      card.innerHTML = `<div style="background: rgba(180,220,170,0.08); border: 0.5px solid rgba(180,220,170,0.3); border-radius: 9px; padding: 10px; font-size: 11px; color: rgba(200,230,200,1);">✓ ${escapeHtml(r.msg)}</div>`;
+      UI.toast('Confirmado', 'success');
+    } else {
+      card.innerHTML = `<div style="background: rgba(255,79,0,0.06); border: 0.5px solid rgba(255,79,0,0.3); border-radius: 9px; padding: 10px; font-size: 11px; color: rgba(255,170,110,1);">✗ ${escapeHtml(r.msg)}</div>`;
+    }
+  }
+}
+
+function cancelarConfirm(cardId) {
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.innerHTML = `<div style="background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 9px; padding: 10px; font-size: 11px; color: var(--text-tertiary);">Cancelado</div>`;
+  }
+}
+
+function deshacerAccion(accion, args, cardId) {
+  const r = Actions.execute(accion, args);
+  const card = document.getElementById(cardId);
+  if (card) {
+    if (r.ok) {
+      card.innerHTML = `<div style="background: rgba(120,200,220,0.06); border: 0.5px solid rgba(120,200,220,0.3); border-radius: 9px; padding: 10px; font-size: 11px; color: rgba(180,220,240,1);">↶ ${escapeHtml(r.msg)}</div>`;
+      UI.toast('Deshecho', 'info');
+    } else {
+      UI.toast('No se pudo deshacer', 'error');
+    }
+  }
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 function detectAndAddActions(text, intent) {

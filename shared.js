@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.6.1',
+  version: '1.6.3',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -463,25 +463,28 @@ ${this.buildStateContext(snap)}
 ${typeof Attach !== 'undefined' ? Attach.buildContext() : ''}
 ${typeof Expediente !== 'undefined' ? Expediente.buildContext() : ''}
 ${typeof Presupuesto !== 'undefined' ? this.buildPresupuestoContext() : ''}
+${typeof Actions !== 'undefined' ? Actions.buildPromptCatalog() : ''}
 
 # CÓMO RESPONDER
-1. Si Alan menciona algo personal/emocional → reconócelo ANTES de operar. Tono cálido pero no empalagoso.
-2. Si pregunta operativo → datos duros + acción concreta. No tema dar números.
-3. SIEMPRE aterriza tips a su realidad: lugares reales en TJ/Ensenada, montos del portafolio real, tiempo disponible real.
-4. Cuando proponga estrategia, da 2 opciones con ROI/tiempo · recomienda una con razón.
-5. Usa modismos MX neutros: "va", "no, va?", contracciones naturales. NO "vos", NO formalidades innecesarias.
-6. NUNCA digas "agencia de marketing" para describir G2C.
-7. NUNCA nombres vendors externos cuando hables de propuesta a cliente.
-8. Si el ciclo de venta lleva >45 días, sugiere cortar.
-9. Si mete tiempo cantando vs G2C, recuerda que G2C tiene ROI 6x mejor por hora pero la música es ingreso paralelo confiable.
-10. Sé conciso. Texto largo solo si Alan lo pidió.
+1. **EJECUTA ACCIONES · NO DELEGUES**: Si Alan dice "agrega", "registra", "elimina", "edita", "recuérdame", "anota" → EJECUTA la acción correspondiente con un bloque \`\`\`action al inicio. NUNCA respondas "tienes que hacerlo tú desde la interfaz" si existe una action que lo hace.
+2. Si Alan menciona algo personal/emocional → reconócelo ANTES de operar. Tono cálido pero no empalagoso.
+3. Si pregunta operativo → datos duros + acción concreta. No tema dar números.
+4. SIEMPRE aterriza tips a su realidad: lugares reales en TJ/Ensenada, montos del portafolio real, tiempo disponible real.
+5. Cuando proponga estrategia, da 2 opciones con ROI/tiempo · recomienda una con razón.
+6. Usa modismos MX neutros: "va", "no, va?", contracciones naturales. NO "vos", NO formalidades innecesarias.
+7. NUNCA digas "agencia de marketing" para describir G2C.
+8. NUNCA nombres vendors externos cuando hables de propuesta a cliente.
+9. Si el ciclo de venta lleva >45 días, sugiere cortar.
+10. Si mete tiempo cantando vs G2C, recuerda que G2C tiene ROI 6x mejor por hora pero la música es ingreso paralelo confiable.
+11. Sé conciso. Texto largo solo si Alan lo pidió.
 
 # TU PERSONALIDAD
 - Operador-senior, no asistente robótico
 - Reconoces estado humano antes que operativo
 - Brutal en honestidad cuando vas en mala dirección
 - Celebras logros sin lambisconería
-- Distingues automáticamente trabajo vs personal sin que Alan toggle nada`;
+- Distingues automáticamente trabajo vs personal sin que Alan toggle nada
+- TIENES MANOS · puedes editar, crear, eliminar todo del sistema · úsalo`;
   },
 
   /**
@@ -949,7 +952,772 @@ const Cascada = {
 };
 
 // ============================================================
-// 7 · UI HELPERS
+// 7 · ACTIONS · capa única de comandos para IA y UI
+// ============================================================
+
+/**
+ * Cada Action tiene:
+ * - name: identificador único
+ * - description: para el LLM (qué hace, cuándo usarla)
+ * - parameters: JSON schema simple con campos requeridos
+ * - execute(args): función que ejecuta y retorna {ok, msg, data, undo?}
+ *
+ * El chat IA usa estas actions vía detección de intent. La UI también
+ * puede llamarlas directo. SIEMPRE retornan estructura uniforme.
+ */
+const Actions = {
+  /**
+   * Diccionario de todas las acciones disponibles.
+   */
+  CATALOG: {
+    // ===== RECORDATORIOS =====
+    crear_recordatorio: {
+      description: 'Crear un recordatorio agendado (ensayo, tocada, cumpleaños, fiscal, llamada). Úsalo cuando diga "recuérdame", "agéndame", "alarma para".',
+      parameters: ['titulo', 'fecha_iso', 'tipo?', 'body?', 'prioridad?'],
+      execute(args) {
+        if (typeof Recordatorios === 'undefined') return { ok: false, msg: 'Sistema no disponible' };
+        const fecha = args.fecha_iso ? new Date(args.fecha_iso).getTime() : Date.now() + 3600000;
+        if (isNaN(fecha)) return { ok: false, msg: `Fecha inválida: ${args.fecha_iso}` };
+        const r = Recordatorios.agendar({
+          tipo: args.tipo || 'personal',
+          titulo: args.titulo,
+          body: args.body || '',
+          fecha,
+          prioridad: args.prioridad || 'media'
+        });
+        const lbl = new Date(fecha).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        return { ok: true, msg: `Recordatorio "${args.titulo}" agendado para ${lbl}`, data: r, undo: { action: 'eliminar_recordatorio', args: { id_o_titulo: r.id } } };
+      }
+    },
+
+    editar_recordatorio: {
+      description: 'Editar un recordatorio · cambiar fecha, hora, título, prioridad, body. Identifica por id o por título parcial.',
+      parameters: ['id_o_titulo', 'titulo?', 'fecha_iso?', 'prioridad?', 'body?'],
+      execute(args) {
+        if (typeof Recordatorios === 'undefined') return { ok: false, msg: 'Sin sistema' };
+        const all = Recordatorios.list ? Recordatorios.list() : Store.get('alan_mando_recordatorios', []);
+        let r = all.find(x => x.id === args.id_o_titulo);
+        if (!r) r = all.find(x => (x.titulo || '').toLowerCase().includes((args.id_o_titulo || '').toLowerCase()));
+        if (!r) return { ok: false, msg: `Recordatorio "${args.id_o_titulo}" no encontrado` };
+        const cambios = [];
+        if (args.titulo) { cambios.push(`título: ${r.titulo} → ${args.titulo}`); r.titulo = args.titulo; }
+        if (args.fecha_iso) {
+          const nf = new Date(args.fecha_iso).getTime();
+          if (isNaN(nf)) return { ok: false, msg: `Fecha inválida: ${args.fecha_iso}` };
+          const lblOld = new Date(r.fecha).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+          const lblNew = new Date(nf).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+          cambios.push(`fecha: ${lblOld} → ${lblNew}`);
+          r.fecha = nf;
+        }
+        if (args.prioridad) { cambios.push(`prioridad: ${r.prioridad} → ${args.prioridad}`); r.prioridad = args.prioridad; }
+        if (args.body !== undefined) r.body = args.body;
+        Store.set('alan_mando_recordatorios', all);
+        return { ok: true, msg: `Recordatorio actualizado · ${cambios.join(' · ')}`, data: r };
+      }
+    },
+
+    eliminar_recordatorio: {
+      description: 'Eliminar recordatorio. Identifica por id o título parcial. Pide confirmación.',
+      parameters: ['id_o_titulo', 'confirmar?'],
+      execute(args) {
+        if (typeof Recordatorios === 'undefined') return { ok: false, msg: 'Sin sistema' };
+        const all = Recordatorios.list ? Recordatorios.list() : Store.get('alan_mando_recordatorios', []);
+        let idx = all.findIndex(x => x.id === args.id_o_titulo);
+        if (idx === -1) idx = all.findIndex(x => (x.titulo || '').toLowerCase().includes((args.id_o_titulo || '').toLowerCase()));
+        if (idx === -1) return { ok: false, msg: 'No encontrado' };
+        if (!args.confirmar) {
+          return { ok: false, msg: `Confirmar eliminar "${all[idx].titulo}"`, requires_confirm: true, action: 'eliminar_recordatorio', args: { id_o_titulo: all[idx].id, confirmar: true } };
+        }
+        const removed = all.splice(idx, 1)[0];
+        Store.set('alan_mando_recordatorios', all);
+        return { ok: true, msg: `Recordatorio "${removed.titulo}" eliminado`, data: removed };
+      }
+    },
+
+    // ===== PENDIENTES =====
+    crear_pendiente: {
+      description: 'Crear tarea/pendiente. Úsalo con "agrega tarea", "pendiente", "tengo que", "anota".',
+      parameters: ['titulo', 'prioridad?', 'due_iso?', 'objetivo_id?'],
+      execute(args) {
+        const due_ts = args.due_iso ? new Date(args.due_iso).getTime() : null;
+        const pend = {
+          id: 'pend_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          titulo: args.titulo,
+          prioridad: args.prioridad || 'media',
+          urgente: args.prioridad === 'alta',
+          importante: args.prioridad === 'alta' || args.prioridad === 'media',
+          due_ts,
+          fecha_creacion: Date.now(),
+          done: false,
+          objetivo_id: args.objetivo_id || null
+        };
+        Store.push(Store.KEYS.PENDIENTES, pend);
+        return { ok: true, msg: `Pendiente creado: "${args.titulo}"`, data: pend, undo: { action: 'eliminar_pendiente', args: { id_o_titulo: pend.id, confirmar: true } } };
+      }
+    },
+
+    editar_pendiente: {
+      description: 'Editar pendiente · cambiar título, prioridad, fecha vencimiento. Identifica por id o título parcial.',
+      parameters: ['id_o_titulo', 'titulo?', 'prioridad?', 'due_iso?'],
+      execute(args) {
+        const pends = Store.get(Store.KEYS.PENDIENTES, []);
+        let p = pends.find(x => x.id === args.id_o_titulo);
+        if (!p) p = pends.find(x => (x.titulo || '').toLowerCase().includes((args.id_o_titulo || '').toLowerCase()));
+        if (!p) return { ok: false, msg: `Pendiente "${args.id_o_titulo}" no encontrado` };
+        const cambios = [];
+        if (args.titulo) { cambios.push(`título: ${p.titulo} → ${args.titulo}`); p.titulo = args.titulo; }
+        if (args.prioridad) { cambios.push(`prioridad: ${p.prioridad} → ${args.prioridad}`); p.prioridad = args.prioridad; p.urgente = args.prioridad === 'alta'; p.importante = args.prioridad !== 'baja'; }
+        if (args.due_iso) {
+          const nf = new Date(args.due_iso).getTime();
+          if (isNaN(nf)) return { ok: false, msg: `Fecha inválida: ${args.due_iso}` };
+          cambios.push(`fecha: ${args.due_iso}`);
+          p.due_ts = nf;
+        }
+        Store.set(Store.KEYS.PENDIENTES, pends);
+        return { ok: true, msg: `Pendiente actualizado · ${cambios.join(' · ')}`, data: p };
+      }
+    },
+
+    completar_pendiente: {
+      description: 'Marcar pendiente como completado',
+      parameters: ['id_o_titulo'],
+      execute(args) {
+        const pends = Store.get(Store.KEYS.PENDIENTES, []);
+        let p = pends.find(x => x.id === args.id_o_titulo);
+        if (!p) p = pends.find(x => (x.titulo || '').toLowerCase().includes((args.id_o_titulo || '').toLowerCase()));
+        if (!p) return { ok: false, msg: 'No encontrado' };
+        p.done = true; p.completed_at = Date.now();
+        Store.set(Store.KEYS.PENDIENTES, pends);
+        return { ok: true, msg: `"${p.titulo}" completado`, data: p };
+      }
+    },
+
+    eliminar_pendiente: {
+      description: 'Eliminar pendiente · pide confirmación.',
+      parameters: ['id_o_titulo', 'confirmar?'],
+      execute(args) {
+        const pends = Store.get(Store.KEYS.PENDIENTES, []);
+        let idx = pends.findIndex(x => x.id === args.id_o_titulo);
+        if (idx === -1) idx = pends.findIndex(x => (x.titulo || '').toLowerCase().includes((args.id_o_titulo || '').toLowerCase()));
+        if (idx === -1) return { ok: false, msg: 'No encontrado' };
+        if (!args.confirmar) {
+          return { ok: false, msg: `Confirmar eliminar "${pends[idx].titulo}"`, requires_confirm: true, action: 'eliminar_pendiente', args: { id_o_titulo: pends[idx].id, confirmar: true } };
+        }
+        const removed = pends.splice(idx, 1)[0];
+        Store.set(Store.KEYS.PENDIENTES, pends);
+        return { ok: true, msg: 'Pendiente eliminado', data: removed };
+      }
+    },
+
+    // ===== CLIENTES =====
+    crear_cliente: {
+      description: 'Agregar cliente nuevo a G2C',
+      parameters: ['nombre', 'plan?', 'monto?', 'frecuencia?', 'notas?'],
+      execute(args) {
+        const cli = {
+          id: 'cli_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          nombre: args.nombre,
+          plan: args.plan || 'Visor',
+          monto: args.monto || 0,
+          frecuencia: args.frecuencia || 'mensual',
+          fechaInicio: new Date().toISOString().slice(0, 10),
+          notas: args.notas || '',
+          status: 'activo',
+          createdAt: Date.now()
+        };
+        Store.push(Store.KEYS.CLIENTES, cli);
+        return { ok: true, msg: `Cliente "${args.nombre}" creado`, data: cli, undo: { action: 'eliminar_cliente', args: { id_o_nombre: cli.id, confirmar: true } } };
+      }
+    },
+
+    editar_cliente: {
+      description: 'Editar cliente · nombre, monto, plan, status, frecuencia, notas. Identifica por id o nombre parcial.',
+      parameters: ['id_o_nombre', 'nombre?', 'monto?', 'plan?', 'status?', 'frecuencia?', 'notas?'],
+      execute(args) {
+        const clientes = Store.get(Store.KEYS.CLIENTES, []);
+        let c = clientes.find(x => x.id === args.id_o_nombre);
+        if (!c) c = clientes.find(x => x.nombre.toLowerCase().includes((args.id_o_nombre || '').toLowerCase()));
+        if (!c) return { ok: false, msg: `Cliente "${args.id_o_nombre}" no encontrado` };
+        const cambios = [];
+        if (args.nombre) { cambios.push(`nombre: ${c.nombre} → ${args.nombre}`); c.nombre = args.nombre; }
+        if (args.monto !== undefined) { cambios.push(`monto: $${c.monto} → $${args.monto}`); c.monto = args.monto; }
+        if (args.plan) { cambios.push(`plan: ${c.plan} → ${args.plan}`); c.plan = args.plan; }
+        if (args.status) { cambios.push(`status: ${c.status} → ${args.status}`); c.status = args.status; }
+        if (args.frecuencia) { cambios.push(`frecuencia: ${c.frecuencia} → ${args.frecuencia}`); c.frecuencia = args.frecuencia; }
+        if (args.notas !== undefined) c.notas = args.notas;
+        Store.set(Store.KEYS.CLIENTES, clientes);
+        return { ok: true, msg: `Cliente "${c.nombre}" actualizado · ${cambios.join(' · ')}`, data: c };
+      }
+    },
+
+    eliminar_cliente: {
+      description: 'Eliminar cliente · pide confirmación.',
+      parameters: ['id_o_nombre', 'confirmar?'],
+      execute(args) {
+        const clientes = Store.get(Store.KEYS.CLIENTES, []);
+        let idx = clientes.findIndex(x => x.id === args.id_o_nombre);
+        if (idx === -1) idx = clientes.findIndex(x => x.nombre.toLowerCase().includes((args.id_o_nombre || '').toLowerCase()));
+        if (idx === -1) return { ok: false, msg: 'No encontrado' };
+        if (!args.confirmar) {
+          return { ok: false, msg: `Confirmar eliminar cliente "${clientes[idx].nombre}"`, requires_confirm: true, action: 'eliminar_cliente', args: { id_o_nombre: clientes[idx].id, confirmar: true } };
+        }
+        const removed = clientes.splice(idx, 1)[0];
+        Store.set(Store.KEYS.CLIENTES, clientes);
+        return { ok: true, msg: `Cliente "${removed.nombre}" eliminado`, data: removed };
+      }
+    },
+
+    // ===== MOVIMIENTOS / FINANZAS =====
+    registrar_movimiento: {
+      description: 'Registrar ingreso o gasto. Tipo: "ingreso"/"gasto". Categoría: g2c, musica, personal, ocio_marihuana, ocio_shopping, comida, etc.',
+      parameters: ['tipo', 'monto', 'concepto', 'categoria?', 'fecha_iso?'],
+      execute(args) {
+        if (!args.monto || !args.concepto) return { ok: false, msg: 'Falta monto o concepto' };
+        const ts = args.fecha_iso ? new Date(args.fecha_iso).getTime() : Date.now();
+        const mov = {
+          id: 'mov_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          ts,
+          tipo: args.tipo,
+          monto: parseFloat(args.monto),
+          concepto: args.concepto,
+          categoria: args.categoria || 'general',
+          tags: []
+        };
+        if (typeof Cascada !== 'undefined') Cascada.registrarMovimiento(mov);
+        else { const movs = Store.get('alan_mando_movimientos', []); movs.push(mov); Store.set('alan_mando_movimientos', movs); }
+        return { ok: true, msg: `${args.tipo === 'ingreso' ? '+' : '−'}$${args.monto.toLocaleString()} · ${args.concepto}`, data: mov, undo: { action: 'eliminar_movimiento', args: { id_o_concepto: mov.id, confirmar: true } } };
+      }
+    },
+
+    editar_movimiento: {
+      description: 'Editar movimiento · monto, concepto, categoría, tipo, fecha. Identifica por id o concepto parcial.',
+      parameters: ['id_o_concepto', 'monto?', 'concepto?', 'categoria?', 'tipo?', 'fecha_iso?'],
+      execute(args) {
+        const movs = Store.get('alan_mando_movimientos', []);
+        let m = movs.find(x => x.id === args.id_o_concepto);
+        if (!m) m = movs.find(x => (x.concepto || '').toLowerCase().includes((args.id_o_concepto || '').toLowerCase()));
+        if (!m) return { ok: false, msg: `Movimiento "${args.id_o_concepto}" no encontrado` };
+        const cambios = [];
+        if (args.monto !== undefined) { cambios.push(`monto: $${m.monto} → $${args.monto}`); m.monto = parseFloat(args.monto); }
+        if (args.concepto) { cambios.push(`concepto: ${m.concepto} → ${args.concepto}`); m.concepto = args.concepto; }
+        if (args.categoria) { cambios.push(`categoría: ${m.categoria} → ${args.categoria}`); m.categoria = args.categoria; }
+        if (args.tipo) { cambios.push(`tipo: ${m.tipo} → ${args.tipo}`); m.tipo = args.tipo; }
+        if (args.fecha_iso) { m.ts = new Date(args.fecha_iso).getTime(); cambios.push(`fecha: ${args.fecha_iso}`); }
+        Store.set('alan_mando_movimientos', movs);
+        return { ok: true, msg: `Movimiento actualizado · ${cambios.join(' · ')}`, data: m };
+      }
+    },
+
+    eliminar_movimiento: {
+      description: 'Eliminar movimiento · pide confirmación.',
+      parameters: ['id_o_concepto', 'confirmar?'],
+      execute(args) {
+        const movs = Store.get('alan_mando_movimientos', []);
+        let idx = movs.findIndex(m => m.id === args.id_o_concepto);
+        if (idx === -1) idx = movs.findIndex(m => (m.concepto || '').toLowerCase().includes((args.id_o_concepto || '').toLowerCase()));
+        if (idx === -1) return { ok: false, msg: 'No encontrado' };
+        if (!args.confirmar) {
+          return { ok: false, msg: `Confirmar eliminar movimiento "${movs[idx].concepto}" · $${movs[idx].monto}`, requires_confirm: true, action: 'eliminar_movimiento', args: { id_o_concepto: movs[idx].id, confirmar: true } };
+        }
+        const removed = movs.splice(idx, 1)[0];
+        Store.set('alan_mando_movimientos', movs);
+        return { ok: true, msg: 'Movimiento eliminado', data: removed };
+      }
+    },
+
+    // ===== TOCADAS / EVENTOS MÚSICA =====
+    crear_tocada: {
+      description: 'Agendar tocada o evento musical',
+      parameters: ['titulo', 'fecha_iso', 'pago?', 'ubicacion?', 'tipo?', 'grupo?', 'contacto?'],
+      execute(args) {
+        const dt = new Date(args.fecha_iso);
+        if (isNaN(dt.getTime())) return { ok: false, msg: `Fecha inválida: ${args.fecha_iso}` };
+        const evt = {
+          id: 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          titulo: args.titulo,
+          fecha: args.fecha_iso.slice(0, 10),
+          hora: dt.toTimeString().slice(0, 5),
+          ts: dt.getTime(),
+          tipo: args.tipo || 'tocada',
+          grupo: args.grupo || 'otro',
+          pago: args.pago || 0,
+          monto: args.pago || 0,
+          status: 'tentativo',
+          ubicacion: args.ubicacion || '',
+          contacto: args.contacto || '',
+          tareas: [],
+          createdAt: Date.now()
+        };
+        Store.push(Store.KEYS.EVENTOS_MUSICA, evt);
+        return { ok: true, msg: `Tocada "${args.titulo}" agendada ${evt.fecha} ${evt.hora}`, data: evt, undo: { action: 'eliminar_tocada', args: { id_o_titulo: evt.id, confirmar: true } } };
+      }
+    },
+
+    editar_tocada: {
+      description: 'Editar tocada · cambiar título, fecha/hora, pago, ubicación, status, contacto. Identifica por id o título parcial.',
+      parameters: ['id_o_titulo', 'titulo?', 'fecha_iso?', 'pago?', 'ubicacion?', 'status?', 'contacto?', 'grupo?', 'tipo?'],
+      execute(args) {
+        const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
+        let e = eventos.find(x => x.id === args.id_o_titulo);
+        if (!e) e = eventos.find(x => (x.titulo || '').toLowerCase().includes((args.id_o_titulo || '').toLowerCase()));
+        if (!e) return { ok: false, msg: `Tocada "${args.id_o_titulo}" no encontrada` };
+        const cambios = [];
+        if (args.titulo) { cambios.push(`título: ${e.titulo} → ${args.titulo}`); e.titulo = args.titulo; }
+        if (args.fecha_iso) {
+          const dt = new Date(args.fecha_iso);
+          if (isNaN(dt.getTime())) return { ok: false, msg: `Fecha inválida` };
+          cambios.push(`fecha: ${e.fecha} ${e.hora} → ${args.fecha_iso}`);
+          e.fecha = args.fecha_iso.slice(0, 10);
+          e.hora = dt.toTimeString().slice(0, 5);
+          e.ts = dt.getTime();
+        }
+        if (args.pago !== undefined) { cambios.push(`pago: $${e.pago} → $${args.pago}`); e.pago = args.pago; e.monto = args.pago; }
+        if (args.ubicacion) { cambios.push(`ubicación: ${e.ubicacion || '-'} → ${args.ubicacion}`); e.ubicacion = args.ubicacion; }
+        if (args.status) { cambios.push(`status: ${e.status} → ${args.status}`); e.status = args.status; }
+        if (args.contacto) e.contacto = args.contacto;
+        if (args.grupo) e.grupo = args.grupo;
+        if (args.tipo) e.tipo = args.tipo;
+        e.updatedAt = Date.now();
+        Store.set(Store.KEYS.EVENTOS_MUSICA, eventos);
+        return { ok: true, msg: `Tocada actualizada · ${cambios.join(' · ')}`, data: e };
+      }
+    },
+
+    eliminar_tocada: {
+      description: 'Eliminar tocada · pide confirmación.',
+      parameters: ['id_o_titulo', 'confirmar?'],
+      execute(args) {
+        const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
+        let idx = eventos.findIndex(e => e.id === args.id_o_titulo);
+        if (idx === -1) idx = eventos.findIndex(e => (e.titulo || '').toLowerCase().includes((args.id_o_titulo || '').toLowerCase()));
+        if (idx === -1) return { ok: false, msg: 'No encontrada' };
+        if (!args.confirmar) {
+          return { ok: false, msg: `Confirmar eliminar tocada "${eventos[idx].titulo}"`, requires_confirm: true, action: 'eliminar_tocada', args: { id_o_titulo: eventos[idx].id, confirmar: true } };
+        }
+        const removed = eventos.splice(idx, 1)[0];
+        Store.set(Store.KEYS.EVENTOS_MUSICA, eventos);
+        return { ok: true, msg: 'Tocada eliminada', data: removed };
+      }
+    },
+
+    // ===== CANCIONES =====
+    crear_cancion: {
+      description: 'Agregar canción al repertorio',
+      parameters: ['titulo', 'artista?', 'genero?', 'youtubeUrl?', 'status?'],
+      execute(args) {
+        const c = {
+          id: 'song_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          titulo: args.titulo,
+          artista: args.artista || '',
+          genero: args.genero || '',
+          status: args.status || 'ensayando',
+          letraUrl: '',
+          youtubeUrl: args.youtubeUrl || '',
+          anotaciones: '',
+          tareas: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+        Store.push(Store.KEYS.CANCIONES, c);
+        return { ok: true, msg: `Canción "${args.titulo}" agregada`, data: c, undo: { action: 'eliminar_cancion', args: { id_o_titulo: c.id, confirmar: true } } };
+      }
+    },
+
+    editar_cancion: {
+      description: 'Editar canción · título, artista, género, status (ensayando/lista/descartada), youtube, anotaciones. Identifica por id o título parcial.',
+      parameters: ['id_o_titulo', 'titulo?', 'artista?', 'genero?', 'status?', 'youtubeUrl?', 'anotaciones?'],
+      execute(args) {
+        const cs = Store.get(Store.KEYS.CANCIONES, []);
+        let c = cs.find(x => x.id === args.id_o_titulo);
+        if (!c) c = cs.find(x => (x.titulo || '').toLowerCase().includes((args.id_o_titulo || '').toLowerCase()));
+        if (!c) return { ok: false, msg: `Canción "${args.id_o_titulo}" no encontrada` };
+        const cambios = [];
+        if (args.titulo) { cambios.push(`título: ${c.titulo} → ${args.titulo}`); c.titulo = args.titulo; }
+        if (args.artista) { cambios.push(`artista: ${c.artista || '-'} → ${args.artista}`); c.artista = args.artista; }
+        if (args.genero) { cambios.push(`género: ${c.genero || '-'} → ${args.genero}`); c.genero = args.genero; }
+        if (args.status) { cambios.push(`status: ${c.status} → ${args.status}`); c.status = args.status; }
+        if (args.youtubeUrl) c.youtubeUrl = args.youtubeUrl;
+        if (args.anotaciones !== undefined) c.anotaciones = args.anotaciones;
+        c.updatedAt = Date.now();
+        Store.set(Store.KEYS.CANCIONES, cs);
+        return { ok: true, msg: `Canción actualizada · ${cambios.join(' · ')}`, data: c };
+      }
+    },
+
+    eliminar_cancion: {
+      description: 'Eliminar canción · pide confirmación.',
+      parameters: ['id_o_titulo', 'confirmar?'],
+      execute(args) {
+        const cs = Store.get(Store.KEYS.CANCIONES, []);
+        let idx = cs.findIndex(x => x.id === args.id_o_titulo);
+        if (idx === -1) idx = cs.findIndex(x => (x.titulo || '').toLowerCase().includes((args.id_o_titulo || '').toLowerCase()));
+        if (idx === -1) return { ok: false, msg: 'No encontrada' };
+        if (!args.confirmar) {
+          return { ok: false, msg: `Confirmar eliminar canción "${cs[idx].titulo}"`, requires_confirm: true, action: 'eliminar_cancion', args: { id_o_titulo: cs[idx].id, confirmar: true } };
+        }
+        const removed = cs.splice(idx, 1)[0];
+        Store.set(Store.KEYS.CANCIONES, cs);
+        return { ok: true, msg: 'Canción eliminada', data: removed };
+      }
+    },
+
+    // ===== OBJETIVOS =====
+    crear_objetivo: {
+      description: 'Crear objetivo financiero o personal',
+      parameters: ['nombre', 'descripcion?', 'deadline?', 'target?'],
+      execute(args) {
+        const obj = {
+          id: 'obj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          nombre: args.nombre,
+          titulo: args.nombre,
+          descripcion: args.descripcion || '',
+          deadline: args.deadline || null,
+          target: args.target || null,
+          progreso: 0,
+          completed: false,
+          kpis: [],
+          createdAt: Date.now()
+        };
+        Store.push(Store.KEYS.OBJETIVOS, obj);
+        return { ok: true, msg: `Objetivo "${args.nombre}" creado`, data: obj, undo: { action: 'eliminar_objetivo', args: { id_o_nombre: obj.id, confirmar: true } } };
+      }
+    },
+
+    editar_objetivo: {
+      description: 'Editar objetivo · nombre, descripción, deadline, target, progreso. Identifica por id o nombre parcial.',
+      parameters: ['id_o_nombre', 'nombre?', 'descripcion?', 'deadline?', 'target?', 'progreso?', 'completed?'],
+      execute(args) {
+        const objs = Store.get(Store.KEYS.OBJETIVOS, []);
+        let o = objs.find(x => x.id === args.id_o_nombre);
+        if (!o) o = objs.find(x => ((x.nombre || x.titulo) || '').toLowerCase().includes((args.id_o_nombre || '').toLowerCase()));
+        if (!o) return { ok: false, msg: `Objetivo "${args.id_o_nombre}" no encontrado` };
+        const cambios = [];
+        if (args.nombre) { cambios.push(`nombre: ${o.nombre || o.titulo} → ${args.nombre}`); o.nombre = args.nombre; o.titulo = args.nombre; }
+        if (args.descripcion !== undefined) o.descripcion = args.descripcion;
+        if (args.deadline) { cambios.push(`deadline: ${args.deadline}`); o.deadline = args.deadline; }
+        if (args.target !== undefined) { cambios.push(`target: $${args.target}`); o.target = args.target; }
+        if (args.progreso !== undefined) { cambios.push(`progreso: ${args.progreso}%`); o.progreso = args.progreso; }
+        if (args.completed !== undefined) { o.completed = args.completed; if (args.completed) cambios.push('marcado como completado'); }
+        Store.set(Store.KEYS.OBJETIVOS, objs);
+        return { ok: true, msg: `Objetivo actualizado · ${cambios.join(' · ')}`, data: o };
+      }
+    },
+
+    eliminar_objetivo: {
+      description: 'Eliminar objetivo · pide confirmación.',
+      parameters: ['id_o_nombre', 'confirmar?'],
+      execute(args) {
+        const objs = Store.get(Store.KEYS.OBJETIVOS, []);
+        let idx = objs.findIndex(x => x.id === args.id_o_nombre);
+        if (idx === -1) idx = objs.findIndex(x => ((x.nombre || x.titulo) || '').toLowerCase().includes((args.id_o_nombre || '').toLowerCase()));
+        if (idx === -1) return { ok: false, msg: 'No encontrado' };
+        if (!args.confirmar) {
+          return { ok: false, msg: `Confirmar eliminar objetivo "${objs[idx].nombre || objs[idx].titulo}"`, requires_confirm: true, action: 'eliminar_objetivo', args: { id_o_nombre: objs[idx].id, confirmar: true } };
+        }
+        const removed = objs.splice(idx, 1)[0];
+        Store.set(Store.KEYS.OBJETIVOS, objs);
+        return { ok: true, msg: 'Objetivo eliminado', data: removed };
+      }
+    },
+
+    // ===== COBROS RECURRENTES =====
+    crear_cobro_recurrente: {
+      description: 'Crear cobro recurrente a cliente (auto-genera liga cobros.g2c.com.mx)',
+      parameters: ['cliente_nombre', 'monto', 'concepto?', 'frecuencia?'],
+      execute(args) {
+        if (typeof Recurrentes === 'undefined') return { ok: false, msg: 'Sin sistema' };
+        const c = Recurrentes.crearCobro({
+          cliente_nombre: args.cliente_nombre,
+          concepto: args.concepto || `Plan G2C · ${args.frecuencia || 'mensual'}`,
+          monto: parseFloat(args.monto),
+          frecuencia: args.frecuencia || 'mensual',
+          fecha_inicio: Date.now()
+        });
+        return { ok: true, msg: `Cobro recurrente ${args.cliente_nombre} creado · $${args.monto}/${args.frecuencia || 'mes'}`, data: c, undo: { action: 'eliminar_cobro_recurrente', args: { id_o_cliente: c.id, confirmar: true } } };
+      }
+    },
+
+    editar_cobro_recurrente: {
+      description: 'Editar cobro recurrente · monto, concepto, frecuencia, status (activo/pausado). Identifica por id o cliente.',
+      parameters: ['id_o_cliente', 'monto?', 'concepto?', 'frecuencia?', 'activo?'],
+      execute(args) {
+        if (typeof Recurrentes === 'undefined') return { ok: false, msg: 'Sin sistema' };
+        const all = Recurrentes.cobros();
+        let c = all.find(x => x.id === args.id_o_cliente);
+        if (!c) c = all.find(x => (x.cliente_nombre || '').toLowerCase().includes((args.id_o_cliente || '').toLowerCase()));
+        if (!c) return { ok: false, msg: `Cobro "${args.id_o_cliente}" no encontrado` };
+        const cambios = [];
+        if (args.monto !== undefined) { cambios.push(`monto: $${c.monto} → $${args.monto}`); c.monto = parseFloat(args.monto); }
+        if (args.concepto) { cambios.push(`concepto: ${args.concepto}`); c.concepto = args.concepto; }
+        if (args.frecuencia) { cambios.push(`frecuencia: ${c.frecuencia} → ${args.frecuencia}`); c.frecuencia = args.frecuencia; }
+        if (args.activo !== undefined) { cambios.push(`activo: ${args.activo}`); c.activo = args.activo; }
+        const cobros = Store.get('alan_mando_cobros_recurrentes', []);
+        const idx = cobros.findIndex(x => x.id === c.id);
+        if (idx >= 0) { cobros[idx] = c; Store.set('alan_mando_cobros_recurrentes', cobros); }
+        return { ok: true, msg: `Cobro actualizado · ${cambios.join(' · ')}`, data: c };
+      }
+    },
+
+    eliminar_cobro_recurrente: {
+      description: 'Eliminar cobro recurrente · pide confirmación.',
+      parameters: ['id_o_cliente', 'confirmar?'],
+      execute(args) {
+        const cobros = Store.get('alan_mando_cobros_recurrentes', []);
+        let idx = cobros.findIndex(x => x.id === args.id_o_cliente);
+        if (idx === -1) idx = cobros.findIndex(x => (x.cliente_nombre || '').toLowerCase().includes((args.id_o_cliente || '').toLowerCase()));
+        if (idx === -1) return { ok: false, msg: 'No encontrado' };
+        if (!args.confirmar) {
+          return { ok: false, msg: `Confirmar eliminar cobro "${cobros[idx].cliente_nombre}"`, requires_confirm: true, action: 'eliminar_cobro_recurrente', args: { id_o_cliente: cobros[idx].id, confirmar: true } };
+        }
+        const removed = cobros.splice(idx, 1)[0];
+        Store.set('alan_mando_cobros_recurrentes', cobros);
+        return { ok: true, msg: 'Cobro recurrente eliminado', data: removed };
+      }
+    },
+
+    // ===== PAGOS RECURRENTES =====
+    crear_pago_recurrente: {
+      description: 'Crear pago recurrente a proveedor (Netlify, contador, etc)',
+      parameters: ['proveedor', 'monto', 'concepto?', 'frecuencia?', 'link_pago?', 'categoria?'],
+      execute(args) {
+        if (typeof Recurrentes === 'undefined') return { ok: false, msg: 'Sin sistema' };
+        const p = Recurrentes.crearPago({
+          proveedor: args.proveedor,
+          concepto: args.concepto || 'Servicio mensual',
+          categoria: args.categoria || 'saas',
+          monto: parseFloat(args.monto),
+          frecuencia: args.frecuencia || 'mensual',
+          fecha_inicio: Date.now(),
+          link_pago: args.link_pago || ''
+        });
+        return { ok: true, msg: `Pago recurrente ${args.proveedor} · $${args.monto}/${args.frecuencia || 'mes'}`, data: p, undo: { action: 'eliminar_pago_recurrente', args: { id_o_proveedor: p.id, confirmar: true } } };
+      }
+    },
+
+    editar_pago_recurrente: {
+      description: 'Editar pago recurrente · monto, concepto, frecuencia, link de pago, status. Identifica por id o proveedor.',
+      parameters: ['id_o_proveedor', 'monto?', 'concepto?', 'frecuencia?', 'link_pago?', 'activo?', 'categoria?'],
+      execute(args) {
+        if (typeof Recurrentes === 'undefined') return { ok: false, msg: 'Sin sistema' };
+        const all = Recurrentes.pagos();
+        let p = all.find(x => x.id === args.id_o_proveedor);
+        if (!p) p = all.find(x => (x.proveedor || '').toLowerCase().includes((args.id_o_proveedor || '').toLowerCase()));
+        if (!p) return { ok: false, msg: `Pago "${args.id_o_proveedor}" no encontrado` };
+        const cambios = [];
+        if (args.monto !== undefined) { cambios.push(`monto: $${p.monto} → $${args.monto}`); p.monto = parseFloat(args.monto); }
+        if (args.concepto) { cambios.push(`concepto: ${args.concepto}`); p.concepto = args.concepto; }
+        if (args.frecuencia) { cambios.push(`frecuencia: ${p.frecuencia} → ${args.frecuencia}`); p.frecuencia = args.frecuencia; }
+        if (args.link_pago) p.link_pago = args.link_pago;
+        if (args.activo !== undefined) { cambios.push(`activo: ${args.activo}`); p.activo = args.activo; }
+        if (args.categoria) p.categoria = args.categoria;
+        const pagos = Store.get('alan_mando_pagos_recurrentes', []);
+        const idx = pagos.findIndex(x => x.id === p.id);
+        if (idx >= 0) { pagos[idx] = p; Store.set('alan_mando_pagos_recurrentes', pagos); }
+        return { ok: true, msg: `Pago actualizado · ${cambios.join(' · ')}`, data: p };
+      }
+    },
+
+    eliminar_pago_recurrente: {
+      description: 'Eliminar pago recurrente · pide confirmación.',
+      parameters: ['id_o_proveedor', 'confirmar?'],
+      execute(args) {
+        const pagos = Store.get('alan_mando_pagos_recurrentes', []);
+        let idx = pagos.findIndex(x => x.id === args.id_o_proveedor);
+        if (idx === -1) idx = pagos.findIndex(x => (x.proveedor || '').toLowerCase().includes((args.id_o_proveedor || '').toLowerCase()));
+        if (idx === -1) return { ok: false, msg: 'No encontrado' };
+        if (!args.confirmar) {
+          return { ok: false, msg: `Confirmar eliminar pago "${pagos[idx].proveedor}"`, requires_confirm: true, action: 'eliminar_pago_recurrente', args: { id_o_proveedor: pagos[idx].id, confirmar: true } };
+        }
+        const removed = pagos.splice(idx, 1)[0];
+        Store.set('alan_mando_pagos_recurrentes', pagos);
+        return { ok: true, msg: 'Pago recurrente eliminado', data: removed };
+      }
+    },
+
+    // ===== PERFIL FÍSICO =====
+    editar_perfil: {
+      description: 'Editar datos del perfil físico de Alan · nombre, peso, estatura, sangre, condiciones, medicación.',
+      parameters: ['nombre?', 'peso_kg?', 'estatura_cm?', 'sangre?', 'fecha_nacimiento?', 'condiciones?', 'medicacion?'],
+      execute(args) {
+        if (typeof PerfilFisico === 'undefined') return { ok: false, msg: 'Sin sistema de perfil' };
+        const p = PerfilFisico.get();
+        const cambios = [];
+        if (args.nombre) { cambios.push(`nombre: ${args.nombre}`); p.nombre = args.nombre; }
+        if (args.peso_kg !== undefined) { cambios.push(`peso: ${p.peso_kg || '-'} → ${args.peso_kg} kg`); p.peso_kg = parseFloat(args.peso_kg); }
+        if (args.estatura_cm !== undefined) { cambios.push(`estatura: ${args.estatura_cm} cm`); p.estatura_cm = parseFloat(args.estatura_cm); }
+        if (args.sangre) { cambios.push(`sangre: ${args.sangre}`); p.sangre = args.sangre; }
+        if (args.fecha_nacimiento) { cambios.push(`nacimiento: ${args.fecha_nacimiento}`); p.fecha_nacimiento = args.fecha_nacimiento; }
+        if (Array.isArray(args.condiciones)) { p.condiciones = args.condiciones; cambios.push('condiciones actualizadas'); }
+        if (Array.isArray(args.medicacion)) { p.medicacion = args.medicacion; cambios.push('medicación actualizada'); }
+        PerfilFisico.set(p);
+        return { ok: true, msg: `Perfil actualizado · ${cambios.join(' · ')}`, data: p };
+      }
+    },
+
+    // ===== PRESUPUESTOS =====
+    editar_presupuesto: {
+      description: 'Editar presupuestos · mota_semanal, shopping_mensual, gasto_total_mensual, gaming_minutos_semana.',
+      parameters: ['mota_semanal?', 'shopping_mensual?', 'gasto_total_mensual?', 'ingreso_minimo_mes?', 'gaming_minutos_semana?'],
+      execute(args) {
+        if (typeof Presupuesto === 'undefined') return { ok: false, msg: 'Sin sistema' };
+        const p = Presupuesto.get();
+        const cambios = [];
+        ['mota_semanal','shopping_mensual','gasto_total_mensual','ingreso_minimo_mes','gaming_minutos_semana'].forEach(k => {
+          if (args[k] !== undefined) { cambios.push(`${k}: ${p[k]} → ${args[k]}`); p[k] = parseFloat(args[k]); }
+        });
+        Presupuesto.set(p);
+        return { ok: true, msg: `Presupuestos · ${cambios.join(' · ')}`, data: p };
+      }
+    },
+
+    // ===== NOTIFICACIONES =====
+    toggle_notif: {
+      description: 'Encender o apagar un tipo de notificación. Tipos: cobro_vencido, gasto_dia_alto, tocada, fiscal, pendiente_alta, etc.',
+      parameters: ['tipo', 'activar'],
+      execute(args) {
+        if (typeof NotifPrefs === 'undefined') return { ok: false, msg: 'Sin sistema' };
+        const p = NotifPrefs.get();
+        if (!(args.tipo in p)) return { ok: false, msg: `Tipo "${args.tipo}" no existe · usa: ${Object.keys(p).join(', ')}` };
+        p[args.tipo] = args.activar === true || args.activar === 'true';
+        NotifPrefs.set(p);
+        return { ok: true, msg: `Notif "${args.tipo}" ${p[args.tipo] ? 'activada' : 'desactivada'}`, data: p };
+      }
+    },
+
+    // ===== LECTURAS =====
+    listar: {
+      description: 'Listar items: clientes, pendientes, recordatorios, tocadas, canciones, objetivos, cobros, pagos, movimientos.',
+      parameters: ['tipo'],
+      execute(args) {
+        const map = {
+          clientes: () => Store.get(Store.KEYS.CLIENTES, []),
+          pendientes: () => Store.get(Store.KEYS.PENDIENTES, []).filter(p => !p.done),
+          recordatorios: () => typeof Recordatorios !== 'undefined' && Recordatorios.proximos ? Recordatorios.proximos(20) : Store.get('alan_mando_recordatorios', []),
+          tocadas: () => Store.get(Store.KEYS.EVENTOS_MUSICA, []),
+          canciones: () => Store.get(Store.KEYS.CANCIONES, []),
+          objetivos: () => Store.get(Store.KEYS.OBJETIVOS, []).filter(o => !o.completed),
+          cobros: () => typeof Recurrentes !== 'undefined' ? Recurrentes.cobros() : [],
+          pagos: () => typeof Recurrentes !== 'undefined' ? Recurrentes.pagos() : [],
+          movimientos: () => Store.get('alan_mando_movimientos', []).slice(-20)
+        };
+        const fn = map[args.tipo];
+        if (!fn) return { ok: false, msg: `Tipo "${args.tipo}" no soportado · usa: ${Object.keys(map).join(', ')}` };
+        const items = fn();
+        return { ok: true, msg: `${items.length} ${args.tipo}`, data: items };
+      }
+    },
+
+    // ===== SUGERENCIAS · IA propone, usuario aprueba =====
+    sugerir: {
+      description: 'Cuando detectes que Alan PROBABLEMENTE quiere algo pero no lo pidió explícito, NO ejecutes · SUGIÉRELO con esta acción. Le aparece tarjeta con botones Aprobar/Rechazar. Para: recordatorios obvios, pendientes que se desprenden de la conversación, gastos que se mencionan al pasar, etc.',
+      parameters: ['accion_sugerida', 'args_sugeridos', 'razon'],
+      execute(args) {
+        const sug = {
+          id: 'sug_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          accion: args.accion_sugerida,
+          args: args.args_sugeridos || {},
+          razon: args.razon || '',
+          creado: Date.now(),
+          status: 'pendiente'
+        };
+        const sugs = Store.get('alan_mando_sugerencias', []);
+        sugs.unshift(sug);
+        if (sugs.length > 50) sugs.length = 50;
+        Store.set('alan_mando_sugerencias', sugs);
+        return { ok: true, msg: 'Sugerencia creada', data: sug, is_suggestion: true };
+      }
+    }
+  },
+
+  /**
+   * Construye un texto con TODAS las acciones disponibles para inyectar al system prompt.
+   */
+  buildPromptCatalog() {
+    const ahora = new Date();
+    const ahoraMX = ahora.toLocaleString('es-MX', { timeZone: 'America/Tijuana', dateStyle: 'full', timeStyle: 'short' });
+    const isoMX = (() => {
+      const d = new Date(ahora.getTime() - (ahora.getTimezoneOffset() * 60000));
+      return d.toISOString().slice(0, 19);
+    })();
+
+    let txt = '\n# ACCIONES QUE PUEDES EJECUTAR EN EL SISTEMA\n';
+    txt += `Hora actual MX: ${ahoraMX} (ISO: ${isoMX})\n\n`;
+    txt += 'Para EJECUTAR una acción de inmediato, abre tu respuesta con bloque:\n';
+    txt += '\\`\\`\\`action\n{"action": "nombre", "args": {...}}\n\\`\\`\\`\n';
+    txt += 'Después escribe lenguaje natural confirmando lo hecho.\n\n';
+    txt += 'Para SUGERIR una acción (cuando NO te la pidió explícito pero la inferes), usa la acción "sugerir" · le aparece tarjeta con botones Aprobar/Rechazar. NO ejecutes directo lo que no te pidió.\n\n';
+
+    txt += 'CATÁLOGO COMPLETO:\n';
+    Object.entries(this.CATALOG).forEach(([name, def]) => {
+      txt += `· ${name}(${def.parameters.join(', ')}): ${def.description}\n`;
+    });
+
+    txt += '\nREGLAS DURAS:\n';
+    txt += '1. PEDIDO EXPLÍCITO ("agrega", "registra", "elimina", "edita", "recuérdame", "cambia") → EJECUTA con bloque action · NUNCA digas "hazlo tú desde la interfaz".\n';
+    txt += '2. INFERENCIA (Alan menciona algo al pasar que parece accionable) → usa "sugerir" · NO ejecutes directo.\n';
+    txt += '3. ELIMINACIONES → la primera vez sin "confirmar:true" la acción retorna requires_confirm; aparece tarjeta de confirmación · TÚ no insistas, deja que el sistema lo maneje.\n';
+    txt += '4. EDICIONES → usa el id si lo tienes; si no, usa nombre/título parcial (id_o_titulo, id_o_nombre, id_o_cliente, id_o_proveedor, id_o_concepto) · el sistema busca case-insensitive.\n';
+    txt += '5. FECHAS → SIEMPRE formato ISO YYYY-MM-DDTHH:mm:00 en zona MX. "hoy 9pm" → calcula con base en la hora actual de arriba.\n';
+    txt += '6. SI NO HAY DATA SUFICIENTE → primero "listar" o pregunta UNA cosa puntual.\n';
+    txt += '7. NUNCA respondas que no puedes editar/eliminar algo · TODO se puede vía editar_*/eliminar_*.\n';
+    txt += '\nEJEMPLOS:\n';
+    txt += '· "agrega recordatorio cumple charly hoy 9pm" → ejecuta crear_recordatorio con fecha_iso calculada.\n';
+    txt += '· "mueve el ensayo del miércoles al jueves misma hora" → primero listar tocadas si no sabes cuál, luego editar_tocada con id_o_titulo:"ensayo" + nuevo fecha_iso.\n';
+    txt += '· "Lanmarc ahora paga 7500" → editar_cliente id_o_nombre:"Lanmarc" monto:7500.\n';
+    txt += '· "olvídate del cliente Acme" → eliminar_cliente id_o_nombre:"Acme" (sin confirmar · sistema pedirá confirmación).\n';
+    txt += '· Alan dice "está pesada la semana" Y NO te pide nada → puedes "sugerir" un recordatorio para revisar agenda mañana, NO crearlo directo.\n';
+    return txt;
+  },
+
+  /**
+   * Ejecuta una acción por nombre con args.
+   * Retorna {ok, msg, data, undo?}
+   */
+  execute(name, args = {}) {
+    const def = this.CATALOG[name];
+    if (!def) return { ok: false, msg: `Acción "${name}" no existe` };
+    try {
+      return def.execute(args);
+    } catch (e) {
+      console.error('Action error:', e);
+      return { ok: false, msg: `Error ejecutando ${name}: ${e.message}` };
+    }
+  },
+
+  /**
+   * Detecta y extrae bloques de acción de una respuesta del LLM.
+   * Soporta:
+   *   ```action\n{...}\n```
+   *   ```json\n{...}\n```  (si el JSON tiene "action")
+   * Retorna array de {name, args, raw}
+   */
+  parseFromResponse(text) {
+    if (!text || typeof text !== 'string') return [];
+    const blocks = [];
+    const re = /```(?:action|json)\s*\n([\s\S]*?)\n```/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      try {
+        const parsed = JSON.parse(m[1].trim());
+        if (parsed.action && typeof parsed.action === 'string') {
+          blocks.push({ name: parsed.action, args: parsed.args || {}, raw: m[0] });
+        }
+      } catch (e) { /* ignorar */ }
+    }
+    return blocks;
+  },
+
+  /**
+   * Quita los bloques de acción del texto (para mostrar al usuario solo el lenguaje natural).
+   */
+  stripFromResponse(text) {
+    if (!text) return '';
+    return text.replace(/```(?:action|json)\s*\n[\s\S]*?\n```\s*/g, '').trim();
+  }
+};
+
+// ============================================================
+// 8 · UI HELPERS
 // ============================================================
 
 const UI = {
@@ -3020,6 +3788,13 @@ const Alertas = {
    * Registra una alerta. Si es la primera vez en N horas, también notifica.
    */
   emit(alerta) {
+    // Filtrar según preferencias del usuario
+    if (typeof NotifPrefs !== 'undefined' && alerta.tipo) {
+      if (!NotifPrefs.isEnabled(alerta.tipo)) {
+        // Usuario no quiere este tipo · NO emitir
+        return null;
+      }
+    }
     const all = this.list();
     alerta.id = 'alert_' + Date.now();
     alerta.ts = Date.now();
@@ -3069,6 +3844,73 @@ const Alertas = {
       }
     });
     return emitidas;
+  }
+};
+
+// ============================================================
+// 23.5 · NOTIFPREFS · qué push enviar a Alan
+// ============================================================
+
+const NotifPrefs = {
+  KEY: 'alan_mando_notif_prefs',
+
+  CATALOG: [
+    // Finanzas
+    { id: 'cobro_vencido', label: 'Cobros vencidos', desc: 'Cliente debe pagar y se pasó la fecha', categoria: 'finanzas', default: true },
+    { id: 'cobro_recurrente_proximo', label: 'Cobros próximos a vencer', desc: '3 días antes del cobro mensual de cada cliente', categoria: 'finanzas', default: true },
+    { id: 'pago_recurrente_proximo', label: 'Pagos por hacer', desc: '3 días antes de cargo recurrente', categoria: 'finanzas', default: true },
+    { id: 'gasto_dia_alto', label: 'Gasto del día alto', desc: 'Cuando llevas 80% del diario promedio', categoria: 'finanzas', default: true },
+    { id: 'gasto_dia_rebasado', label: 'Día caro · te pasaste', desc: 'Más de 120% del diario promedio', categoria: 'finanzas', default: true },
+    { id: 'gasto_individual_alto', label: 'Gasto individual fuerte', desc: 'Un solo movimiento >50% del diario', categoria: 'finanzas', default: true },
+    { id: 'presupuesto_rebasado', label: 'Presupuestos rebasados', desc: 'Mota, shopping, etc por encima del límite', categoria: 'finanzas', default: true },
+    { id: 'presupuesto_cerca', label: 'Cerca del límite', desc: '80% del presupuesto consumido', categoria: 'finanzas', default: false },
+
+    // Música
+    { id: 'tocada', label: 'Tocadas próximas sin set list', desc: 'Tocada en 7 días sin repertorio armado', categoria: 'musica', default: true },
+    { id: 'ensayo_recordatorio', label: 'Recordatorio de ensayos', desc: '30 min antes de cada ensayo', categoria: 'musica', default: true },
+
+    // SAT
+    { id: 'fiscal', label: 'Vencimientos fiscales SAT', desc: '7 días antes de cada obligación', categoria: 'sat', default: true },
+
+    // Tareas
+    { id: 'pendiente_alta', label: 'Pendientes alta prioridad', desc: 'Recordatorio diario de tareas urgentes', categoria: 'tareas', default: true },
+    { id: 'pendiente_vencido', label: 'Pendientes vencidos', desc: 'Cuando un pendiente pasó su fecha', categoria: 'tareas', default: true },
+
+    // Salud
+    { id: 'ejercicio_recordatorio', label: 'Recordatorio de ejercicio', desc: '30 min antes de sesión agendada', categoria: 'salud', default: true },
+    { id: 'salud_alerta', label: 'Alertas de salud', desc: 'Análisis fuera de rango, suplementos', categoria: 'salud', default: false },
+
+    // IA proactiva
+    { id: 'sugerencia_recurrente', label: 'IA detectó pago repetido', desc: '"¿Lo agendamos como recurrente?"', categoria: 'ia', default: false },
+    { id: 'patron_detectado', label: 'IA detectó patrón', desc: 'Insights del sistema', categoria: 'ia', default: false }
+  ],
+
+  get() {
+    const stored = Store.get(this.KEY, null);
+    if (stored && typeof stored === 'object') {
+      const merged = {};
+      this.CATALOG.forEach(item => {
+        merged[item.id] = stored[item.id] !== undefined ? stored[item.id] : item.default;
+      });
+      return merged;
+    }
+    const defs = {};
+    this.CATALOG.forEach(item => { defs[item.id] = item.default; });
+    return defs;
+  },
+
+  set(prefs) { Store.set(this.KEY, prefs); },
+
+  toggle(id) {
+    const p = this.get();
+    p[id] = !p[id];
+    this.set(p);
+    return p[id];
+  },
+
+  isEnabled(tipo) {
+    const p = this.get();
+    return p[tipo] !== false;
   }
 };
 
@@ -3326,6 +4168,7 @@ window.Store = Store;
 window.Util = Util;
 window.IA = IA;
 window.Cascada = Cascada;
+window.Actions = Actions;
 window.UI = UI;
 window.Auth = Auth;
 window.SAT = SAT;
@@ -3345,6 +4188,7 @@ window.OcioTrack = OcioTrack;
 window.Presupuesto = Presupuesto;
 window.Alertas = Alertas;
 window.Recordatorios = Recordatorios;
+window.NotifPrefs = NotifPrefs;
 window.Expediente = Expediente;
 window.Recurrentes = Recurrentes;
 window.ProactivIA = ProactivIA;
