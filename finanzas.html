@@ -231,22 +231,86 @@ function renderResumen() {
     html += `</div>`;
   }
 
-  // Decisión fiscal
+  // ============================================================
+  // DECISIÓN FISCAL · CALCULADA CON DATA REAL
+  // ============================================================
+  const cfdis = Store.get('alan_mando_cfdis', []) || [];
+  const movsFiscal = Store.get('alan_mando_movimientos', []) || [];
+
+  const movsMesFiscal = movsFiscal.filter(m => m.ts >= inicioMes.getTime());
+  const ingresosMesFiscal = movsMesFiscal.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + (m.monto || 0), 0);
+  const gastosBizMes = movsMesFiscal.filter(m => m.tipo === 'gasto' && m.categoria !== 'personal').reduce((s, m) => s + (m.monto || 0), 0);
+
+  const ivaFacturado = ingresosMesFiscal * 0.16;
+  const ivaAcreditable = gastosBizMes * 0.16;
+  const cfdisMes = cfdis.filter(c => c.ts && c.ts >= inicioMes.getTime());
+  const ivaCFDIsReal = cfdisMes.reduce((s, c) => s + (c.iva_traslado || 0), 0);
+  const ivaAcred = ivaCFDIsReal > 0 ? ivaCFDIsReal : ivaAcreditable;
+  const ivaPorPagar = Math.max(0, ivaFacturado - ivaAcred);
+
+  const isrEstimado = (ingresosMesFiscal - gastosBizMes) * 0.30;
+
+  let decisionTexto;
+  if (ingresosMesFiscal === 0 && gastosBizMes === 0) {
+    decisionTexto = `Sin movimientos del mes registrados aún. Carga ingresos y gastos para que calcule tu posición fiscal real.`;
+  } else if (cfdisMes.length === 0 && gastosBizMes > 0) {
+    decisionTexto = `Tienes ${Util.fmtMoneyK(gastosBizMes)} en gastos sin CFDI cargado · estás dejando ~${Util.fmtMoneyK(ivaAcreditable)} de IVA acreditable en la mesa. Sube CFDIs.`;
+  } else if (ivaPorPagar > 5000) {
+    decisionTexto = `IVA por pagar ${Util.fmtMoneyK(ivaPorPagar)} este mes (facturado ${Util.fmtMoneyK(ivaFacturado)} − acreditable ${Util.fmtMoneyK(ivaAcred)}). ISR estimado ${Util.fmtMoneyK(isrEstimado)}. Revisa CFDIs faltantes para reducir.`;
+  } else {
+    decisionTexto = `IVA balanceado este mes (${Util.fmtMoneyK(ivaPorPagar)} a pagar). ISR estimado ${Util.fmtMoneyK(isrEstimado)}. Posición fiscal sana.`;
+  }
+
+  // ============================================================
+  // MANDO · PROYECCIÓN INTEGRADA CON DATOS REALES
+  // (cobrosRec y pagosRec ya declarados arriba en líneas ~85-86)
+  // ============================================================
+  const objetivosProy = (Store.get(Store.KEYS.OBJETIVOS, []) || []).filter(o => !o.cumplido);
+  const eventosProy = (Store.get(Store.KEYS.EVENTOS_MUSICA, []) || []).filter(e => e.tipo === 'tocada' && e.ts > Date.now());
+
+  const mrrCalc = cobrosRec.reduce((s, c) => {
+    const dias = (typeof Recurrentes !== 'undefined' && Recurrentes.FRECUENCIAS) ? (Recurrentes.FRECUENCIAS[c.frecuencia]?.dias || 30) : 30;
+    return s + (c.monto * (30 / dias));
+  }, 0);
+  const egresosRecMes = pagosRec.reduce((s, p) => {
+    const dias = (typeof Recurrentes !== 'undefined' && Recurrentes.FRECUENCIAS) ? (Recurrentes.FRECUENCIAS[p.frecuencia]?.dias || 30) : 30;
+    return s + (p.monto * (30 / dias));
+  }, 0);
+  const ingresoMusicaProx90d = eventosProy.filter(e => e.ts <= Date.now() + 90*86400000).reduce((s, e) => s + (e.pago || 0), 0);
+
+  const proyeccion90d = (mrrCalc * 3) + ingresoMusicaProx90d - (egresosRecMes * 3);
+  const objetivoActivo = objetivosProy[0];
+
+  let proyeccionTexto;
+  if (cobrosRec.length === 0 && eventosProy.length === 0) {
+    proyeccionTexto = `Sin cobros recurrentes ni tocadas registradas · agrega data para que cruce tu proyección real. Por ahora estoy ciego.`;
+  } else if (objetivoActivo && objetivoActivo.target_monto) {
+    const gap = objetivoActivo.target_monto - proyeccion90d;
+    if (gap <= 0) {
+      proyeccionTexto = `Cruce real 90d: MRR ${Util.fmtMoneyK(mrrCalc)} × 3 + tocadas ${Util.fmtMoneyK(ingresoMusicaProx90d)} − recurrentes ${Util.fmtMoneyK(egresosRecMes*3)} = ${Util.fmtMoneyK(proyeccion90d)}. Cubres "${objetivoActivo.nombre || objetivoActivo.titulo}" (${Util.fmtMoneyK(objetivoActivo.target_monto)}) con ${Util.fmtMoneyK(-gap)} de buffer.`;
+    } else {
+      proyeccionTexto = `Cruce real 90d: ${Util.fmtMoneyK(proyeccion90d)} contra objetivo "${objetivoActivo.nombre || objetivoActivo.titulo}" (${Util.fmtMoneyK(objetivoActivo.target_monto)}). Faltan ${Util.fmtMoneyK(gap)}. Necesitas 1 cliente más Plan Total o ${Math.ceil(gap/2500)} tocadas extra.`;
+    }
+  } else {
+    proyeccionTexto = `Cruce real 90d: MRR ${Util.fmtMoneyK(mrrCalc)} × 3 + tocadas ${Util.fmtMoneyK(ingresoMusicaProx90d)} − pagos recurrentes ${Util.fmtMoneyK(egresosRecMes*3)} = ${Util.fmtMoneyK(proyeccion90d)} en flujo neto. ${cobrosRec.length} cobros activos · ${eventosProy.length} tocadas próximas.`;
+  }
+
+  // Decisión fiscal + proyección
   html += `
     <div style="background:rgba(244,243,239,0.025);border:0.5px solid rgba(255,79,0,0.18);border-radius:12px;padding:13px 15px;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px;">
         <div style="width:3px;height:14px;background:#FF4F00;border-radius:1px;"></div>
-        <div style="font-size:10px;color:rgba(255,150,80,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;">decisión fiscal del mes</div>
+        <div style="font-size:10px;color:rgba(255,150,80,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;">decisión fiscal del mes · real</div>
       </div>
-      <div style="font-size:12px;color:rgba(244,243,239,0.85);line-height:1.5;">22% IVA acreditable vs 16% facturado · descarga CFDIs para ahorrar $1.4K en ISR mayo.</div>
+      <div style="font-size:12px;color:rgba(244,243,239,0.85);line-height:1.5;">${decisionTexto}</div>
     </div>
 
     <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:14px;padding:14px;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;">
         <div style="width:16px;height:16px;background:rgba(120,200,220,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:5px;height:5px;background:rgba(150,210,230,1);transform:rotate(45deg);"></div></div>
-        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;">Mando · proyección integrada</div>
+        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;">Mando · proyección integrada · real</div>
       </div>
-      <div style="font-size:13px;line-height:1.55;color:rgba(244,243,239,0.92);">Crucé tus 3 fuentes de ingreso, gastos fijos, hormiga, viajes pendientes y objetivo casa. Si cierras NEOS exp + sigues 2 tocadas/mes + recortas $4K hormiga · llegas a $128K en 90 días.</div>
+      <div style="font-size:13px;line-height:1.55;color:rgba(244,243,239,0.92);">${proyeccionTexto}</div>
     </div>
   `;
 
@@ -1133,103 +1197,195 @@ function convertirEnRecurrente(proveedor, monto, categoria) {
 }
 
 function renderPersonal() {
-  const movs = Store.get('alan_mando_movimientos', []);
-  const personales = movs.filter(m => m.tipo === 'gasto' && (m.categoria || '').includes('personal'));
-  const totalGasto = personales.reduce((s, m) => s + m.monto, 0) || 8400;
-  const recortable = totalGasto * 0.75; // 75% del gasto suele ser recortable según patrón
+  const movs = Store.get('alan_mando_movimientos', []) || [];
+  const presupuestos = Store.get('alan_mando_presupuestos', {}) || {};
+  const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+
+  // Solo gastos personales del mes actual
+  const personales = movs.filter(m =>
+    m.tipo === 'gasto' &&
+    m.ts >= inicioMes.getTime() &&
+    ((m.categoria || '').toLowerCase().includes('personal') ||
+     (m.categoria || '').toLowerCase().includes('comida') ||
+     (m.categoria || '').toLowerCase().includes('cafeter') ||
+     (m.categoria || '').toLowerCase().includes('gasol') ||
+     (m.categoria || '').toLowerCase().includes('shop') ||
+     (m.categoria || '').toLowerCase().includes('mota') ||
+     (m.categoria || '').toLowerCase().includes('gaming') ||
+     (m.categoria || '').toLowerCase().includes('hormiga'))
+  );
+
+  const totalGasto = personales.reduce((s, m) => s + (m.monto || 0), 0);
+  const mesNombre = new Date().toLocaleDateString('es-MX', { month: 'long' });
+
+  // Agrupa por categoría
+  const porCategoria = {};
+  personales.forEach(m => {
+    const cat = m.categoria || 'sin categoría';
+    porCategoria[cat] = (porCategoria[cat] || 0) + (m.monto || 0);
+  });
+  const cats = Object.entries(porCategoria).sort(([,a],[,b]) => b - a).slice(0, 6);
+
+  // Pagos recurrentes personales (vida fija)
+  const pagosRec = (Store.get('alan_mando_pagos_recurrentes', []) || []).filter(p => p.activo && (p.tipo === 'personal' || (p.categoria || '').toLowerCase().includes('personal') || (p.categoria || '').toLowerCase().includes('vida')));
+
+  const colors = ['#FF965A','#F4D580','#96D2E6','#B4DCAA','#D4A574','rgba(244,243,239,0.4)'];
+  const totalCategorias = cats.reduce((s, [,v]) => s + v, 0) || 1;
 
   return `
     <div class="stat-grid cols-2">
       <div class="stat-card yellow" style="background:rgba(244,213,128,0.04);border-color:rgba(244,213,128,0.18);">
-        <div class="stat-label" style="color:rgba(244,213,128,0.85);">GASTO ABRIL</div>
+        <div class="stat-label" style="color:rgba(244,213,128,0.85);">GASTO ${mesNombre.toUpperCase()}</div>
         <div class="stat-value tabular">${Util.fmtMoney(totalGasto)}</div>
+        <div class="stat-meta">${personales.length} movimientos</div>
       </div>
       <div class="stat-card green">
-        <div class="stat-label" style="color:rgba(180,220,170,0.85);">RECORTABLE</div>
-        <div class="stat-value tabular">${Util.fmtMoney(recortable)}</div>
+        <div class="stat-label" style="color:rgba(180,220,170,0.85);">PROMEDIO/DÍA</div>
+        <div class="stat-value tabular">${Util.fmtMoney(totalGasto / Math.max(1, new Date().getDate()))}</div>
+        <div class="stat-meta">día ${new Date().getDate()} del mes</div>
       </div>
     </div>
 
-    <div class="section-eyebrow"><div class="label">categorías personales</div></div>
-    <div style="background:rgba(244,243,239,0.025);border-radius:11px;padding:12px;margin-bottom:14px;">
-      <div style="display:flex;gap:5px;margin-bottom:11px;height:14px;border-radius:4px;overflow:hidden;">
-        <div style="width:47%;background:rgba(255,150,80,0.7);"></div>
-        <div style="width:18%;background:rgba(244,213,128,0.7);"></div>
-        <div style="width:15%;background:rgba(150,210,230,0.7);"></div>
-        <div style="width:12%;background:rgba(180,220,170,0.7);"></div>
-        <div style="width:8%;background:rgba(244,243,239,0.3);"></div>
+    <div class="section-eyebrow"><div class="label">categorías personales · mes actual</div></div>
+    ${cats.length === 0 ? `
+      <div style="background:rgba(244,243,239,0.025);border:0.5px dashed rgba(244,243,239,0.15);border-radius:12px;padding:18px;text-align:center;font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">
+        Sin gastos personales registrados este mes
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="display:flex;justify-content:space-between;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;background:rgba(255,150,80,0.95);border-radius:2px;"></div><div style="font-size:11px;">Comida fuera</div></div><div style="font-size:11px;font-weight:500;">$3,920</div></div>
-        <div style="display:flex;justify-content:space-between;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;background:rgba(244,213,128,0.95);border-radius:2px;"></div><div style="font-size:11px;">Cafeterías</div></div><div style="font-size:11px;font-weight:500;">$1,540</div></div>
-        <div style="display:flex;justify-content:space-between;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;background:rgba(150,210,230,0.95);border-radius:2px;"></div><div style="font-size:11px;">Gasolina · transporte</div></div><div style="font-size:11px;font-weight:500;">$1,260</div></div>
-        <div style="display:flex;justify-content:space-between;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;background:rgba(180,220,170,0.95);border-radius:2px;"></div><div style="font-size:11px;">Salud · Pepe</div></div><div style="font-size:11px;font-weight:500;">$1,000</div></div>
-        <div style="display:flex;justify-content:space-between;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;background:rgba(244,243,239,0.4);border-radius:2px;"></div><div style="font-size:11px;">Suscripciones inactivas</div></div><div style="font-size:11px;font-weight:500;">$680</div></div>
+    ` : `
+      <div style="background:rgba(244,243,239,0.025);border-radius:11px;padding:12px;margin-bottom:14px;">
+        <div style="display:flex;gap:5px;margin-bottom:11px;height:14px;border-radius:4px;overflow:hidden;">
+          ${cats.map(([,v], i) => {
+            const pct = (v / totalCategorias) * 100;
+            return `<div style="width:${pct}%;background:${colors[i] || colors[5]};"></div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${cats.map(([cat, v], i) => `
+            <div style="display:flex;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <div style="width:7px;height:7px;background:${colors[i] || colors[5]};border-radius:2px;"></div>
+                <div style="font-size:11px;text-transform:capitalize;">${Util.esc(cat)}</div>
+              </div>
+              <div style="font-size:11px;font-weight:500;">${Util.fmtMoney(v)}</div>
+            </div>
+          `).join('')}
+        </div>
       </div>
-    </div>
+    `}
 
-    <div class="section-eyebrow"><div class="label">vida fija mensual</div></div>
-    <div class="list-card">
-      <div class="list-row"><div class="row-main"><div class="row-content"><div class="row-title">Renta departamento</div><div class="row-sub">día 7</div></div></div><div class="row-value">$1,800</div></div>
-      <div class="list-row"><div class="row-main"><div class="row-content"><div class="row-title">Telnor + AT&amp;T</div><div class="row-sub">día 28 + 2</div></div></div><div class="row-value">$1,247</div></div>
-      <div class="list-row"><div class="row-main"><div class="row-content"><div class="row-title">CFE bimestral</div><div class="row-sub">día 18</div></div></div><div class="row-value">$1,051</div></div>
-      <div class="list-row"><div class="row-main"><div class="row-content"><div class="row-title">Spotify · Netflix · ChatGPT</div><div class="row-sub">3 servicios</div></div></div><div class="row-value">$580</div></div>
-    </div>
+    <div class="section-eyebrow"><div class="label">vida fija mensual · ${pagosRec.length} servicios</div></div>
+    ${pagosRec.length === 0 ? `
+      <div style="background:rgba(244,243,239,0.025);border:0.5px dashed rgba(244,243,239,0.15);border-radius:12px;padding:14px;text-align:center;font-size:12px;color:var(--text-tertiary);margin-bottom:14px;">
+        Sin pagos recurrentes personales · agrégalos en Recurrentes
+      </div>
+    ` : `
+      <div class="list-card">
+        ${pagosRec.map(p => {
+          const dia = p.proximo_pago ? new Date(p.proximo_pago).getDate() : '—';
+          return `
+            <div class="list-row">
+              <div class="row-main">
+                <div class="row-content">
+                  <div class="row-title">${Util.esc(p.proveedor_nombre || p.concepto || 'Sin nombre')}</div>
+                  <div class="row-sub">día ${dia}</div>
+                </div>
+              </div>
+              <div class="row-value">${Util.fmtMoney(p.monto)}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `}
 
-    <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:12px;padding:12px;">
+    <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:12px;padding:12px;margin-top:12px;">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
         <div style="width:14px;height:14px;background:rgba(120,200,220,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:4px;height:4px;background:rgba(150,210,230,1);transform:rotate(45deg);"></div></div>
-        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">Mando · cruza con objetivos</div>
+        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">Mando · personal vs negocio</div>
       </div>
-      <div style="font-size:11px;color:rgba(244,243,239,0.85);line-height:1.5;margin-bottom:8px;">Si recortas $4K hormiga este mes, tu objetivo casa avanza al ritmo requerido y aún te alcanza Ensenada.</div>
-      <button class="btn primary-cyan full">Activar plan recorte</button>
+      <div style="font-size:11px;color:rgba(244,243,239,0.85);line-height:1.5;">${
+        totalGasto === 0 ? 'Sin data personal · empieza a registrar gastos para que cruce con tu MRR.' :
+        cats[0] ? `Tu top de gasto: ${cats[0][0]} (${Util.fmtMoneyK(cats[0][1])}). ${totalGasto > 10000 ? 'Considera revisar si está dentro de presupuesto.' : 'Dentro de rango.'}` :
+        `Total ${Util.fmtMoney(totalGasto)} en ${personales.length} movimientos.`
+      }</div>
     </div>
   `;
 }
 
 // ============================================================
-// TAB MÚSICA
+// TAB MÚSICA · datos reales
 // ============================================================
 function renderMusica() {
-  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
-  const tocadasMes = eventos.filter(e => e.tipo === 'tocada' && new Date(e.ts).getMonth() === new Date().getMonth());
-  const ingreso = tocadasMes.reduce((s, e) => s + (e.pago || 0), 0) || 9000;
-  const gastos = 1200;
-  const utilidad = ingreso - gastos;
+  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []) || [];
+  const movs = Store.get('alan_mando_movimientos', []) || [];
+  const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+  const mesNombre = new Date().toLocaleDateString('es-MX', { month: 'long' });
+
+  // Ingreso real del mes · solo tocadas pagadas/marcadas como pagada
+  const tocadasMes = eventos.filter(e =>
+    e.tipo === 'tocada' &&
+    e.ts >= inicioMes.getTime() &&
+    e.ts < Date.now() // ya pasó
+  );
+  const ingresoCobrado = tocadasMes.filter(t => t.pagada).reduce((s, t) => s + (t.pago || 0), 0);
+  const ingresoPendiente = tocadasMes.filter(t => !t.pagada).reduce((s, t) => s + (t.pago || 0), 0);
+
+  // Gastos categoría música del mes · ensayos, transporte, equipo
+  const gastosMes = movs.filter(m =>
+    m.tipo === 'gasto' &&
+    m.ts >= inicioMes.getTime() &&
+    ((m.categoria || '').toLowerCase().includes('musica') ||
+     (m.categoria || '').toLowerCase().includes('música') ||
+     (m.categoria || '').toLowerCase().includes('ensayo') ||
+     (m.categoria || '').toLowerCase().includes('equipo'))
+  ).reduce((s, m) => s + (m.monto || 0), 0);
+
+  const utilidad = ingresoCobrado - gastosMes;
+
+  // Próximas tocadas (incluye hoy adelante)
+  const proxTocadas = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now() - 86400000).sort((a, b) => a.ts - b.ts).slice(0, 5);
+  const ingresoProyectado = proxTocadas.reduce((s, t) => s + (t.pago || 0), 0);
 
   let html = `
     <div class="stat-grid cols-2">
-      <div class="stat-card green"><div class="stat-label" style="color:rgba(180,220,170,0.85);">INGRESO MAYO</div><div class="stat-value tabular">${Util.fmtMoneyK(ingreso)}</div></div>
-      <div class="stat-card yellow" style="background:rgba(244,213,128,0.04);border-color:rgba(244,213,128,0.18);"><div class="stat-label" style="color:rgba(244,213,128,0.85);">GASTO MAYO</div><div class="stat-value tabular">${Util.fmtMoneyK(gastos)}</div></div>
+      <div class="stat-card green">
+        <div class="stat-label" style="color:rgba(180,220,170,0.85);">COBRADO ${mesNombre.toUpperCase()}</div>
+        <div class="stat-value tabular">${Util.fmtMoneyK(ingresoCobrado)}</div>
+        <div class="stat-meta">${tocadasMes.filter(t => t.pagada).length} tocadas pagadas</div>
+      </div>
+      <div class="stat-card yellow" style="background:rgba(244,213,128,0.04);border-color:rgba(244,213,128,0.18);">
+        <div class="stat-label" style="color:rgba(244,213,128,0.85);">POR COBRAR</div>
+        <div class="stat-value tabular">${Util.fmtMoneyK(ingresoPendiente)}</div>
+        <div class="stat-meta">${tocadasMes.filter(t => !t.pagada).length} tocadas pendientes</div>
+      </div>
     </div>
 
-    <div class="section-eyebrow"><div class="label">tocadas · cobros</div></div>
+    <div class="section-eyebrow"><div class="label">próximas tocadas · ${proxTocadas.length}</div></div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
   `;
 
-  const proxTocadas = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now() - 86400000).sort((a, b) => a.ts - b.ts).slice(0, 3);
   if (proxTocadas.length === 0) {
-    html += `<div style="background:rgba(244,243,239,0.025);border:0.5px dashed rgba(244,243,239,0.15);border-radius:11px;padding:18px;text-align:center;font-size:12px;color:var(--text-tertiary);">Sin tocadas próximas</div>`;
+    html += `<div style="background:rgba(244,243,239,0.025);border:0.5px dashed rgba(244,243,239,0.15);border-radius:11px;padding:18px;text-align:center;font-size:12px;color:var(--text-tertiary);">Sin tocadas próximas · agenda en módulo Música</div>`;
   } else {
     proxTocadas.forEach(t => {
       const cardClass = t.confirmada ? 'green' : 'yellow';
-      const pillText = t.confirmada ? 'CONFIRMADO' : 'TENTATIVO';
+      const pillText = t.pagada ? 'PAGADO' : (t.confirmada ? 'CONFIRMADO' : 'TENTATIVO');
+      const yaPaso = t.ts < Date.now();
       html += `
         <div class="decision-card ${cardClass}" style="padding:11px;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
             <div>
-              <div style="font-size:12px;font-weight:500;">${Util.esc(t.lugar || 'Tocada')} · ${Util.esc(t.banda || '')}</div>
+              <div style="font-size:12px;font-weight:500;">${Util.esc(t.lugar || t.titulo || 'Tocada')} ${t.banda ? '· ' + Util.esc(t.banda) : ''}</div>
               <div style="font-size:9px;color:rgba(244,243,239,0.55);">${Util.fmtDate(t.ts, { short: true })} · ${Util.fmtTime(t.ts)}</div>
             </div>
             <div style="text-align:right;">
-              <div style="font-size:13px;font-weight:500;">${Util.fmtMoney(t.pago)}</div>
+              <div style="font-size:13px;font-weight:500;">${Util.fmtMoney(t.pago || 0)}</div>
               <div class="pill ${cardClass}" style="margin-top:2px;">${pillText}</div>
             </div>
           </div>
-          ${t.confirmada && !t.pagada ? `
+          ${yaPaso && !t.pagada ? `
             <button class="btn primary-green full" onclick="marcarTocadaPagada('${t.id}')" style="display:flex;align-items:center;justify-content:center;gap:5px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-              Marcar pagado tras tocada
+              Marcar pagado
             </button>
           ` : ''}
         </div>
@@ -1239,13 +1395,17 @@ function renderMusica() {
   html += `</div>`;
 
   html += `
-    <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:12px;">
-      <div style="font-size:9px;color:rgba(244,243,239,0.55);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:7px;">utilidad música · mayo</div>
+    <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:9px;color:rgba(244,243,239,0.55);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:7px;">utilidad música ${mesNombre}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-size:10px;color:rgba(244,243,239,0.6);">${Util.fmtMoney(ingreso)} ingreso − ${Util.fmtMoney(gastos)} gasto</div>
-        <div style="font-size:16px;font-weight:500;color:rgba(180,220,170,0.95);">${Util.fmtMoney(utilidad)}</div>
+        <div style="font-size:10px;color:rgba(244,243,239,0.6);">${Util.fmtMoney(ingresoCobrado)} cobrado − ${Util.fmtMoney(gastosMes)} gasto</div>
+        <div style="font-size:16px;font-weight:500;color:${utilidad >= 0 ? 'rgba(180,220,170,0.95)' : 'rgba(255,170,110,0.95)'};">${Util.fmtMoney(utilidad)}</div>
       </div>
-      <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(244,243,239,0.06);font-size:10px;color:rgba(244,243,239,0.55);line-height:1.4;">Suma a ahorro casa · acerca meta enganche</div>
+      ${ingresoProyectado > 0 ? `
+        <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(244,243,239,0.06);font-size:10px;color:rgba(244,243,239,0.55);line-height:1.4;">
+          Proyectado próximas ${proxTocadas.length} tocadas: ${Util.fmtMoneyK(ingresoProyectado)}
+        </div>
+      ` : ''}
     </div>
   `;
 
@@ -1287,9 +1447,43 @@ function renderObjetivos() {
 
   let html = `<div style="display:flex;flex-direction:column;gap:8px;">`;
 
+  // Calcular MRR para mejorar el cruce
+  const cobrosRec = (Store.get('alan_mando_cobros_recurrentes', []) || []).filter(c => c.activo);
+  const mrrCalc = cobrosRec.reduce((s, c) => {
+    const dias = (typeof Recurrentes !== 'undefined' && Recurrentes.FRECUENCIAS) ? (Recurrentes.FRECUENCIAS[c.frecuencia]?.dias || 30) : 30;
+    return s + (c.monto * (30 / dias));
+  }, 0);
+
   objetivos.forEach(o => {
-    const cardClass = o.progreso >= 80 ? 'green' : (o.progreso >= 50 ? 'cyan' : (o.progreso >= 30 ? 'yellow' : 'orange'));
-    const pctColor = o.progreso >= 80 ? 'rgba(180,220,170,0.95)' : (o.progreso >= 50 ? 'rgba(150,210,230,0.95)' : (o.progreso >= 30 ? 'rgba(244,213,128,0.95)' : 'rgba(255,170,110,0.95)'));
+    // CALCULA progreso REAL · NO usa o.progreso (siempre 0)
+    const progreso = (typeof ObjetivosLink !== 'undefined' && ObjetivosLink.progresoCompleto)
+      ? ObjetivosLink.progresoCompleto(o)
+      : { monetario_pct: 0, tareas_pct: 0, tareas_completadas: 0, tareas_total: 0 };
+
+    // El % "principal" en card inicial = el más alto entre monetario y tareas
+    // (lo que ya empieza a moverse muestra al usuario que avanza)
+    const pct = Math.max(progreso.monetario_pct || 0, progreso.tareas_pct || 0);
+
+    const cardClass = pct >= 80 ? 'green' : (pct >= 50 ? 'cyan' : (pct >= 30 ? 'yellow' : 'orange'));
+    const pctColor = pct >= 80 ? 'rgba(180,220,170,0.95)' : (pct >= 50 ? 'rgba(150,210,230,0.95)' : (pct >= 30 ? 'rgba(244,213,128,0.95)' : 'rgba(255,170,110,0.95)'));
+
+    // Ritmo · si tiene target_monto y deadline, calcula requerido/mes
+    let ritmoBlock = '';
+    if (o.target_monto && o.deadline) {
+      const mesesRestantes = Math.max(1, Math.ceil((o.deadline - Date.now()) / (30 * 86400000)));
+      const acumulado = o.acumulado || 0;
+      const faltante = Math.max(0, o.target_monto - acumulado);
+      const requerido = faltante / mesesRestantes;
+      const ritmoActual = mrrCalc; // proxy · MRR actual
+      const desvio = ritmoActual - requerido;
+      ritmoBlock = `
+        <div style="display:flex;gap:6px;padding-top:7px;border-top:0.5px solid rgba(255,255,255,0.06);">
+          <div style="flex:1;"><div style="font-size:8px;color:rgba(244,243,239,0.5);">RITMO ACTUAL</div><div style="font-size:10px;color:${pctColor};margin-top:1px;">${Util.fmtMoneyK(ritmoActual)}/mes</div></div>
+          <div style="flex:1;"><div style="font-size:8px;color:rgba(244,243,239,0.5);">REQUERIDO</div><div style="font-size:10px;color:rgba(244,213,128,0.95);margin-top:1px;">${Util.fmtMoneyK(requerido)}/mes</div></div>
+          <div style="flex:1;"><div style="font-size:8px;color:rgba(244,243,239,0.5);">DESVÍO</div><div style="font-size:10px;color:${desvio >= 0 ? 'rgba(180,220,170,0.95)' : 'rgba(255,170,110,0.95)'};margin-top:1px;">${desvio >= 0 ? '+' : ''}${Util.fmtMoneyK(desvio)}</div></div>
+        </div>
+      `;
+    }
 
     html += `
       <div class="decision-card ${cardClass}" onclick="verDetalleObjetivo('${o.id}')" style="cursor:pointer;">
@@ -1299,24 +1493,44 @@ function renderObjetivos() {
             <div style="font-size:9px;color:rgba(244,243,239,0.55);">${Util.esc(o.descripcion || '')}</div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:14px;font-weight:500;color:${pctColor};">${o.progreso || 0}%</div>
-            <div style="font-size:9px;color:rgba(244,243,239,0.5);">${Util.fmtMoneyK(o.acumulado || 0)}${o.target ? ' / ' + Util.fmtMoneyK(o.target) : ''}</div>
+            <div style="font-size:14px;font-weight:500;color:${pctColor};">${pct}%</div>
+            <div style="font-size:9px;color:rgba(244,243,239,0.5);">
+              ${o.target_monto ? `${Util.fmtMoneyK(o.acumulado || 0)} / ${Util.fmtMoneyK(o.target_monto)}` : ''}
+              ${progreso.tareas_total > 0 ? `· ${progreso.tareas_completadas}/${progreso.tareas_total} tareas` : ''}
+            </div>
           </div>
         </div>
         <div style="height:6px;background:rgba(244,243,239,0.04);border-radius:3px;margin-bottom:9px;">
-          <div style="height:100%;width:${o.progreso || 0}%;background:linear-gradient(90deg, ${pctColor.replace('0.95', '0.6')}, ${pctColor});border-radius:3px;"></div>
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg, ${pctColor.replace('0.95', '0.6')}, ${pctColor});border-radius:3px;transition:width 0.6s ease;"></div>
         </div>
-        ${o.ritmo ? `
-          <div style="display:flex;gap:6px;padding-top:7px;border-top:0.5px solid rgba(255,255,255,0.06);">
-            <div style="flex:1;"><div style="font-size:8px;color:rgba(244,243,239,0.5);">RITMO</div><div style="font-size:10px;color:${pctColor};margin-top:1px;">${Util.fmtMoneyK(o.ritmo)}/mes</div></div>
-            <div style="flex:1;"><div style="font-size:8px;color:rgba(244,243,239,0.5);">REQUERIDO</div><div style="font-size:10px;color:rgba(244,213,128,0.95);margin-top:1px;">${Util.fmtMoneyK(o.requerido || 0)}/mes</div></div>
-            <div style="flex:1;"><div style="font-size:8px;color:rgba(244,243,239,0.5);">DESVÍO</div><div style="font-size:10px;color:rgba(255,170,110,0.95);margin-top:1px;">${o.desvio >= 0 ? '+' : ''}${Util.fmtMoneyK(o.desvio || 0)}</div></div>
-          </div>
-        ` : ''}
+        ${ritmoBlock}
         <div style="font-size:9px;color:rgba(244,243,239,0.4);text-align:center;margin-top:8px;padding-top:7px;border-top:0.5px solid rgba(255,255,255,0.04);">tap para ver tareas vinculadas →</div>
       </div>
     `;
   });
+
+  // ===== MANDO CRUZA OBJETIVOS · datos reales =====
+  const objActivos = objetivos.filter(o => !o.cumplido);
+  let cruceTexto;
+  if (objActivos.length === 0) {
+    cruceTexto = 'Sin objetivos activos. Crea uno y cruzaré tu MRR + tocadas para decirte si vas en ritmo.';
+  } else {
+    const obj = objActivos[0];
+    if (obj.target_monto && obj.deadline) {
+      const mesesRest = Math.max(1, Math.ceil((obj.deadline - Date.now()) / (30 * 86400000)));
+      const faltante = Math.max(0, obj.target_monto - (obj.acumulado || 0));
+      const requerido = faltante / mesesRest;
+      const desvio = mrrCalc - requerido;
+      if (desvio >= 0) {
+        cruceTexto = `"${obj.nombre}" requiere ${Util.fmtMoneyK(requerido)}/mes y tu MRR actual genera ${Util.fmtMoneyK(mrrCalc)}/mes. Vas con ${Util.fmtMoneyK(desvio)} de buffer · sostén ritmo.`;
+      } else {
+        cruceTexto = `"${obj.nombre}" requiere ${Util.fmtMoneyK(requerido)}/mes pero tu MRR genera ${Util.fmtMoneyK(mrrCalc)}/mes. Faltan ${Util.fmtMoneyK(-desvio)}/mes · cierra 1 cliente más Plan Total.`;
+      }
+    } else {
+      const progObj = (typeof ObjetivosLink !== 'undefined' && ObjetivosLink.progresoCompleto) ? ObjetivosLink.progresoCompleto(obj) : { tareas_completadas: 0, tareas_total: 0 };
+      cruceTexto = `"${obj.nombre}" lleva ${progObj.tareas_completadas}/${progObj.tareas_total} tareas. ${progObj.tareas_total === 0 ? 'Agrega tareas vinculadas para que mida progreso.' : `${progObj.tareas_total - progObj.tareas_completadas} tareas pendientes.`}`;
+    }
+  }
 
   html += `
     <div style="background:rgba(244,243,239,0.025);border:0.5px dashed rgba(244,243,239,0.15);border-radius:12px;padding:13px;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;" onclick="crearObjetivo()">
@@ -1328,9 +1542,9 @@ function renderObjetivos() {
   <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:12px;padding:12px;margin-top:12px;">
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
       <div style="width:14px;height:14px;background:rgba(120,200,220,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:4px;height:4px;background:rgba(150,210,230,1);transform:rotate(45deg);"></div></div>
-      <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">Mando · cruza objetivos</div>
+      <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">Mando · cruza objetivos · real</div>
     </div>
-    <div style="font-size:11px;color:rgba(244,243,239,0.85);line-height:1.5;">Casa requiere $4.7K más/mes. Cerrar NEOS aporta $4.7K/mes inmediato y resuelve el desvío.</div>
+    <div style="font-size:11px;color:rgba(244,243,239,0.85);line-height:1.5;">${cruceTexto}</div>
   </div>
   `;
 
@@ -1852,25 +2066,118 @@ function renderProyeccionesAsync(container) {
 }
 
 function renderProyeccionesBase() {
-  // Cálculo anual de ingresos y egresos basado en TODO el sistema
+  // ===========================================================
+  // DATOS REALES MENSUALES · lo que YA pasó
+  // ===========================================================
+  const movs = Store.get('alan_mando_movimientos', []) || [];
+  const mesesData = [];
+
+  for (let offset = 0; offset < 6; offset++) {
+    const inicio = new Date(); inicio.setDate(1); inicio.setHours(0,0,0,0);
+    inicio.setMonth(inicio.getMonth() - offset);
+    const fin = new Date(inicio); fin.setMonth(fin.getMonth() + 1);
+
+    const movsM = movs.filter(m => m.ts >= inicio.getTime() && m.ts < fin.getTime());
+    const ingresoReal = movsM.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + (m.monto || 0), 0);
+    const egresoReal = movsM.filter(m => m.tipo === 'gasto').reduce((s, m) => s + (m.monto || 0), 0);
+
+    mesesData.unshift({
+      label: inicio.toLocaleDateString('es-MX', { month: 'short' }),
+      ingreso: ingresoReal,
+      egreso: egresoReal,
+      utilidad: ingresoReal - egresoReal
+    });
+  }
+
+  const mesActual = mesesData[mesesData.length - 1];
+  const mesAnterior = mesesData[mesesData.length - 2] || { ingreso: 0, egreso: 0 };
+  const deltaIngreso = mesAnterior.ingreso > 0 ? Math.round(((mesActual.ingreso - mesAnterior.ingreso) / mesAnterior.ingreso) * 100) : 0;
+
+  // Tendencia 3 meses para la proyección
+  const ult3 = mesesData.slice(-3);
+  const promedioIngreso = ult3.reduce((s, m) => s + m.ingreso, 0) / Math.max(1, ult3.length);
+  const promedioEgreso = ult3.reduce((s, m) => s + m.egreso, 0) / Math.max(1, ult3.length);
+
+  const realMensualHtml = `
+    <div class="section-eyebrow"><div class="label">datos reales · últimos 6 meses</div></div>
+    <div class="stat-grid cols-3" style="margin-bottom:8px;">
+      <div class="stat-card green">
+        <div class="stat-label" style="color:rgba(180,220,170,0.85);">ESTE MES INGRESO</div>
+        <div class="stat-value tabular">${Util.fmtMoneyK(mesActual.ingreso)}</div>
+        <div class="stat-meta">${deltaIngreso >= 0 ? '+' : ''}${deltaIngreso}% vs mes pasado</div>
+      </div>
+      <div class="stat-card alert">
+        <div class="stat-label" style="color:rgba(255,150,80,0.95);">ESTE MES EGRESO</div>
+        <div class="stat-value tabular">${Util.fmtMoneyK(mesActual.egreso)}</div>
+        <div class="stat-meta">vs ${Util.fmtMoneyK(mesAnterior.egreso)} pasado</div>
+      </div>
+      <div class="stat-card cyan">
+        <div class="stat-label" style="color:rgba(150,210,230,0.95);">UTILIDAD MES</div>
+        <div class="stat-value tabular" style="${mesActual.utilidad < 0 ? 'color:rgba(255,170,110,0.95);' : 'color:rgba(180,220,170,0.95);'}">${Util.fmtMoneyK(mesActual.utilidad)}</div>
+        <div class="stat-meta">${mesActual.ingreso > 0 ? Math.round((mesActual.utilidad/mesActual.ingreso)*100) : 0}% margen real</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;margin-bottom:14px;">
+      <div style="font-size:9px;color:rgba(244,243,239,0.55);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:10px;">comparativo 6 meses · datos reales</div>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:80px;margin-bottom:6px;">
+        ${mesesData.map(m => {
+          const max = Math.max(...mesesData.map(x => Math.max(x.ingreso, x.egreso))) || 1;
+          const pctI = (m.ingreso / max) * 100;
+          const pctE = (m.egreso / max) * 100;
+          return `
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="display:flex;gap:1px;align-items:flex-end;height:64px;">
+                <div title="Ingreso ${Util.fmtMoneyK(m.ingreso)}" style="width:8px;height:${pctI}%;background:rgba(180,220,170,0.7);border-radius:1px 1px 0 0;"></div>
+                <div title="Egreso ${Util.fmtMoneyK(m.egreso)}" style="width:8px;height:${pctE}%;background:rgba(255,150,80,0.7);border-radius:1px 1px 0 0;"></div>
+              </div>
+              <div style="font-size:8px;color:rgba(244,243,239,0.5);text-transform:uppercase;">${m.label}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:12px;font-size:9px;color:rgba(244,243,239,0.5);justify-content:center;padding-top:8px;border-top:0.5px solid rgba(244,243,239,0.05);">
+        <div style="display:flex;align-items:center;gap:5px;"><div style="width:7px;height:7px;background:rgba(180,220,170,0.7);border-radius:1px;"></div>ingresos</div>
+        <div style="display:flex;align-items:center;gap:5px;"><div style="width:7px;height:7px;background:rgba(255,150,80,0.7);border-radius:1px;"></div>egresos</div>
+      </div>
+    </div>
+  `;
+
+  // ===========================================================
+  // PROYECCIÓN ESTADÍSTICA ANUAL · suavizada con tendencia 3m
+  // ===========================================================
   const proyAnual = calcularProyeccionAnual();
 
-  // Resumen alto nivel
+  // Override con promedio real 3m (más realista)
+  if (promedioIngreso > 0) {
+    proyAnual.ingresos_anual = Math.round(promedioIngreso * 12);
+    proyAnual.egresos_anual = Math.round(promedioEgreso * 12);
+    proyAnual.utilidad_anual = proyAnual.ingresos_anual - proyAnual.egresos_anual;
+    proyAnual.margen_pct = proyAnual.ingresos_anual > 0 ? Math.round((proyAnual.utilidad_anual / proyAnual.ingresos_anual) * 100) : 0;
+  }
+
+  // Resumen alto nivel · ahora marcado como ESTADÍSTICA
   const cards = `
+    <div class="section-eyebrow">
+      <div>
+        <div class="label">proyección estadística · 12 meses</div>
+        <div style="font-size:10px;color:rgba(244,243,239,0.45);margin-top:2px;">extrapolación basada en tendencia ${ult3.length}m</div>
+      </div>
+    </div>
     <div class="stat-grid cols-3" style="margin-bottom:14px;">
       <div class="stat-card green">
         <div class="stat-label" style="color:rgba(180,220,170,0.85);">INGRESOS 12M</div>
         <div class="stat-value tabular">${Util.fmtMoneyK(proyAnual.ingresos_anual)}</div>
-        <div class="stat-meta">${proyAnual.fuentes_ingreso.length} fuentes</div>
+        <div class="stat-meta">proyectado · ${proyAnual.fuentes_ingreso.length} fuentes</div>
       </div>
       <div class="stat-card alert">
         <div class="stat-label" style="color:rgba(255,150,80,0.95);">EGRESOS 12M</div>
         <div class="stat-value tabular">${Util.fmtMoneyK(proyAnual.egresos_anual)}</div>
-        <div class="stat-meta">fijos + variables</div>
+        <div class="stat-meta">proyectado · fijos + variables</div>
       </div>
       <div class="stat-card cyan">
         <div class="stat-label" style="color:rgba(150,210,230,0.95);">UTILIDAD 12M</div>
-        <div class="stat-value tabular ${proyAnual.utilidad_anual < 0 ? '' : ''}" style="${proyAnual.utilidad_anual < 0 ? 'color:rgba(255,170,110,0.95);' : 'color:rgba(180,220,170,0.95);'}">${Util.fmtMoneyK(proyAnual.utilidad_anual)}</div>
+        <div class="stat-value tabular" style="${proyAnual.utilidad_anual < 0 ? 'color:rgba(255,170,110,0.95);' : 'color:rgba(180,220,170,0.95);'}">${Util.fmtMoneyK(proyAnual.utilidad_anual)}</div>
         <div class="stat-meta">${proyAnual.margen_pct}% margen</div>
       </div>
     </div>
@@ -1945,7 +2252,7 @@ function renderProyeccionesBase() {
     </div>
   `;
 
-  return cards + grafica + detalle + calculadora + tipsIA;
+  return realMensualHtml + cards + grafica + detalle + calculadora + tipsIA;
 }
 
 /**

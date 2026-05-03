@@ -52,7 +52,16 @@
   <div class="cal-legend-item"><div class="legend-dot" style="background:rgba(244,213,128,1);"></div>pago</div>
   <div class="cal-legend-item"><div class="legend-dot" style="background:rgba(150,210,230,1);"></div>música</div>
   <div class="cal-legend-item"><div class="legend-dot" style="background:rgba(120,200,220,1);"></div>viaje</div>
+  <div class="cal-legend-item"><div class="legend-dot" style="background:rgba(180,220,170,1);"></div>autoagenda</div>
 </div>
+
+<button id="autoagenda-btn" class="btn primary-orange full" style="margin:14px 0 8px;display:flex;align-items:center;justify-content:center;gap:7px;">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+    <path d="M3 12l2 2 4-4M3 18l2 2 4-4M13 6h8M13 12h8M13 18h8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+  Validar autoagenda
+</button>
+<div id="autoagenda-panel"></div>
 
 <div id="ia-suggestions"></div>
 
@@ -68,13 +77,94 @@ let anioActual = new Date().getFullYear();
 (async function init() {
   if (!Auth.enforce()) return;
   document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
-  // REMOVIDO v1.8: chat unificado en Mando · UI.renderChatInput('Pregunta sobre tu agenda...');
   document.getElementById('footer-host').innerHTML = UI.renderFooter();
   document.getElementById('nav-host').innerHTML = UI.renderBottomNav('calendario');
 
   renderCalendario();
-  // REMOVIDO v1.8: UI.bindChatInput(t => location.href = 'chat.html?msg=' + encodeURIComponent(t) + '&scope=calendario');
+  document.getElementById('autoagenda-btn').addEventListener('click', mostrarAutoagenda);
 })();
+
+function mostrarAutoagenda() {
+  const propuestas = Autoagenda.proponer();
+  const panel = document.getElementById('autoagenda-panel');
+
+  if (propuestas.length === 0) {
+    panel.innerHTML = `
+      <div style="background:rgba(180,220,170,0.06);border:0.5px solid rgba(180,220,170,0.25);border-radius:12px;padding:13px;margin-bottom:14px;">
+        <div style="font-size:9px;color:rgba(180,220,170,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;margin-bottom:5px;">autoagenda · sin propuestas</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">No hay pendientes vencidos, alta prioridad sin agendar, ni pagos próximos. Tu agenda está al día.</div>
+      </div>
+    `;
+    return;
+  }
+
+  // Agrupa por tipo
+  const porTipo = {};
+  propuestas.forEach(p => { porTipo[p.tipo] = porTipo[p.tipo] || []; porTipo[p.tipo].push(p); });
+
+  const tipoLabel = {
+    pendiente_vencido: { label: 'Pendientes vencidos', color: '#C56A6A' },
+    pendiente_alta: { label: 'Prioridad alta', color: '#FF7A00' },
+    pago_proximo: { label: 'Pagos próximos', color: '#D4A574' }
+  };
+
+  let html = `
+    <div style="background:rgba(255,79,0,0.04);border:0.5px solid rgba(255,79,0,0.22);border-radius:14px;padding:14px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:11px;">
+        <div>
+          <div style="font-size:9px;color:rgba(255,170,110,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;margin-bottom:3px;">autoagenda propuesta</div>
+          <div style="font-size:14px;font-weight:500;">${propuestas.length} bloque${propuestas.length > 1 ? 's' : ''} sugerido${propuestas.length > 1 ? 's' : ''}</div>
+          <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">basado en pendientes alta + pagos del mes</div>
+        </div>
+        <button onclick="cerrarAutoagenda()" style="background:transparent;border:0;color:var(--text-tertiary);font-size:18px;cursor:pointer;">×</button>
+      </div>
+  `;
+
+  Object.entries(porTipo).forEach(([tipo, items]) => {
+    const meta = tipoLabel[tipo] || { label: tipo, color: '#FF7A00' };
+    html += `
+      <div style="margin-bottom:10px;">
+        <div style="font-size:9px;color:${meta.color};letter-spacing:0.1em;text-transform:uppercase;font-weight:500;margin-bottom:5px;">${meta.label} · ${items.length}</div>
+        ${items.map(p => `
+          <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:9px;padding:9px 11px;margin-bottom:4px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:9px;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:11px;font-weight:500;line-height:1.3;">${Util.esc(p.titulo)}</div>
+                <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">${new Date(p.ts).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })} · ${new Date(p.ts).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })} · ${p.duracion_min} min</div>
+              </div>
+              <div style="font-size:9px;color:${meta.color};text-align:right;flex-shrink:0;">${Util.esc(p.razon)}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  });
+
+  html += `
+      <div style="display:flex;gap:6px;margin-top:11px;">
+        <button onclick="cerrarAutoagenda()" class="btn" style="flex:1;font-size:11px;">Cancelar</button>
+        <button onclick="aceptarAutoagenda()" class="btn primary-orange" style="flex:2;font-size:11px;">Aceptar ${propuestas.length} bloques</button>
+      </div>
+    </div>
+  `;
+
+  panel.innerHTML = html;
+  panel.dataset.propuestas = JSON.stringify(propuestas);
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function aceptarAutoagenda() {
+  const panel = document.getElementById('autoagenda-panel');
+  const propuestas = JSON.parse(panel.dataset.propuestas || '[]');
+  const agregados = Autoagenda.aceptarTodas(propuestas);
+  UI.toast(`${agregados} bloques agregados al calendario`, 'success');
+  panel.innerHTML = '';
+  renderCalendario();
+}
+
+function cerrarAutoagenda() {
+  document.getElementById('autoagenda-panel').innerHTML = '';
+}
 
 function cambiarMes(dir) {
   mesActual += dir;

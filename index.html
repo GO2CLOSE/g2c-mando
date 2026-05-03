@@ -11,14 +11,339 @@
 <title>Mando · G2C</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
+<style>
+body {
+  padding-bottom: calc(var(--pad-bottom-nav) + 90px + env(safe-area-inset-bottom, 0px));
+}
+
+.mando-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.thread-msg-ai {
+  align-self: flex-start;
+  max-width: 92%;
+  margin-bottom: 4px;
+  animation: msgIn 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.thread-msg-user {
+  align-self: flex-end;
+  max-width: 88%;
+  background: rgba(255,79,0,0.16);
+  border: 0.5px solid rgba(255,79,0,0.3);
+  color: rgba(255,200,170,0.98);
+  padding: 9px 13px;
+  border-radius: 16px 16px 4px 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 4px;
+  animation: msgIn 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.9); }
+}
+
+.ai-eyebrow-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+  padding-left: 2px;
+}
+.ai-dot-pulse {
+  width: 6px;
+  height: 6px;
+  background: #FF7A00;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+.ai-eyebrow-text {
+  font-size: 9px;
+  color: rgba(255,150,80,0.95);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.ai-bubble-greet {
+  background: linear-gradient(135deg, rgba(255,79,0,0.08), rgba(255,79,0,0.02));
+  border: 0.5px solid rgba(255,79,0,0.22);
+  border-radius: 16px 16px 16px 4px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+.ai-bubble-greet .greet-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+  line-height: 1.15;
+}
+
+.proactiv-card {
+  align-self: flex-start;
+  max-width: 92%;
+  background: linear-gradient(135deg, var(--card-bg-1, rgba(255,79,0,0.10)), var(--card-bg-2, rgba(255,79,0,0.02)));
+  border: 0.5px solid var(--card-border, rgba(255,79,0,0.30));
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s, box-shadow 0.15s;
+  margin-bottom: 4px;
+  animation: msgIn 0.36s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.proactiv-card:active { transform: scale(0.985); }
+
+.proactiv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.proactiv-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.proactiv-arrow { font-size: 14px; flex-shrink: 0; }
+.proactiv-titulo {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+.proactiv-desc {
+  font-size: 11px;
+  color: rgba(244,243,239,0.62);
+  line-height: 1.45;
+}
+
+.thread-chips {
+  align-self: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 8px;
+  max-width: 92%;
+}
+.chat-chip {
+  background: rgba(244,243,239,0.04);
+  border: 0.5px solid rgba(244,243,239,0.12);
+  color: var(--text-primary);
+  padding: 7px 13px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.chat-chip:active { background: rgba(255,79,0,0.12); border-color: rgba(255,79,0,0.3); }
+.chat-chip.primary {
+  background: rgba(255,79,0,0.14);
+  border-color: rgba(255,79,0,0.35);
+  color: rgba(255,170,110,0.98);
+}
+
+.agenda-quick {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: rgba(120,200,220,0.08);
+  border: 0.5px solid rgba(120,200,220,0.28);
+  border-radius: 22px;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s;
+}
+.agenda-quick:active { transform: scale(0.97); }
+.agenda-quick-label {
+  font-size: 11px;
+  color: rgba(180,220,240,0.95);
+  font-weight: 500;
+}
+.agenda-quick-count {
+  font-size: 10px;
+  color: rgba(120,200,220,0.95);
+  background: rgba(120,200,220,0.14);
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.typing-bubble {
+  align-self: flex-start;
+  background: rgba(244,243,239,0.04);
+  border: 0.5px solid rgba(244,243,239,0.08);
+  border-radius: 16px 16px 16px 4px;
+  padding: 12px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: rgba(244,243,239,0.5);
+  border-radius: 50%;
+  animation: typingPulse 1.3s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingPulse {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+.lista-visual-card {
+  align-self: flex-start;
+  width: 92%;
+  max-width: 92%;
+  background: linear-gradient(135deg, var(--lv-bg-1, rgba(255,79,0,0.07)), var(--lv-bg-2, rgba(255,79,0,0.01)));
+  border: 0.5px solid var(--lv-border, rgba(255,79,0,0.22));
+  border-radius: 14px;
+  overflow: hidden;
+  margin: 4px 0;
+}
+.lv-header {
+  padding: 11px 13px 9px;
+  border-bottom: 0.5px solid var(--lv-border-soft, rgba(255,79,0,0.12));
+}
+.lv-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--lv-accent, rgba(255,170,110,0.98));
+}
+.lv-titulo {
+  font-size: 14px;
+  font-weight: 500;
+}
+.lv-item {
+  padding: 10px 13px;
+  border-bottom: 0.5px solid rgba(244,243,239,0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.lv-item:last-child { border-bottom: 0; }
+.lv-item-content { flex: 1; min-width: 0; }
+.lv-item-principal {
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lv-item-secundario {
+  font-size: 10px;
+  color: rgba(244,243,239,0.5);
+  margin-top: 2px;
+}
+.lv-item-tag {
+  font-size: 10px;
+  font-weight: 500;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.lv-item-urgent-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.resumen-card {
+  align-self: flex-start;
+  width: 92%;
+  max-width: 92%;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 4px 0;
+}
+.resumen-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.resumen-valor {
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.resumen-meta {
+  font-size: 10px;
+  color: rgba(244,243,239,0.55);
+  margin-top: 4px;
+}
+
+.nav-card {
+  align-self: flex-start;
+  max-width: 92%;
+  background: rgba(120,200,220,0.06);
+  border: 0.5px solid rgba(120,200,220,0.3);
+  border-radius: 12px;
+  padding: 10px 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  margin: 4px 0;
+}
+.nav-card-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(180,220,240,0.98);
+  flex: 1;
+}
+.nav-card-arrow {
+  font-size: 16px;
+  color: rgba(150,210,230,0.95);
+  flex-shrink: 0;
+}
+</style>
 </head>
 <body>
 
 <div id="status-bar"></div>
 
-<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+<header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
   <div style="display:flex;align-items:center;gap:11px;">
     <div class="mando-avatar">
       <div class="core">
@@ -28,16 +353,25 @@
       <div class="ring-2"></div>
     </div>
     <div>
-      <div style="font-size:15px;font-weight:500;">Mando</div>
+      <div style="font-size:14px;font-weight:500;">Mando</div>
       <div style="display:flex;align-items:center;gap:5px;margin-top:1px;">
         <div style="width:5px;height:5px;background:rgba(180,220,170,0.95);border-radius:50%;"></div>
         <div style="font-size:9px;color:rgba(244,243,239,0.55);">activo · Sonnet 4.6</div>
       </div>
     </div>
   </div>
-  <div style="display:flex;gap:8px;">
+  <div style="display:flex;gap:6px;">
+    <a id="agenda-quick" href="calendario.html" class="agenda-quick">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="5" width="18" height="16" rx="2" stroke="rgba(180,220,240,0.95)" stroke-width="1.5" fill="none"/>
+        <path d="M3 9h18" stroke="rgba(180,220,240,0.95)" stroke-width="1.5"/>
+        <path d="M8 3v3M16 3v3" stroke="rgba(180,220,240,0.95)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="agenda-quick-label" id="agenda-quick-label">Ver agenda</span>
+      <span class="agenda-quick-count" id="agenda-quick-count" style="display:none;">0</span>
+    </a>
     <a href="config.html" style="width:38px;height:38px;background:rgba(255,79,0,0.1);border:0.5px solid rgba(255,79,0,0.3);border-radius:10px;display:flex;align-items:center;justify-content:center;text-decoration:none;position:relative;" id="config-link">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="3" stroke="rgba(255,170,110,0.95)" stroke-width="1.5"/>
         <path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="rgba(255,170,110,0.95)" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
@@ -46,101 +380,10 @@
   </div>
 </header>
 
-<!-- Briefing card hero -->
-<div class="briefing-card">
-  <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-    <div style="font-size:9px;color:rgba(255,150,80,0.85);letter-spacing:0.18em;text-transform:uppercase;font-weight:500;" id="briefing-eyebrow">Briefing · cargando...</div>
-  </div>
-  <div id="briefing-content">
-    <div class="loader" style="margin:8px 0;"></div>
-  </div>
-  <div class="chip-row" id="briefing-chips" style="display:none;">
-    <div class="chip" data-chip="bien">bien · sigamos</div>
-    <div class="chip" data-chip="cansado">cansado</div>
-    <div class="chip" data-chip="denso">denso</div>
-  </div>
-</div>
+<!-- Thread del chat principal · UN SOLO flujo conversacional -->
+<div class="mando-thread" id="mando-thread"></div>
 
-<!-- Timeline del día -->
-<div class="section-eyebrow">
-  <div>
-    <div class="label" style="color:rgba(244,243,239,0.55);">tu día en una mirada</div>
-    <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;" id="timeline-summary">cargando...</div>
-  </div>
-  <a href="calendario.html" style="font-size:11px;color:rgba(255,150,80,0.9);font-weight:500;text-decoration:none;">ver agenda →</a>
-</div>
-
-<div class="timeline" id="timeline-container">
-  <div class="timeline-track" id="timeline-track">
-    <div class="timeline-line"></div>
-    <div class="timeline-progress" style="width:30%;"></div>
-    <!-- Eventos se inyectan dinámicamente -->
-  </div>
-  <div class="timeline-next" id="timeline-next">
-    <div class="next-label">próximo · cargando</div>
-    <div class="next-text">—</div>
-  </div>
-</div>
-
-<!-- Pulso operativo -->
-<div class="section-eyebrow">
-  <div>
-    <div class="label" style="color:rgba(244,243,239,0.55);">pulso operativo</div>
-    <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">tiempo real · todos los módulos</div>
-  </div>
-</div>
-
-<div class="stat-grid cols-2" id="pulso-grid">
-  <div class="stat-card green">
-    <div class="stat-label" style="color:rgba(180,220,170,0.85);">caja</div>
-    <div class="stat-value tabular" id="pulso-caja">—</div>
-    <div class="stat-meta" style="color:rgba(180,220,170,0.85);" id="pulso-caja-meta">—</div>
-  </div>
-  <div class="stat-card alert">
-    <div class="stat-label" style="color:rgba(255,150,80,0.95);">por cobrar</div>
-    <div class="stat-value tabular" id="pulso-cobrar">—</div>
-    <div class="stat-meta" style="color:rgba(255,170,110,0.95);" id="pulso-cobrar-meta">—</div>
-  </div>
-  <div class="stat-card cyan">
-    <div class="stat-label" style="color:rgba(150,210,230,0.85);">pendientes</div>
-    <div class="stat-value tabular" id="pulso-pendientes">—</div>
-    <div class="stat-meta" id="pulso-pendientes-meta">—</div>
-  </div>
-  <div class="stat-card cyan">
-    <div class="stat-label" style="color:rgba(150,210,230,0.85);">música</div>
-    <div class="stat-value tabular" id="pulso-musica">—</div>
-    <div class="stat-meta" id="pulso-musica-meta">—</div>
-  </div>
-</div>
-
-<!-- Decisiones del día -->
-<div class="section-eyebrow">
-  <div>
-    <div class="label" style="color:rgba(244,243,239,0.55);">decisiones que requieren tu OK</div>
-    <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;" id="decisiones-count">cargando...</div>
-  </div>
-</div>
-
-<div id="decisiones-container">
-  <div class="loader-wrap"><div class="loader"></div></div>
-</div>
-
-<!-- Contexto IA -->
-<div style="background:rgba(244,243,239,0.025);border:0.5px solid rgba(244,243,239,0.05);border-radius:14px;padding:13px 15px;margin-bottom:16px;">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;">
-    <div style="display:flex;align-items:center;gap:7px;">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="10" stroke="rgba(244,243,239,0.6)" stroke-width="1.5"/>
-        <path d="M12 6v6l4 2" stroke="rgba(244,243,239,0.6)" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-      <div style="font-size:10px;color:rgba(244,243,239,0.7);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">contexto que entiendo hoy</div>
-    </div>
-    <div style="font-size:10px;color:rgba(180,220,170,0.85);" id="contexto-status">sync</div>
-  </div>
-  <div id="contexto-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"></div>
-</div>
-
-<!-- Mini-player y chat -->
+<!-- Mini-player flotante -->
 <div class="miniplayer" id="miniplayer">
   <div class="yt-thumb">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
@@ -162,210 +405,164 @@
 </div>
 
 <div id="chat-input-host"></div>
-<div id="footer-host"></div>
+<div id="footer-host" style="display:none;"></div>
 <div id="nav-host"></div>
 
 <script src="shared.js"></script>
 <script>
+let conversationHistory = [];
+
 (async function init() {
   if (!Auth.enforce()) return;
 
-  // Inyectar status bar, footer, nav
   document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
   document.getElementById('chat-input-host').innerHTML = UI.renderChatInput('Háblame...');
-  document.getElementById('footer-host').innerHTML = UI.renderFooter();
   document.getElementById('nav-host').innerHTML = UI.renderBottomNav('mando');
 
-  // Ejecutar ProactivIA en background (revisa presupuestos, cobros, etc.)
-  ProactivIA.ejecutar().then(() => {
-    actualizarContadorAlertas();
-  });
+  // Botón agenda dinámico · cuenta eventos hoy/próx 7d
+  renderAgendaQuick();
 
-  // 1. Cargar briefing dinámico
-  loadBriefing();
+  // Ejecutar ProactivIA en background
+  ProactivIA.ejecutar().then(() => actualizarContadorAlertas());
 
-  // 1.5 · ProactivIA · sugerencias en home
-  renderProactivCards();
+  // Render del flow conversacional
+  renderConversationalFlow();
 
-  // 2. Timeline del día
-  renderTimeline();
-
-  // 3. Pulso operativo
-  renderPulso();
-
-  // 4. Decisiones
-  renderDecisiones();
-
-  // 5. Contexto IA
-  renderContexto();
-
-  // 6. Bind chat input
+  // Bind input principal
   UI.bindChatInput(handleChatMessage);
 
-  // 7. Bind chips
-  document.querySelectorAll('[data-chip]').forEach(c => {
-    c.addEventListener('click', () => handleChatMessage(c.dataset.chip === 'bien' ? 'bien, sigamos' : c.dataset.chip));
-  });
-
-  // 8. Mini-player si hay canción cacheada
+  // Mini-player
   loadMiniplayer();
+
+  // Restaurar conversación si hay
+  conversationHistory = Store.get(Store.KEYS.CHAT_CONV, []);
 })();
 
 // ============================================================
-// PROACTIV CARDS · sugerencias accionables en el home
+// FLOW CONVERSACIONAL · saludo IA + cards proactivas + chips
 // ============================================================
-function renderProactivCards() {
-  const sugs = ProactivIA.sugerenciasParaHome();
-  if (!sugs.length) return;
+function renderConversationalFlow() {
+  const thread = document.getElementById('mando-thread');
+  thread.innerHTML = '';
 
-  const container = document.createElement('div');
-  container.id = 'proactiv-container';
-  container.style.cssText = 'margin: 0 0 14px;';
-  container.innerHTML = `
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-      <div style="width:6px;height:6px;background:#FF7A00;border-radius:50%;animation:pulse 2s infinite;"></div>
-      <div style="font-size:9px;color:rgba(255,150,80,0.95);letter-spacing:0.18em;text-transform:uppercase;font-weight:500;">Mando proactivo · ${sugs.length} sugerencia${sugs.length > 1 ? 's' : ''}</div>
-    </div>
-    ${sugs.map((s, i) => `
-      <div onclick="ejecutarSugerenciaProactiv('${s.prompt.replace(/'/g, "\\'")}')" style="
-        background: linear-gradient(135deg, ${s.color}1a, ${s.color}05);
-        border: 0.5px solid ${s.color}40;
-        border-radius: 13px;
-        padding: 12px 14px;
-        margin-bottom: 6px;
-        cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-        transition: transform 0.15s;
-      ">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px;">
-          <div style="font-size:9px;color:${s.color};letter-spacing:0.12em;text-transform:uppercase;font-weight:500;">${s.eyebrow}</div>
-          <div style="font-size:14px;color:${s.color};">→</div>
-        </div>
-        <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">${Util.esc(s.titulo)}</div>
-        <div style="font-size:11px;color:rgba(244,243,239,0.6);line-height:1.45;">${Util.esc(s.descripcion)}</div>
-      </div>
-    `).join('')}
-  `;
-
-  // Insertar después del briefing-card
-  const briefing = document.querySelector('.briefing-card');
-  if (briefing && briefing.parentNode) {
-    briefing.parentNode.insertBefore(container, briefing.nextSibling);
-  }
-}
-
-function ejecutarSugerenciaProactiv(prompt) {
-  // Mandar al chat con el prompt pre-llenado
-  if (typeof handleChatMessage === 'function') {
-    handleChatMessage(prompt);
-  } else {
-    location.href = 'chat.html?msg=' + encodeURIComponent(prompt);
-  }
-}
-
-// ============================================================
-// BRIEFING
-// ============================================================
-function actualizarContadorAlertas() {
-  const noLeidas = Alertas.noLeidas();
-  const badge = document.getElementById('config-badge');
-  if (!badge) return;
-
-  if (noLeidas.length > 0) {
-    badge.textContent = noLeidas.length > 9 ? '9+' : noLeidas.length;
-    badge.style.display = 'flex';
-
-    // Mostrar la más reciente como toast con prioridad alta
-    const masReciente = noLeidas[0];
-    if (masReciente.prioridad === 'alta') {
-      setTimeout(() => {
-        UI.toast(`⚡ ${masReciente.subject}`, 'error', 5000);
-      }, 1500);
-    }
-  } else {
-    badge.style.display = 'none';
-  }
-}
-
-async function loadBriefing() {
-  const eyebrow = document.getElementById('briefing-eyebrow');
-  const content = document.getElementById('briefing-content');
-  const chips = document.getElementById('briefing-chips');
-
+  // 1. SALUDO IA en bubble de chat
+  const saludoMsg = document.createElement('div');
+  saludoMsg.className = 'thread-msg-ai';
   const fecha = new Date().toLocaleDateString('es-MX', { weekday: 'long' });
-  eyebrow.textContent = `Briefing · ${fecha}`;
-
-  // Fallback estático (siempre se muestra primero)
   const greeting = `${Util.greeting()}, Alan.`;
-  const fallbackBriefing = buildLocalBriefing();
+  const briefingText = buildLocalBriefing();
 
-  content.innerHTML = `
-    <div style="font-size:24px;font-weight:500;letter-spacing:-0.02em;line-height:1.15;margin-bottom:8px;">${Util.esc(greeting)}</div>
-    <div style="font-size:13px;color:rgba(244,243,239,0.85);line-height:1.55;" id="briefing-text">${Util.esc(fallbackBriefing)}</div>
+  saludoMsg.innerHTML = `
+    <div class="ai-eyebrow-row">
+      <div class="ai-dot-pulse"></div>
+      <div class="ai-eyebrow-text">Mando · ${fecha}</div>
+    </div>
+    <div class="ai-bubble-greet">
+      <div class="greet-title">${Util.esc(greeting)}</div>
+      <div>${Util.esc(briefingText)}</div>
+    </div>
   `;
-  chips.style.display = 'flex';
+  thread.appendChild(saludoMsg);
 
-  // Intenta mejorar con IA en background
-  try {
-    const result = await IA.briefing();
+  // 2. CARDS PROACTIVAS (idénticas en estilo · entre mensajes)
+  const sugs = ProactivIA.sugerenciasParaHome();
+  sugs.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'proactiv-card';
+    card.style.setProperty('--card-bg-1', `${s.color}1A`);
+    card.style.setProperty('--card-bg-2', `${s.color}05`);
+    card.style.setProperty('--card-border', `${s.color}40`);
+    card.innerHTML = `
+      <div class="proactiv-row">
+        <div class="proactiv-eyebrow" style="color:${s.color};">${s.eyebrow}</div>
+        <div class="proactiv-arrow" style="color:${s.color};">→</div>
+      </div>
+      <div class="proactiv-titulo">${Util.esc(s.titulo)}</div>
+      <div class="proactiv-desc">${Util.esc(s.descripcion)}</div>
+    `;
+    card.addEventListener('click', () => handleChatMessage(s.prompt));
+    thread.appendChild(card);
+  });
 
-    if (result.error) {
-      // Solo log silencioso · NO mostrar error al usuario · ya tiene briefing local
-      console.warn('[Briefing] IA no disponible:', result.error_message);
-      return;
-    }
+  // 3. CHIPS de respuesta
+  const chips = document.createElement('div');
+  chips.className = 'thread-chips';
 
-    if (result.text) {
-      // CRÍTICO: limpiar bloques action por si la IA los inyectó por error
-      let cleanText = result.text;
-      if (typeof Actions !== 'undefined') {
-        cleanText = Actions.stripFromResponse(cleanText) || result.text;
-      }
-      const lines = cleanText.split('\n').filter(Boolean);
-      const aiGreeting = lines[0] || greeting;
-      const rest = lines.slice(1).join(' ').trim();
+  // Chips contextuales según ProactivIA
+  const chipOpts = sugs.length > 0
+    ? [
+        { text: 'Arrancamos con lo urgente', primary: true, prompt: 'arrancamos con lo más urgente' },
+        { text: 'cansado', prompt: 'cansado' },
+        { text: 'denso', prompt: 'denso' }
+      ]
+    : [
+        { text: 'bien · sigamos', primary: true, prompt: 'bien, sigamos' },
+        { text: 'cansado', prompt: 'cansado' },
+        { text: 'denso', prompt: 'denso' },
+        { text: 'qué tengo hoy', prompt: 'qué tengo hoy en agenda' }
+      ];
 
-      content.innerHTML = `
-        <div style="font-size:24px;font-weight:500;letter-spacing:-0.02em;line-height:1.15;margin-bottom:8px;">${Util.esc(aiGreeting)}</div>
-        <div style="font-size:13px;color:rgba(244,243,239,0.85);line-height:1.55;">${Util.esc(rest || fallbackBriefing)}</div>
-      `;
-    }
-  } catch (e) {
-    console.warn('[Briefing] Error:', e);
-    // Briefing local ya está visible, no hacer nada
+  chipOpts.forEach(opt => {
+    const c = document.createElement('button');
+    c.className = 'chat-chip' + (opt.primary ? ' primary' : '');
+    c.textContent = opt.text;
+    c.addEventListener('click', () => handleChatMessage(opt.prompt));
+    chips.appendChild(c);
+  });
+  thread.appendChild(chips);
+}
+
+function renderAgendaQuick() {
+  const calendario = Store.get(Store.KEYS.CALENDARIO, []) || [];
+  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []) || [];
+  const ahora = Date.now();
+  const en7d = ahora + 7 * 86400000;
+  const inicioHoy = new Date(); inicioHoy.setHours(0,0,0,0);
+  const finHoy = inicioHoy.getTime() + 86400000;
+
+  // Eventos hoy en calendario + tocadas
+  const eventosHoy = [
+    ...calendario.filter(e => e.ts >= inicioHoy.getTime() && e.ts < finHoy),
+    ...eventos.filter(e => e.ts >= inicioHoy.getTime() && e.ts < finHoy)
+  ].length;
+
+  const eventosSemana = [
+    ...calendario.filter(e => e.ts >= ahora && e.ts <= en7d),
+    ...eventos.filter(e => e.ts >= ahora && e.ts <= en7d)
+  ].length;
+
+  const label = document.getElementById('agenda-quick-label');
+  const count = document.getElementById('agenda-quick-count');
+
+  if (eventosHoy > 0) {
+    label.textContent = 'Hoy';
+    count.textContent = eventosHoy;
+    count.style.display = 'inline-flex';
+  } else if (eventosSemana > 0) {
+    label.textContent = 'Esta semana';
+    count.textContent = eventosSemana;
+    count.style.display = 'inline-flex';
+  } else {
+    label.textContent = 'Ver agenda';
+    count.style.display = 'none';
   }
 }
 
-/**
- * Briefing local · construido con datos del ERP sin llamar IA.
- * Útil como fallback cuando hay problemas de red o el cerebro está apagado.
- */
 function buildLocalBriefing() {
-  const clientes = Store.get(Store.KEYS.CLIENTES, []);
-  const pendientes = Store.get(Store.KEYS.PENDIENTES, []).filter(p => !p.done);
-  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
-  const cuentasCobrar = Store.get('alan_mando_cuentas_cobrar', []).filter(c => !c.cobrado);
-  const cuentasPagar = Store.get('alan_mando_cuentas_pagar', []).filter(c => !c.pagado);
-  const cobrosRec = Store.get('alan_mando_cobros_recurrentes', []).filter(c => c.activo);
-  const pagosRec = Store.get('alan_mando_pagos_recurrentes', []).filter(p => p.activo);
+  const clientes = Store.get(Store.KEYS.CLIENTES, []) || [];
+  const pendientes = (Store.get(Store.KEYS.PENDIENTES, []) || []).filter(p => !p.done);
+  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []) || [];
+  const cuentasCobrar = (Store.get('alan_mando_cuentas_cobrar', []) || []).filter(c => !c.cobrado);
+  const cobrosRec = (Store.get('alan_mando_cobros_recurrentes', []) || []).filter(c => c.activo);
 
   const ahora = Date.now();
   const en7d = ahora + 7 * 86400000;
 
-  // Cobros vencidos / próximos
   const cobrosVencidos = cuentasCobrar.filter(c => c.fecha_esperada && c.fecha_esperada < ahora);
   const cobrosProximos = cuentasCobrar.filter(c => c.fecha_esperada && c.fecha_esperada >= ahora && c.fecha_esperada <= en7d);
   const recProximos = cobrosRec.filter(c => c.proximo_cobro && c.proximo_cobro <= en7d);
-
-  // Pagos próximos
-  const pagosProximos = cuentasPagar.filter(p => p.fecha && p.fecha <= en7d);
-  const recPagoProximos = pagosRec.filter(p => p.proximo_pago && p.proximo_pago <= en7d);
-
-  // Pendientes urgentes
   const altas = pendientes.filter(p => p.prioridad === 'alta');
   const vencidosPend = pendientes.filter(p => p.fecha_limite && p.fecha_limite < ahora);
-
-  // Tocadas próximas
   const proxTocada = eventos.filter(e => e.tipo === 'tocada' && e.ts > ahora).sort((a, b) => a.ts - b.ts)[0];
 
   const partes = [];
@@ -373,18 +570,13 @@ function buildLocalBriefing() {
     const monto = cobrosVencidos.reduce((s, c) => s + (c.monto || 0), 0);
     partes.push(`${cobrosVencidos.length} cobro${cobrosVencidos.length > 1 ? 's' : ''} vencido${cobrosVencidos.length > 1 ? 's' : ''} (${Util.fmtMoneyK(monto)})`);
   }
+  if (vencidosPend.length) partes.push(`${vencidosPend.length} pendiente${vencidosPend.length > 1 ? 's' : ''} VENCIDO${vencidosPend.length > 1 ? 'S' : ''}`);
+  if (altas.length && !vencidosPend.length) partes.push(`${altas.length} pendiente${altas.length > 1 ? 's' : ''} alta prioridad`);
   if (cobrosProximos.length || recProximos.length) {
     const total = cobrosProximos.length + recProximos.length;
-    const monto = [...cobrosProximos, ...recProximos.map(r => ({monto: r.monto}))].reduce((s, c) => s + (c.monto || 0), 0);
-    partes.push(`${total} cobro${total > 1 ? 's' : ''} esta semana (${Util.fmtMoneyK(monto)})`);
+    partes.push(`${total} cobro${total > 1 ? 's' : ''} esta semana`);
   }
-  if (pagosProximos.length || recPagoProximos.length) {
-    const total = pagosProximos.length + recPagoProximos.length;
-    partes.push(`${total} pago${total > 1 ? 's' : ''} a tu cargo`);
-  }
-  if (vencidosPend.length) partes.push(`${vencidosPend.length} pendiente${vencidosPend.length > 1 ? 's' : ''} VENCIDO${vencidosPend.length > 1 ? 'S' : ''}`);
-  if (altas.length) partes.push(`${altas.length} pendiente${altas.length > 1 ? 's' : ''} alta prioridad`);
-  if (proxTocada) partes.push(`tocada "${proxTocada.titulo || 'sin nombre'}" en ${Util.daysUntil(proxTocada.ts)} días`);
+  if (proxTocada) partes.push(`tocada en ${Util.daysUntil(proxTocada.ts)} días`);
 
   if (partes.length === 0) {
     return 'Día limpio · sin urgencias detectadas. Aprovecha para trabajo profundo o prospección de clientes nuevos.';
@@ -393,325 +585,29 @@ function buildLocalBriefing() {
 }
 
 // ============================================================
-// TIMELINE DEL DÍA
+// HANDLE CHAT · navega al chat dedicado con mensaje pre-llenado
 // ============================================================
-function renderTimeline() {
-  const calendario = Store.get(Store.KEYS.CALENDARIO, []);
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const finHoy = hoy.getTime() + 86400000;
-
-  const eventosHoy = calendario.filter(e => e.ts >= hoy.getTime() && e.ts < finHoy).sort((a, b) => a.ts - b.ts);
-
-  const summary = document.getElementById('timeline-summary');
-  summary.textContent = eventosHoy.length ? `${eventosHoy.length} actividades · día activo` : 'sin eventos agendados hoy';
-
-  const track = document.getElementById('timeline-track');
-  const ahora = Date.now();
-  const inicioH = hoy.getTime() + 8 * 3600000; // 8am
-  const finH = hoy.getTime() + 22 * 3600000; // 10pm
-  const total = finH - inicioH;
-
-  let html = '<div class="timeline-line"></div><div class="timeline-progress" style="width:' + Math.max(0, Math.min(100, ((ahora - inicioH) / total) * 100)) + '%;"></div>';
-
-  eventosHoy.forEach((e, i) => {
-    const pct = Math.max(0, Math.min(100, ((e.ts - inicioH) / total) * 100));
-    const status = e.ts < ahora ? 'done' : (Math.abs(e.ts - ahora) < 1800000 ? 'now' : 'future');
-    const time = Util.fmtTime(e.ts);
-    html += `
-      <div class="timeline-event ${status}" style="left:${pct}%;"></div>
-      <div class="timeline-time" style="left:${pct}%;">${time}</div>
-      <div class="timeline-label" style="left:${pct}%;">${Util.esc(e.titulo || '').slice(0, 12)}</div>
-    `;
-  });
-
-  // "Ahora" si no hay evento exacto
-  const pctNow = Math.max(0, Math.min(100, ((ahora - inicioH) / total) * 100));
-  if (!eventosHoy.some(e => Math.abs(e.ts - ahora) < 1800000)) {
-    html += `
-      <div class="timeline-event now" style="left:${pctNow}%;"></div>
-      <div class="timeline-time" style="left:${pctNow}%;color:rgba(255,170,110,0.95);font-weight:500;">${Util.fmtTime(ahora)}</div>
-      <div class="timeline-label" style="left:${pctNow}%;color:rgba(255,170,110,0.95);">ahora</div>
-    `;
-  }
-
-  track.innerHTML = html;
-
-  // Próximo evento
-  const next = eventosHoy.find(e => e.ts > ahora);
-  const nextEl = document.getElementById('timeline-next');
-  if (next) {
-    const minsAprox = Math.round((next.ts - ahora) / 60000);
-    nextEl.innerHTML = `
-      <div class="next-label">próximo · en ${minsAprox > 60 ? Math.round(minsAprox / 60) + 'h ' + (minsAprox % 60) + 'min' : minsAprox + ' min'}</div>
-      <div class="next-text">${Util.esc(next.titulo || 'Sin título')}</div>
-    `;
-  } else {
-    nextEl.innerHTML = `<div class="next-label">resto del día</div><div class="next-text">Sin eventos agendados</div>`;
-  }
+function handleChatMessage(text) {
+  if (!text || !text.trim()) return;
+  // Redirige al chat dedicado · ahí está toda la lógica de cards visuales
+  window.location.href = 'chat.html?msg=' + encodeURIComponent(text);
 }
 
 // ============================================================
-// PULSO OPERATIVO
+// CONFIG BADGE · alertas pendientes
 // ============================================================
-function renderPulso() {
-  const finanzas = Store.get(Store.KEYS.FINANZAS, {});
-  const clientes = Store.get(Store.KEYS.CLIENTES, []);
-  const pendientes = Store.get(Store.KEYS.PENDIENTES, []);
-  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
-
-  // Caja
-  const caja = finanzas.mrr || clientes.reduce((s, c) => s + (c.monto_mensual || 0), 0);
-  document.getElementById('pulso-caja').textContent = Util.fmtMoneyK(caja);
-  document.getElementById('pulso-caja-meta').textContent = caja > 0 ? `MRR · ${clientes.length} cuentas` : 'sin clientes activos';
-
-  // Por cobrar
-  const vencidos = clientes.filter(c => c.status === 'vencido');
-  const totalVencido = vencidos.reduce((s, c) => s + (c.monto_pendiente || c.monto_mensual || 0), 0);
-  document.getElementById('pulso-cobrar').textContent = Util.fmtMoneyK(totalVencido);
-  document.getElementById('pulso-cobrar-meta').textContent = vencidos.length ? `${vencidos.length} vencido${vencidos.length > 1 ? 's' : ''}` : 'todos al día';
-
-  // Pendientes alta
-  const altas = pendientes.filter(p => p.prioridad === 'alta' && !p.done);
-  document.getElementById('pulso-pendientes').innerHTML = `${altas.length}<span style="font-size:12px;color:rgba(244,243,239,0.5);font-weight:400;"> alta</span>`;
-  const venceHoy = pendientes.filter(p => !p.done && p.due_ts && Util.daysUntil(p.due_ts) === 0).length;
-  document.getElementById('pulso-pendientes-meta').textContent = venceHoy ? `${venceHoy} vence${venceHoy > 1 ? 'n' : ''} hoy` : 'al corriente';
-
-  // Próxima tocada
-  const proxTocada = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now()).sort((a, b) => a.ts - b.ts)[0];
-  if (proxTocada) {
-    const dias = Util.daysUntil(proxTocada.ts);
-    document.getElementById('pulso-musica').textContent = dias + 'd';
-    document.getElementById('pulso-musica-meta').textContent = `${proxTocada.lugar || 'Tocada'} · ${proxTocada.confirmada ? 'confirmada' : 'tentativa'}`;
-  } else {
-    document.getElementById('pulso-musica').textContent = '—';
-    document.getElementById('pulso-musica-meta').textContent = 'sin tocadas próximas';
-  }
-}
-
-// ============================================================
-// DECISIONES (cards con barra lateral)
-// ============================================================
-async function renderDecisiones() {
-  const container = document.getElementById('decisiones-container');
-  const decisiones = await calcularDecisiones();
-
-  document.getElementById('decisiones-count').textContent = `${decisiones.length} acciones encadenadas listas`;
-
-  if (decisiones.length === 0) {
-    container.innerHTML = `<div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:14px;padding:18px;text-align:center;font-size:12px;color:var(--text-tertiary);">Sin decisiones pendientes · todo bajo control.</div>`;
-    return;
-  }
-
-  let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
-  decisiones.forEach(d => {
-    html += `
-      <div class="decision-card ${d.color}">
-        <div class="decision-eyebrow">
-          ${d.icon}
-          <div class="label">${Util.esc(d.eyebrow)}</div>
-        </div>
-        <div class="decision-title">${Util.esc(d.titulo)}</div>
-        ${d.pivots ? `
-          <div class="decision-pivots">
-            ${d.pivots.map(p => `
-              <div class="decision-pivot">
-                <div class="pivot-label">${Util.esc(p.label)}</div>
-                <div class="pivot-value">${Util.esc(p.value)}</div>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
-        <div class="decision-actions">
-          <button class="btn primary-${d.color}" data-action="${d.action_primary}" data-id="${d.id}">${Util.esc(d.btn_primary)}</button>
-          ${d.btn_secondary ? `<button class="btn" data-action="${d.action_secondary}" data-id="${d.id}">${Util.esc(d.btn_secondary)}</button>` : ''}
-        </div>
-      </div>
-    `;
-  });
-  html += '</div>';
-  container.innerHTML = html;
-
-  // Bind acciones
-  container.querySelectorAll('[data-action]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const action = btn.dataset.action;
-      const id = btn.dataset.id;
-      await handleDecisionAction(action, id);
-    });
-  });
-}
-
-async function calcularDecisiones() {
-  const decisiones = [];
-  const clientes = Store.get(Store.KEYS.CLIENTES, []);
-  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
-
-  // 1. Cliente vencido (cobranza)
-  const vencido = clientes.find(c => c.status === 'vencido');
-  if (vencido) {
-    decisiones.push({
-      id: vencido.id,
-      color: 'orange',
-      icon: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 9v3m0 3h.01M5 19h14a2 2 0 001.7-3l-7-12a2 2 0 00-3.4 0l-7 12A2 2 0 005 19z" stroke="rgba(255,170,110,0.95)" stroke-width="1.5"/></svg>`,
-      eyebrow: `cobranza · ${vencido.nombre}`,
-      titulo: 'Genero liga + manda WhatsApp en automático',
-      pivots: [
-        { label: 'VENCIDO', value: (vencido.dias_vencido || 0) + ' días' },
-        { label: 'MONTO', value: Util.fmtMoney(vencido.monto_pendiente || vencido.monto_mensual) },
-        { label: 'MÉTODO', value: vencido.metodo_pago || 'CLABE' }
-      ],
-      btn_primary: 'Generar y enviar',
-      action_primary: 'cobranza_full',
-      btn_secondary: 'Solo generar',
-      action_secondary: 'cobranza_solo'
-    });
-  }
-
-  // 2. Tocada próxima sin set list
-  const proxTocada = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now() && Util.daysUntil(e.ts) <= 7).sort((a, b) => a.ts - b.ts)[0];
-  if (proxTocada && (!proxTocada.set_list || proxTocada.set_list.length === 0)) {
-    decisiones.push({
-      id: proxTocada.id,
-      color: 'cyan',
-      icon: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M9 18V5l12-2v13" stroke="rgba(180,220,240,0.95)" stroke-width="1.5"/><circle cx="6" cy="18" r="3" stroke="rgba(180,220,240,0.95)" stroke-width="1.5"/></svg>`,
-      eyebrow: `set list · ${proxTocada.lugar || 'tocada'}`,
-      titulo: 'Te armo set 5-9 canciones según género del lugar',
-      pivots: [
-        { label: 'LUGAR', value: proxTocada.lugar || 'TBD' },
-        { label: 'EN', value: Util.daysUntil(proxTocada.ts) + ' días' },
-        { label: 'TIPO', value: proxTocada.tipo_evento || 'general' }
-      ],
-      btn_primary: 'Armar set',
-      action_primary: 'armar_set',
-      btn_secondary: 'Manual',
-      action_secondary: 'manual_set'
-    });
-  }
-
-  // 3. Tip proactivo si hay constancia detectada
-  // (Solo si no hay decisiones urgentes ya, para no saturar)
-  if (decisiones.length < 3) {
-    const finanzas = Store.get(Store.KEYS.FINANZAS, {});
-    const objetivos = Store.get(Store.KEYS.OBJETIVOS, []);
-    const objCasa = objetivos.find(o => o.tipo === 'ahorro_casa');
-    if (objCasa && objCasa.progreso < 50) {
-      // Detecta posible viaje en bitácora
-      const bp = Store.get(Store.KEYS.BITACORA_PERSONAL, []);
-      const mencionesViaje = bp.filter(b => /ensenada|viaje|salir/i.test(b.texto || '')).length;
-      if (mencionesViaje >= 2) {
-        decisiones.push({
-          id: 'viaje_ensenada',
-          color: 'cyan',
-          icon: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 2C8 2 4.5 5.5 4.5 9.5c0 5 7.5 12.5 7.5 12.5s7.5-7.5 7.5-12.5C19.5 5.5 16 2 12 2z" stroke="rgba(150,220,200,0.95)" stroke-width="1.5"/></svg>`,
-          eyebrow: `viaje · 17-19 mayo`,
-          titulo: 'Ensenada en firme · te alcanza con $4,800 si recortas hormiga',
-          pivots: [
-            { label: 'CALENDARIO', value: '3 días libres ✓' },
-            { label: 'CAJA', value: '+$32K proyectado' },
-            { label: 'PRESUPUESTO', value: '$4,800' }
-          ],
-          btn_primary: 'Confirmar',
-          action_primary: 'confirmar_viaje',
-          btn_secondary: 'Tentativo',
-          action_secondary: 'tentativo_viaje'
-        });
-      }
+function actualizarContadorAlertas() {
+  const alertas = Store.get('alan_mando_alertas', []) || [];
+  const noLeidas = alertas.filter(a => !a.leida).length;
+  const badge = document.getElementById('config-badge');
+  if (badge) {
+    if (noLeidas > 0) {
+      badge.style.display = 'flex';
+      badge.textContent = noLeidas > 9 ? '9+' : String(noLeidas);
+    } else {
+      badge.style.display = 'none';
     }
   }
-
-  return decisiones;
-}
-
-async function handleDecisionAction(action, id) {
-  switch (action) {
-    case 'cobranza_full':
-      const r = await Cascada.marcarPagado(id);
-      if (r.ok) UI.toast('Pago registrado · cascada disparada ✓', 'success');
-      else UI.toast('No pude registrar · revisa', 'error');
-      renderDecisiones();
-      renderPulso();
-      break;
-    case 'cobranza_solo':
-      UI.toast('Liga generada · te la copio al portapapeles', 'info');
-      // Aquí iría la lógica de generar liga MP/Stripe
-      break;
-    case 'armar_set':
-      window.location.href = `musica.html?armar_set=${id}`;
-      break;
-    case 'confirmar_viaje':
-      Store.push(Store.KEYS.CALENDARIO, {
-        tipo: 'viaje',
-        titulo: 'Ensenada',
-        ts: new Date(2026, 4, 17, 9, 0).getTime(),
-        ts_fin: new Date(2026, 4, 19, 22, 0).getTime(),
-        confirmado: true,
-        presupuesto: 4800
-      });
-      UI.toast('Viaje confirmado · 3 días bloqueados ✓', 'success');
-      renderDecisiones();
-      break;
-    case 'tentativo_viaje':
-      UI.toast('Marcado como tentativo · te recuerdo en 3 días', 'info');
-      break;
-    default:
-      console.log('Acción no implementada:', action);
-  }
-}
-
-// ============================================================
-// CONTEXTO IA
-// ============================================================
-function renderContexto() {
-  const grid = document.getElementById('contexto-grid');
-  const finanzas = Store.get(Store.KEYS.FINANZAS, {});
-  const clientes = Store.get(Store.KEYS.CLIENTES, []);
-  const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
-
-  const items = [];
-
-  if ((finanzas.mrr || 0) > 50000) items.push({ color: 'rgba(180,220,170,0.85)', text: 'caja sana' });
-  else items.push({ color: 'rgba(244,213,128,0.95)', text: 'caja ajustada' });
-
-  const vencidos = clientes.filter(c => c.status === 'vencido');
-  if (vencidos.length) items.push({ color: 'rgba(255,150,80,0.95)', text: `${vencidos[0].nombre} vencido` });
-
-  const proxTocada = eventos.filter(e => e.tipo === 'tocada' && e.ts > Date.now()).sort((a, b) => a.ts - b.ts)[0];
-  if (proxTocada) items.push({ color: 'rgba(150,210,230,0.95)', text: `tocada en ${Util.daysUntil(proxTocada.ts)} días` });
-
-  items.push({ color: 'rgba(244,243,239,0.5)', text: 'Bigin sync ✓' });
-  items.push({ color: 'rgba(244,213,128,0.95)', text: 'servicios fijos' });
-  items.push({ color: 'rgba(120,200,180,0.95)', text: 'objetivos vivos' });
-
-  grid.innerHTML = items.map(i => `
-    <div style="display:flex;align-items:center;gap:7px;padding:6px 0;">
-      <div style="width:5px;height:5px;background:${i.color};border-radius:50%;"></div>
-      <div style="font-size:11px;color:rgba(244,243,239,0.85);">${Util.esc(i.text)}</div>
-    </div>
-  `).join('');
-}
-
-// ============================================================
-// CHAT GLOBAL EN MANDO
-// ============================================================
-async function handleChatMessage(text) {
-  // Detectar intent (Haiku · rápido)
-  const intent = await IA.detectIntent(text);
-
-  if (intent.intent === 'register' && intent.domain === 'movimiento' && intent.data.monto) {
-    const r = Cascada.registrarMovimiento(intent.data);
-    UI.toast(`Movimiento registrado · ${intent.data.tipo} ${Util.fmtMoney(intent.data.monto)}`, 'success');
-    renderPulso();
-    return;
-  }
-
-  if (intent.intent === 'delete') {
-    UI.toast('Para eliminar, ve al módulo correspondiente · medida de seguridad', 'info');
-    return;
-  }
-
-  // Si es chat libre, redirige a chat.html con prefilled
-  window.location.href = 'chat.html?msg=' + encodeURIComponent(text);
 }
 
 // ============================================================
@@ -729,7 +625,12 @@ function loadMiniplayer() {
     Store.set('alan_mando_current_song', null);
     mp.classList.remove('active');
   });
+  document.getElementById('miniplayer').addEventListener('click', (e) => {
+    if (e.target.closest('#mp-close')) return;
+    location.href = 'musica.html';
+  });
 }
 </script>
+
 </body>
 </html>

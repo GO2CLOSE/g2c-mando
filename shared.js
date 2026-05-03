@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.9.0',
+  version: '2.0.0',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -1895,24 +1895,28 @@ const Actions = {
     });
 
     txt += '\n## REGLAS DURAS\n';
-    txt += '1. PEDIDO EXPLÍCITO ("agrega", "edita", "elimina", "cambia", "recuérdame") → EJECUTA con bloque action · NUNCA digas "hazlo tú desde la interfaz".\n';
-    txt += '2. **CADA respuesta termina SIEMPRE con quick_choices** (2-4 botones) · NUNCA dejes a Alan sin opciones tappeables.\n';
-    txt += '3. **CUANDO ALAN PIDA "lista de X" / "qué X tengo" / "muéstrame X" / "cuáles son mis X"** → usa SIEMPRE `lista_visual` · NUNCA escribas los items uno por uno en texto. UN bloque `lista_visual` reemplaza una lista bullets.\n';
-    txt += '4. **CUANDO MENCIONES UN NÚMERO/MONTO IMPORTANTE** ("MRR $26K", "tienes $42K por cobrar") → usa `tarjeta_resumen` con valor grande. NO lo dejes en texto plano.\n';
-    txt += '5. INFERENCIA → usa "sugerir" · NO ejecutes directo.\n';
-    txt += '6. ELIMINACIONES → primera vez sin "confirmar:true" · sistema pedirá confirmación.\n';
-    txt += '7. EDICIONES → usa id_o_nombre/id_o_titulo con búsqueda parcial case-insensitive.\n';
-    txt += '8. FECHAS → ISO YYYY-MM-DDTHH:mm:00 zona MX.\n';
-    txt += '9. NUNCA digas "no puedo editar/eliminar X" · TODO se puede.\n';
-    txt += '10. **TEXTO MÁXIMO 2 ORACIONES** antes del primer bloque action. Si necesitas más, pasa a cards.\n';
-    txt += '11. CERO "¿quieres que...?" · ejecuta directo · cero permisos.\n';
-    txt += '12. CUANDO ENCUENTRES algo relevante agrega "ir_a" para que Alan VEA el módulo.\n\n';
+    txt += '\n## REGLAS DURAS · CERO EXCEPCIONES\n';
+    txt += '1. **CUANDO ALAN PIDA "lista de X" / "muéstrame X" / "qué X tengo" / "cuáles son mis X" / "ver X"** → SIEMPRE `lista_visual`. PROHIBIDO escribir items en texto plano · PROHIBIDO usar palomitas (✓ ✔ • -) seguidas de nombres · PROHIBIDO conteos textuales tipo "tienes 5 cobros: X, Y, Z". Si no usas `lista_visual`, fallaste.\n';
+    txt += '2. **CADA respuesta termina SIEMPRE con `quick_choices`** (2-4 botones cortos · máx 5 palabras c/u). Sin excepción.\n';
+    txt += '3. **NÚMEROS/MONTOS importantes** ($26K, $7,500, "8 días tarde") → SIEMPRE en `tarjeta_resumen`. NO en texto.\n';
+    txt += '4. **TEXTO PLANO máximo 2 oraciones** antes del primer bloque action. Si necesitas explicar más, conviértelo en cards.\n';
+    txt += '5. **PEDIDO EXPLÍCITO** ("agrega/edita/elimina/cambia/recuérdame") → EJECUTA bloque action al inicio. Cero "¿quieres que...?".\n';
+    txt += '6. **PROHIBIDO** decir "no puedo" · "tienes que hacerlo desde la interfaz" · "habla con tu contador" · "pídele a alguien". Tienes manos.\n';
+    txt += '7. **VIAJES/VACACIONES/COMPRAS PERSONALES** ("quiero ir a Cancún", "pienso comprarme PS5", "vacaciones en julio") → activa modo PROYECCIÓN: `tarjeta_resumen` con costo estimado + `tarjeta_resumen` con impacto en flujo + `lista_visual` con sugerencias para cubrir gap (cobros pendientes, prospects, tocadas extra). Cero juicio · solo math.\n';
+    txt += '8. **PROYECTO NUEVO B2B** ("quiero lanzar X servicio", "voy a abrir agencia") → modo SUGERIR: cuestiona viabilidad con `tarjeta_resumen` (margen, tiempo, ROI hr) + `sugerir` con plan estructurado.\n';
+    txt += '9. **DETECCIÓN ESTADO EMOCIONAL**: si Alan dice "denso", "cansado", "agotado", "no puedo más" → MODO HUMANO 1 oración + `quick_choices` con opciones de pausa + opción "sigamos".\n';
+    txt += '10. **NUNCA** "agencia de marketing" · "infraestructura comercial replicable" siempre.\n';
+    txt += '11. **NUNCA** menciona vendors externos (Zoho, GoDaddy, Netlify) a clientes hipotéticos · "proveedores externos".\n';
+    txt += '12. **EDICIONES**: id_o_nombre/id_o_titulo con búsqueda parcial. ELIMINACIONES: primera vez sin "confirmar:true".\n';
+    txt += '13. **ENCONTRASTE algo** → `ir_a` para que Alan VEA el módulo · NO leas data en chat.\n';
+    txt += '14. **TONO**: MX neutro · "va", "ahí va", "ya quedó". Cero "estimado" · cero formalidad.\n';
+    txt += '15. **CICLO DE VENTA >45 días** → di explícito "cortar". Música ROI menor que G2C pero ingreso paralelo.\n\n';
 
-    txt += '## EJEMPLOS COMPLETOS DE RESPUESTA\n\n';
+    txt += '## EJEMPLOS · COPIA EL FORMATO EXACTO\n\n';
 
-    txt += '### Ejemplo 1 · Edición + quick_choices\n';
+    txt += '### Ejemplo 1 · Edición simple\n';
     txt += 'Alan: "Lanmarc ahora paga 7500"\n';
-    txt += 'Tu respuesta:\n\n';
+    txt += 'TU respuesta:\n\n';
     txt += '```action\n';
     txt += '{"action": "editar_cliente", "args": {"id_o_nombre": "Lanmarc", "monto": 7500}}\n';
     txt += '```\n\n';
@@ -1921,10 +1925,10 @@ const Actions = {
     txt += '{"action": "quick_choices", "args": {"choices": ["Aplica ya", "Desde próximo cobro", "Ver historial"]}}\n';
     txt += '```\n\n';
 
-    txt += '### Ejemplo 2 · Pidió ver lista (usar lista_visual + ir_a · NO escribir items)\n';
-    txt += 'Alan: "lista de tareas" / "qué pendientes tengo" / "muéstrame mis pendientes"\n';
-    txt += 'TU respuesta debe ser EXACTAMENTE así (NO escribir nombres):\n\n';
-    txt += 'Acá están tus pendientes activos:\n\n';
+    txt += '### Ejemplo 2 · Lista de pendientes (USAR lista_visual · NUNCA escribir items)\n';
+    txt += 'Alan: "lista de tareas" / "qué pendientes tengo" / "muéstrame las tareas"\n';
+    txt += 'TU respuesta CORRECTA:\n\n';
+    txt += 'Acá tus pendientes activos:\n\n';
     txt += '```action\n';
     txt += '{"action": "lista_visual", "args": {"tipo": "pendientes", "subtitulo": "ordenados por prioridad"}}\n';
     txt += '```\n\n';
@@ -1934,13 +1938,16 @@ const Actions = {
     txt += '```action\n';
     txt += '{"action": "quick_choices", "args": {"choices": ["Cerrar el más urgente", "Crear nuevo", "Cuáles son alta"]}}\n';
     txt += '```\n\n';
+    txt += 'RESPUESTA INCORRECTA (NUNCA hagas esto):\n';
+    txt += '"Tienes 11 pendientes:\n  ✓ Cerrar libro NEOS (alta)\n  ✓ Llamar a Lanmarc\n  ✓ Update diagnóstico..."\n';
+    txt += 'Eso es VIOLACIÓN. Usa `lista_visual` SIEMPRE.\n\n';
 
-    txt += '### Ejemplo 3 · Pidió cobros (lista_visual + tarjeta_resumen)\n';
-    txt += 'Alan: "qué debo cobrar"\n';
-    txt += 'Tu respuesta:\n\n';
-    txt += 'Acá los cobros activos:\n\n';
+    txt += '### Ejemplo 3 · Cobros con resumen\n';
+    txt += 'Alan: "qué debo cobrar" / "cobros pendientes" / "cuánto me deben"\n';
+    txt += 'TU respuesta:\n\n';
+    txt += 'Tu cartera por cobrar:\n\n';
     txt += '```action\n';
-    txt += '{"action": "tarjeta_resumen", "args": {"titulo": "POR COBRAR", "valor": "$42,500", "contexto": "5 clientes activos · 2 vencidos", "color": "orange"}}\n';
+    txt += '{"action": "tarjeta_resumen", "args": {"titulo": "POR COBRAR", "valor": "$42,500", "contexto": "5 clientes · 2 vencidos", "color": "orange"}}\n';
     txt += '```\n\n';
     txt += '```action\n';
     txt += '{"action": "lista_visual", "args": {"tipo": "cobros"}}\n';
@@ -1952,9 +1959,49 @@ const Actions = {
     txt += '{"action": "quick_choices", "args": {"choices": ["Generar liga el más viejo", "Recordatorios WhatsApp", "Crear cobro nuevo"]}}\n';
     txt += '```\n\n';
 
-    txt += '### Ejemplo 4 · Conversación abierta · usa cards no texto\n';
-    txt += 'Alan: "cómo estoy esta semana"\n';
-    txt += 'Tu respuesta:\n\n';
+    txt += '### Ejemplo 4 · VIAJE/VACACIONES (modo proyección)\n';
+    txt += 'Alan: "quiero ir a Cancún en julio 5 días" / "pienso vacacionar 2 semanas" / "voy a Vegas con la novia"\n';
+    txt += 'TU respuesta:\n\n';
+    txt += 'Cancún en julio · 5 días para 2 personas. Costo medio MX:\n\n';
+    txt += '```action\n';
+    txt += '{"action": "tarjeta_resumen", "args": {"titulo": "COSTO ESTIMADO", "valor": "$28,000", "contexto": "Hotel 4★ · vuelo TJ-CUN · comidas · actividades", "color": "orange"}}\n';
+    txt += '```\n\n';
+    txt += '```action\n';
+    txt += '{"action": "tarjeta_resumen", "args": {"titulo": "IMPACTO FLUJO JULIO", "valor": "−18%", "contexto": "vs MRR proyectado · queda buffer $14K", "color": "red"}}\n';
+    txt += '```\n\n';
+    txt += 'Para cubrirlo sin tocar capital:\n\n';
+    txt += '```action\n';
+    txt += '{"action": "lista_visual", "args": {"tipo": "cobros", "titulo": "Cobros que aceleran caja"}}\n';
+    txt += '```\n\n';
+    txt += '```action\n';
+    txt += '{"action": "quick_choices", "args": {"choices": ["Genera plan ahorro", "Tocada extra valdría?", "Cierre prospect 14d", "Olvídalo"]}}\n';
+    txt += '```\n\n';
+
+    txt += '### Ejemplo 5 · COMPRA PERSONAL grande\n';
+    txt += 'Alan: "quiero comprarme PS5 Pro" / "voy a cambiar de iPhone"\n';
+    txt += 'TU respuesta:\n\n';
+    txt += 'PS5 Pro $14,999 MX:\n\n';
+    txt += '```action\n';
+    txt += '{"action": "tarjeta_resumen", "args": {"titulo": "COSTO PS5 PRO", "valor": "$14,999", "contexto": "Sony oficial · disponible BB/Liverpool", "color": "orange"}}\n';
+    txt += '```\n\n';
+    txt += '```action\n';
+    txt += '{"action": "tarjeta_resumen", "args": {"titulo": "PRESUPUESTO GAMING DISPONIBLE", "valor": "$2,800", "contexto": "necesitas $12,200 extra · ¿de dónde?", "color": "red"}}\n';
+    txt += '```\n\n';
+    txt += '```action\n';
+    txt += '{"action": "quick_choices", "args": {"choices": ["1 tocada extra cubre 60%", "Diferir 3 meses", "Ver flujo julio-sep", "Compra ya"]}}\n';
+    txt += '```\n\n';
+
+    txt += '### Ejemplo 6 · Estado emocional (humano antes que operativo)\n';
+    txt += 'Alan: "denso" / "cansado" / "no puedo con todo"\n';
+    txt += 'TU respuesta:\n\n';
+    txt += 'Te leo · día denso pasa. Cierra 30 min y vuelve. Cuando regreses te doy el mínimo necesario para hoy.\n\n';
+    txt += '```action\n';
+    txt += '{"action": "quick_choices", "args": {"choices": ["Pausa 30 min · agendar", "Modo crisis · solo lo urgente", "Sigamos · estoy bien"]}}\n';
+    txt += '```\n\n';
+
+    txt += '### Ejemplo 7 · Pregunta abierta (auto-elige cards relevantes)\n';
+    txt += 'Alan: "cómo estoy esta semana" / "qué onda con el negocio"\n';
+    txt += 'TU respuesta:\n\n';
     txt += 'Tu semana en números:\n\n';
     txt += '```action\n';
     txt += '{"action": "tarjeta_resumen", "args": {"titulo": "MRR ACTUAL", "valor": "$26,000", "contexto": "+12% vs mes pasado", "color": "green"}}\n';
@@ -1963,7 +2010,7 @@ const Actions = {
     txt += '{"action": "lista_visual", "args": {"tipo": "pendientes", "titulo": "Pendientes urgentes"}}\n';
     txt += '```\n\n';
     txt += '```action\n';
-    txt += '{"action": "quick_choices", "args": {"choices": ["Ver dashboard completo", "Plan de la semana", "Foco hoy"]}}\n';
+    txt += '{"action": "quick_choices", "args": {"choices": ["Ver dashboard finanzas", "Plan de la semana", "Foco hoy"]}}\n';
     txt += '```\n';
     return txt;
   },
@@ -3912,6 +3959,37 @@ const Ejercicio = {
 
 const Dieta = {
   KEY: 'alan_mando_dieta_semanal',
+  PREFS_KEY: 'alan_mando_dieta_preferencias',
+
+  /**
+   * Preferencias gusto/aversión del usuario.
+   * { aversiones: ['avena', 'betabel'], gustos: ['huevo', 'pollo'], alergias: [], notas: '' }
+   */
+  getPreferencias() {
+    return Store.get(this.PREFS_KEY, {
+      aversiones: [],
+      gustos: [],
+      alergias: [],
+      notas: ''
+    });
+  },
+
+  setPreferencias(prefs) {
+    Store.set(this.PREFS_KEY, prefs);
+  },
+
+  /**
+   * Filtra una lista de ingredientes/comidas removiendo los que tengan aversión o alergia.
+   */
+  filtrarAversiones(comidas) {
+    const prefs = this.getPreferencias();
+    const bloqueados = [...(prefs.aversiones || []), ...(prefs.alergias || [])].map(s => s.toLowerCase().trim()).filter(Boolean);
+    if (!bloqueados.length) return comidas;
+    return comidas.filter(c => {
+      const txt = (typeof c === 'string' ? c : (c.nombre || '')).toLowerCase();
+      return !bloqueados.some(b => txt.includes(b));
+    });
+  },
 
   /**
    * Plan de la semana actual.
@@ -3946,12 +4024,65 @@ const Dieta = {
 
   /**
    * Genera plan default basado en alimentos seguros para Alan.
+   * Respeta aversiones y alergias del módulo Preferencias.
    */
   generarDefault() {
+    const prefs = this.getPreferencias();
+    const bloqueados = [...(prefs.aversiones || []), ...(prefs.alergias || [])].map(s => s.toLowerCase().trim()).filter(Boolean);
+
+    const aplicar = (str) => {
+      const txt = str.toLowerCase();
+      const malo = bloqueados.find(b => txt.includes(b));
+      return malo ? null : str;
+    };
+
     const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-    const desayunos = ['Avena con plátano + miel', 'Huevos revueltos con espinaca', 'Yogurt griego con arándanos', 'Smoothie verde con jengibre', 'Pan integral con aguacate y huevo', 'Hot cakes integrales con fruta', 'Chilaquiles verdes (sin chile picante)'];
-    const comidas = ['Salmón al horno + arroz integral + brócoli', 'Pollo asado + camote + ensalada', 'Pasta con pesto + pollo + tomate', 'Tacos de pescado (sin salsa picante)', 'Bowl poke de atún + edamame', 'Caldo de pollo con verduras + arroz', 'Filete de res + papas asadas + ensalada'];
-    const cenas = ['Sopa de lentejas + verduras', 'Tostadas de aguacate con huevo', 'Ensalada quinoa con manzana y nuez', 'Wrap de pollo con vegetales', 'Crema de calabaza + queso panela', 'Sándwich integral pavo y queso', 'Pescado a la plancha + verduras'];
+
+    // Pool ampliado · si hay aversión a uno, hay alternativa
+    const desayunosPool = [
+      'Huevos revueltos con espinaca', 'Yogurt griego con arándanos', 'Smoothie verde con jengibre',
+      'Pan integral con aguacate y huevo', 'Hot cakes integrales con fruta', 'Chilaquiles verdes suaves',
+      'Avena con plátano + miel', 'Tostadas francesas integrales', 'Burrito de huevo y verduras',
+      'Bowl de yogurt con granola', 'Omelette de queso y jamón', 'Tortilla española con papa',
+      'Quinoa caliente con canela', 'Pan tostado con mantequilla de maní'
+    ];
+    const comidasPool = [
+      'Salmón al horno + arroz integral + brócoli', 'Pollo asado + camote + ensalada',
+      'Pasta con pesto + pollo + tomate', 'Tacos de pescado suaves', 'Bowl poke de atún + edamame',
+      'Caldo de pollo con verduras + arroz', 'Filete de res + papas asadas + ensalada',
+      'Pollo a la plancha + quinoa', 'Pescado a la veracruzana', 'Hamburguesa de pavo casera',
+      'Pasta carbonara con pollo', 'Tacos al pastor caseros', 'Curry de pollo suave',
+      'Lasagna de verduras', 'Bowl de res asada con vegetales'
+    ];
+    const cenasPool = [
+      'Sopa de lentejas + verduras', 'Tostadas de aguacate con huevo',
+      'Ensalada quinoa con manzana y nuez', 'Wrap de pollo con vegetales',
+      'Crema de calabaza + queso panela', 'Sándwich integral pavo y queso',
+      'Pescado a la plancha + verduras', 'Tacos suaves de pollo deshebrado',
+      'Quesadillas de queso con champiñones', 'Sopa minestrone',
+      'Tostadas de atún', 'Caldo tlalpeño suave'
+    ];
+
+    const desayunos = desayunosPool.map(aplicar).filter(Boolean).slice(0, 7);
+    const comidas = comidasPool.map(aplicar).filter(Boolean).slice(0, 7);
+    const cenas = cenasPool.map(aplicar).filter(Boolean).slice(0, 7);
+
+    // Si no hay suficientes (pasa si bloqueas mucho), pad con genéricos
+    while (desayunos.length < 7) desayunos.push('Desayuno libre · elige tú');
+    while (comidas.length < 7) comidas.push('Comida libre · elige tú');
+    while (cenas.length < 7) cenas.push('Cena libre · elige tú');
+
+    // Mercado · filtrar también
+    const mercadoBase = [
+      'Salmón fresco (300g)', 'Filete de pollo (500g)', 'Atún fresco (200g)', 'Huevos (12)', 'Pavo rebanado (250g)', 'Filete de res (300g)',
+      'Espinaca baby', 'Brócoli (1 pieza)', 'Calabaza (2)', 'Aguacate (5)', 'Tomate cherry', 'Lechugas mixtas', 'Repollo morado',
+      'Arroz integral', 'Pasta integral', 'Avena', 'Pan integral', 'Camote (3)', 'Quinoa (250g)', 'Papas',
+      'Almendras', 'Nueces', 'Aceite de oliva', 'Tahini', 'Edamame congelado',
+      'Yogurt griego natural (1L)', 'Queso panela (200g)',
+      'Plátano (6)', 'Manzana (5)', 'Arándanos', 'Limones (8)',
+      'Lentejas (500g)', 'Pesto', 'Salsa de soya', 'Miel', 'Canela', 'Jengibre fresco', 'Cilantro'
+    ];
+    const mercado = mercadoBase.map(aplicar).filter(Boolean);
 
     const plan = {
       dias: dias.map((dia, i) => ({
@@ -3960,22 +4091,7 @@ const Dieta = {
         comida: comidas[i],
         cena: cenas[i]
       })),
-      ingredientes_mercado: [
-        // Proteínas
-        'Salmón fresco (300g)', 'Filete de pollo (500g)', 'Atún fresco (200g)', 'Huevos (12)', 'Pavo rebanado (250g)', 'Filete de res (300g)',
-        // Verduras
-        'Espinaca baby', 'Brócoli (1 pieza)', 'Calabaza (2)', 'Aguacate (5)', 'Tomate cherry', 'Lechugas mixtas', 'Repollo morado',
-        // Carbos complejos
-        'Arroz integral', 'Pasta integral', 'Avena', 'Pan integral', 'Camote (3)', 'Quinoa (250g)', 'Papas',
-        // Grasas buenas
-        'Almendras', 'Nueces', 'Aceite de oliva', 'Tahini', 'Edamame congelado',
-        // Lácteos
-        'Yogurt griego natural (1L)', 'Queso panela (200g)',
-        // Frutas
-        'Plátano (6)', 'Manzana (5)', 'Arándanos', 'Limones (8)',
-        // Otros
-        'Lentejas (500g)', 'Pesto', 'Salsa de soya', 'Miel', 'Canela', 'Jengibre fresco', 'Cilantro'
-      ]
+      ingredientes_mercado: mercado
     };
 
     return this.guardar(plan);
@@ -4676,6 +4792,124 @@ const ProactivIA = {
 };
 
 // ============================================================
+// 25b · AUTOAGENDA · genera bloques en calendario según pendientes + pagos
+// ============================================================
+const Autoagenda = {
+  /**
+   * Analiza pendientes alta/vencidos + pagos del mes y propone bloques
+   * de tiempo en calendario para los próximos 7 días.
+   * NO modifica nada · solo retorna propuestas.
+   * @returns {Array} bloques propuestos
+   */
+  proponer() {
+    const pendientes = (Store.get(Store.KEYS.PENDIENTES, []) || []).filter(p => !p.done);
+    const cxp = (Store.get('alan_mando_cuentas_pagar', []) || []).filter(p => !p.pagado);
+    const pagosRec = (Store.get('alan_mando_pagos_recurrentes', []) || []).filter(p => p.activo);
+    const calendario = Store.get(Store.KEYS.CALENDARIO, []) || [];
+
+    const ahora = Date.now();
+    const en30d = ahora + 30 * 86400000;
+    const propuestas = [];
+
+    // 1. Pendientes vencidos · bloque mañana 9am
+    const vencidos = pendientes.filter(p => p.fecha_limite && p.fecha_limite < ahora);
+    vencidos.slice(0, 3).forEach((p, i) => {
+      const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9 + i, 0, 0, 0);
+      propuestas.push({
+        tipo: 'pendiente_vencido',
+        titulo: `[Foco] ${p.titulo || p.descripcion}`,
+        ts: d.getTime(),
+        duracion_min: 60,
+        razon: 'Pendiente vencido · cerrar prioridad alta',
+        pendiente_id: p.id
+      });
+    });
+
+    // 2. Pendientes alta sin vencer · bloques esta semana
+    const altas = pendientes.filter(p => p.prioridad === 'alta' && (!p.fecha_limite || p.fecha_limite >= ahora)).slice(0, 4);
+    altas.forEach((p, i) => {
+      const d = new Date(); d.setDate(d.getDate() + 2 + i); d.setHours(10, 0, 0, 0);
+      propuestas.push({
+        tipo: 'pendiente_alta',
+        titulo: `[Trabajo] ${p.titulo || p.descripcion}`,
+        ts: d.getTime(),
+        duracion_min: 90,
+        razon: 'Prioridad alta · bloque dedicado',
+        pendiente_id: p.id
+      });
+    });
+
+    // 3. Pagos próximos del mes · bloque 1 día antes
+    const pagosProx = [
+      ...cxp.filter(p => p.fecha && p.fecha <= en30d),
+      ...pagosRec.filter(p => p.proximo_pago && p.proximo_pago <= en30d)
+    ];
+    pagosProx.slice(0, 5).forEach(p => {
+      const fechaPago = p.fecha || p.proximo_pago;
+      const d = new Date(fechaPago - 86400000); d.setHours(11, 0, 0, 0);
+      propuestas.push({
+        tipo: 'pago_proximo',
+        titulo: `[Pago] ${p.proveedor_nombre || p.concepto || 'Pago'} · ${Util.fmtMoney(p.monto || 0)}`,
+        ts: d.getTime(),
+        duracion_min: 15,
+        razon: `Recordatorio · pagar ${new Date(fechaPago).toLocaleDateString('es-MX')}`,
+        pago_id: p.id
+      });
+    });
+
+    // Filtrar conflictos con eventos ya existentes (overlap por hora)
+    const conflicto = (ts) => {
+      return calendario.some(e => {
+        const inicio = e.ts;
+        const fin = e.ts + ((e.duracion_min || 60) * 60000);
+        return ts >= inicio && ts < fin;
+      });
+    };
+
+    return propuestas
+      .filter(p => !conflicto(p.ts))
+      .sort((a, b) => a.ts - b.ts);
+  },
+
+  /**
+   * Acepta TODAS las propuestas y las inserta en el calendario.
+   */
+  aceptarTodas(propuestas) {
+    const calendario = Store.get(Store.KEYS.CALENDARIO, []) || [];
+    let agregados = 0;
+    propuestas.forEach(p => {
+      calendario.push({
+        id: 'auto_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        titulo: p.titulo,
+        ts: p.ts,
+        duracion_min: p.duracion_min || 60,
+        tipo: p.tipo,
+        autoagenda: true,
+        razon: p.razon,
+        pendiente_id: p.pendiente_id || null,
+        pago_id: p.pago_id || null,
+        createdAt: Date.now()
+      });
+      agregados++;
+    });
+    Store.set(Store.KEYS.CALENDARIO, calendario);
+    return agregados;
+  },
+
+  /**
+   * Borra todos los bloques de autoagenda futuros (rollback).
+   */
+  limpiarFuturos() {
+    const calendario = Store.get(Store.KEYS.CALENDARIO, []) || [];
+    const ahora = Date.now();
+    const filtrados = calendario.filter(e => !(e.autoagenda && e.ts > ahora));
+    const eliminados = calendario.length - filtrados.length;
+    Store.set(Store.KEYS.CALENDARIO, filtrados);
+    return eliminados;
+  }
+};
+
+// ============================================================
 // 26 · INICIALIZACIÓN
 // ============================================================
 
@@ -4709,6 +4943,7 @@ window.NotifPrefs = NotifPrefs;
 window.Expediente = Expediente;
 window.Recurrentes = Recurrentes;
 window.ProactivIA = ProactivIA;
+window.Autoagenda = Autoagenda;
 
 console.log(`%cG2C Mando v${G2C.version}`, 'color:#FF4F00;font-weight:bold;font-size:14px;');
 console.log('%cCreated by Alan Davis · powered by g2c.com.mx', 'color:rgba(244,243,239,0.5);font-size:11px;');

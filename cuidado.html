@@ -82,11 +82,12 @@
   <div class="module-subtitle">Perfil físico · ejercicio · dieta · ocio · proyecciones</div>
 </header>
 
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:14px;">
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:14px;">
   <div class="tab-pill active" data-tab="perfil">Perfil</div>
   <div class="tab-pill" data-tab="ejercicio">Ejercicio</div>
   <div class="tab-pill" data-tab="dieta">Dieta</div>
   <div class="tab-pill" data-tab="ocio">Ocio</div>
+  <div class="tab-pill" data-tab="tracking">Tracking</div>
 </div>
 
 <div id="content"></div>
@@ -123,6 +124,7 @@ function renderTab(tab) {
     case 'ejercicio': c.innerHTML = renderEjercicio(); break;
     case 'dieta': c.innerHTML = renderDieta(); break;
     case 'ocio': c.innerHTML = renderOcio(); break;
+    case 'tracking': c.innerHTML = renderTracking(); break;
   }
 }
 
@@ -598,13 +600,57 @@ function renderDieta() {
   const compradosCount = plan.comprados ? Object.values(plan.comprados).filter(Boolean).length : 0;
   const totalIng = plan.ingredientes_mercado.length;
 
+  const prefs = Dieta.getPreferencias();
+
   return `
     <div class="dashboard-card">
       <div class="dash-eyebrow">semana del ${semanaLabel}</div>
       <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;margin-top:6px;">
-        Plan personalizado: anti-inflamatorio · sin picante · TDAH-friendly. Considera: ${PerfilFisico.get().condiciones.length} condiciones tuyas.
+        Plan personalizado: anti-inflamatorio · TDAH-friendly. ${prefs.aversiones.length > 0 ? `Excluye: <strong>${prefs.aversiones.join(', ')}</strong>.` : 'Sin aversiones registradas.'}
       </div>
       <button class="btn full" onclick="regenerarDieta()" style="margin-top:10px;font-size:11px;">↻ Regenerar plan semanal</button>
+    </div>
+
+    <div class="section-eyebrow"><div><div class="label">tus gustos y aversiones</div></div></div>
+    <div style="background:rgba(244,79,0,0.04);border:0.5px solid rgba(255,79,0,0.18);border-radius:12px;padding:13px;margin-bottom:14px;">
+
+      <div style="margin-bottom:10px;">
+        <div style="font-size:9px;color:rgba(255,170,110,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">no me gusta · excluir siempre</div>
+        <div id="aversiones-tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;min-height:24px;">
+          ${prefs.aversiones.length === 0 ? '<div style="font-size:10px;color:var(--text-tertiary);">Ninguna</div>' :
+            prefs.aversiones.map(a => `
+              <div style="background:rgba(255,79,0,0.15);border:0.5px solid rgba(255,79,0,0.4);color:rgba(255,170,110,0.98);padding:4px 9px;border-radius:11px;font-size:10px;display:flex;align-items:center;gap:5px;">
+                ${Util.esc(a)} <span onclick="quitarAversion('${Util.esc(a).replace(/'/g, '&apos;')}')" style="cursor:pointer;font-size:11px;">×</span>
+              </div>
+            `).join('')}
+        </div>
+        <div style="display:flex;gap:5px;">
+          <input type="text" id="nueva-aversion" placeholder="Ej: avena, betabel..." style="flex:1;background:rgba(244,243,239,0.04);border:0.5px solid var(--border-soft);color:var(--text-primary);font-family:inherit;border-radius:6px;padding:6px 10px;font-size:14px !important;outline:0;">
+          <button class="btn" onclick="agregarAversion()" style="padding:6px 11px;font-size:10px;">+ no</button>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:9px;color:rgba(180,220,170,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">me gusta · prioriza estos</div>
+        <div id="gustos-tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;min-height:24px;">
+          ${prefs.gustos.length === 0 ? '<div style="font-size:10px;color:var(--text-tertiary);">Ninguno</div>' :
+            prefs.gustos.map(g => `
+              <div style="background:rgba(180,220,170,0.12);border:0.5px solid rgba(180,220,170,0.35);color:rgba(180,220,170,0.95);padding:4px 9px;border-radius:11px;font-size:10px;display:flex;align-items:center;gap:5px;">
+                ${Util.esc(g)} <span onclick="quitarGusto('${Util.esc(g).replace(/'/g, '&apos;')}')" style="cursor:pointer;font-size:11px;">×</span>
+              </div>
+            `).join('')}
+        </div>
+        <div style="display:flex;gap:5px;">
+          <input type="text" id="nuevo-gusto" placeholder="Ej: huevo, salmón..." style="flex:1;background:rgba(244,243,239,0.04);border:0.5px solid var(--border-soft);color:var(--text-primary);font-family:inherit;border-radius:6px;padding:6px 10px;font-size:14px !important;outline:0;">
+          <button class="btn primary-green" onclick="agregarGusto()" style="padding:6px 11px;font-size:10px;">+ sí</button>
+        </div>
+      </div>
+
+      ${(prefs.aversiones.length > 0 || prefs.gustos.length > 0) ? `
+        <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid rgba(244,243,239,0.06);font-size:10px;color:var(--text-tertiary);line-height:1.5;">
+          Al regenerar el plan se aplicarán estas preferencias automáticamente.
+        </div>
+      ` : ''}
     </div>
 
     <div class="section-eyebrow"><div><div class="label">plan diario</div></div></div>
@@ -636,6 +682,41 @@ function renderDieta() {
       }).join('')}
     </div>
   `;
+}
+
+function agregarAversion() {
+  const val = document.getElementById('nueva-aversion').value.trim();
+  if (!val) return;
+  const prefs = Dieta.getPreferencias();
+  if (!prefs.aversiones.includes(val)) {
+    prefs.aversiones.push(val);
+    Dieta.setPreferencias(prefs);
+    UI.toast(`"${val}" agregado a aversiones`, 'success');
+    renderTab('dieta');
+  }
+}
+function quitarAversion(val) {
+  const prefs = Dieta.getPreferencias();
+  prefs.aversiones = prefs.aversiones.filter(a => a !== val);
+  Dieta.setPreferencias(prefs);
+  renderTab('dieta');
+}
+function agregarGusto() {
+  const val = document.getElementById('nuevo-gusto').value.trim();
+  if (!val) return;
+  const prefs = Dieta.getPreferencias();
+  if (!prefs.gustos.includes(val)) {
+    prefs.gustos.push(val);
+    Dieta.setPreferencias(prefs);
+    UI.toast(`"${val}" agregado a gustos`, 'success');
+    renderTab('dieta');
+  }
+}
+function quitarGusto(val) {
+  const prefs = Dieta.getPreferencias();
+  prefs.gustos = prefs.gustos.filter(g => g !== val);
+  Dieta.setPreferencias(prefs);
+  renderTab('dieta');
 }
 
 function regenerarDieta() {
@@ -959,6 +1040,135 @@ function guardarPresupuestos() {
   UI.toast('Presupuestos guardados', 'success');
   cerrarModalPresup();
   renderTab('ocio');
+}
+
+// ============================================================
+// TRACKING LONGITUDINAL · cruza ERP completo + IA
+// ============================================================
+function renderTracking() {
+  const menteState = Store.get('alan_mando_mente_state', { estados_diarios: [] });
+  const ejercicios = Store.get('alan_mando_ejercicios', []) || [];
+  const ocioEntries = Store.get('alan_mando_ocio_entries', []) || [];
+  const movs = Store.get('alan_mando_movimientos', []) || [];
+
+  const ahora = Date.now();
+  const en30d = ahora - 30 * 86400000;
+  const en7d = ahora - 7 * 86400000;
+
+  // Últimos 30 días
+  const checkins30d = (menteState.estados_diarios || []).filter(e => new Date(e.fecha).getTime() >= en30d);
+  const ejer30d = ejercicios.filter(e => e.ts >= en30d);
+  const ocio30d = ocioEntries.filter(o => o.ts >= en30d);
+
+  // Últimos 7 días
+  const checkins7d = (menteState.estados_diarios || []).filter(e => new Date(e.fecha).getTime() >= en7d);
+  const ejer7d = ejercicios.filter(e => e.ts >= en7d);
+
+  // Cálculo índice de bienestar 0-100
+  const ESTADOS_SCORE = { inspirado: 5, bien: 4, neutro: 3, cansado: 2, denso: 1 };
+  const scoreCheckin = checkins30d.length ? checkins30d.reduce((s, c) => s + (ESTADOS_SCORE[c.estado] || 3), 0) / checkins30d.length : 0;
+  const scoreEjercicio = Math.min(5, ejer30d.length / 6); // 30 ejercicios/30d = 5
+  const scoreConsistencia = checkins30d.length / 30 * 5;
+
+  const indiceBienestar = Math.round(((scoreCheckin + scoreEjercicio + scoreConsistencia) / 3) * 20); // 0-100
+
+  // Carga operativa
+  const pendientes = (Store.get(Store.KEYS.PENDIENTES, []) || []).filter(p => !p.done);
+  const altas = pendientes.filter(p => p.prioridad === 'alta').length;
+  const cargaOp = Math.min(100, altas * 10 + (pendientes.length - altas) * 3);
+
+  // Color índice
+  const colorIndice = indiceBienestar >= 70 ? '#7AC68A' : indiceBienestar >= 40 ? '#D4A574' : '#C56A6A';
+  const colorCarga = cargaOp <= 40 ? '#7AC68A' : cargaOp <= 70 ? '#D4A574' : '#C56A6A';
+
+  // Patrón cruzado
+  let patron = '';
+  if (checkins30d.length >= 7) {
+    const densos = checkins30d.filter(c => c.estado === 'denso' || c.estado === 'cansado').length;
+    const buenos = checkins30d.filter(c => c.estado === 'bien' || c.estado === 'inspirado').length;
+    if (densos > buenos && cargaOp > 60) {
+      patron = `Patrón detectado: días densos coinciden con carga operativa alta (${altas} pendientes urgentes). Bloquea 1 ejercicio diario · tu ritmo histórico mejora bienestar 30%.`;
+    } else if (buenos > densos && ejer30d.length > 15) {
+      patron = `Racha positiva: ${buenos} días buenos en 30d, con ${ejer30d.length} ejercicios. La rutina física correlaciona con tu mejor estado mental.`;
+    } else if (checkins30d.length < 10) {
+      patron = `Solo ${checkins30d.length} check-ins en 30d. Mente necesita 7+ días seguidos para detectar correlaciones reales con tu carga operativa.`;
+    } else {
+      patron = `Datos suficientes · sin patrón claro aún. Mantén consistencia · en 60d puedo cruzar con tu ciclo de cobros y tocadas.`;
+    }
+  } else {
+    patron = `Necesitas más check-ins de Mente. Solo tengo ${checkins30d.length} días de data en 30d.`;
+  }
+
+  // Top ejercicios
+  const tipos = {};
+  ejer30d.forEach(e => { tipos[e.tipo || 'sin tipo'] = (tipos[e.tipo || 'sin tipo'] || 0) + 1; });
+  const ejerTop = Object.entries(tipos).sort(([,a],[,b]) => b - a).slice(0, 4);
+
+  return `
+    <div style="background:radial-gradient(circle at top right, ${colorIndice}1A, ${colorIndice}03 70%);border:0.5px solid ${colorIndice}33;border-radius:14px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:9px;letter-spacing:0.14em;text-transform:uppercase;font-weight:500;color:${colorIndice};margin-bottom:6px;">índice bienestar 30d</div>
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:10px;">
+        <div style="font-size:36px;font-weight:500;color:${colorIndice};letter-spacing:-0.02em;line-height:1;font-variant-numeric:tabular-nums;">${indiceBienestar}</div>
+        <div style="font-size:11px;color:rgba(244,243,239,0.55);">/100</div>
+      </div>
+      <div style="display:flex;gap:5px;height:6px;border-radius:3px;overflow:hidden;background:rgba(244,243,239,0.05);">
+        <div style="height:100%;width:${indiceBienestar}%;background:${colorIndice};"></div>
+      </div>
+      <div style="margin-top:9px;font-size:11px;color:rgba(244,243,239,0.7);line-height:1.5;">
+        ${indiceBienestar >= 70 ? 'Vas bien · sostén el ritmo.' : indiceBienestar >= 40 ? 'Mantén consistencia · pequeños ajustes mejoran score.' : 'Tu sistema te pide pausa · prioriza descanso y movimiento.'}
+      </div>
+    </div>
+
+    <div class="stat-grid cols-3" style="margin-bottom:14px;">
+      <div class="stat-card" style="background:rgba(180,220,170,0.04);border-color:rgba(180,220,170,0.18);">
+        <div class="stat-label" style="color:rgba(180,220,170,0.85);">CHECK-INS 30D</div>
+        <div class="stat-value tabular">${checkins30d.length}</div>
+        <div class="stat-meta">${Math.round((checkins30d.length / 30) * 100)}% consistencia</div>
+      </div>
+      <div class="stat-card" style="background:rgba(150,210,230,0.04);border-color:rgba(150,210,230,0.18);">
+        <div class="stat-label" style="color:rgba(150,210,230,0.85);">EJERCICIOS 30D</div>
+        <div class="stat-value tabular">${ejer30d.length}</div>
+        <div class="stat-meta">${ejer7d.length} última semana</div>
+      </div>
+      <div class="stat-card" style="background:${colorCarga}14;border-color:${colorCarga}33;">
+        <div class="stat-label" style="color:${colorCarga};">CARGA OP</div>
+        <div class="stat-value tabular">${cargaOp}</div>
+        <div class="stat-meta">${altas} alta · ${pendientes.length} total</div>
+      </div>
+    </div>
+
+    <div class="section-eyebrow"><div><div class="label">patrón detectado por Mando</div></div></div>
+    <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:12px;padding:13px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <div style="width:14px;height:14px;background:rgba(120,200,220,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:4px;height:4px;background:rgba(150,210,230,1);transform:rotate(45deg);"></div></div>
+        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">cruce ERP completo</div>
+      </div>
+      <div style="font-size:12px;color:rgba(244,243,239,0.85);line-height:1.55;">${patron}</div>
+    </div>
+
+    ${ejerTop.length > 0 ? `
+      <div class="section-eyebrow"><div><div class="label">qué hiciste · 30 días</div></div></div>
+      <div style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:11px;padding:13px;margin-bottom:14px;">
+        ${ejerTop.map(([tipo, count]) => `
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:11px;">
+            <div style="color:var(--text-secondary);text-transform:capitalize;">${Util.esc(tipo)}</div>
+            <div style="color:rgba(150,210,230,0.95);font-weight:500;font-variant-numeric:tabular-nums;">${count} sesiones</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    <div style="background:rgba(255,79,0,0.04);border:0.5px solid rgba(255,79,0,0.2);border-radius:12px;padding:13px;">
+      <div style="font-size:9px;color:rgba(255,170,110,0.95);letter-spacing:0.1em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">recomendación accionable</div>
+      <div style="font-size:12px;color:rgba(244,243,239,0.85);line-height:1.55;margin-bottom:10px;">${
+        cargaOp > 60 && ejer7d.length < 2 ? 'Carga operativa alta + bajo movimiento esta semana. Bloquea 30 min de ejercicio HOY · tu rutina histórica mejora score 25%.' :
+        checkins7d.length < 3 ? 'Sin check-ins regulares esta semana. Abre Mente · 5 segundos diarios · mejor data = mejores cruces.' :
+        ejer30d.length < 12 ? 'Bajo volumen de ejercicio · 12 sesiones en 30d. Agenda 3 sesiones esta semana en bloques fijos.' :
+        'Sistema en buen ritmo · sostén consistencia 60d para análisis profundo.'
+      }</div>
+      <a href="mente.html" class="btn primary-orange full" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">Ir a Mente · check-in</a>
+    </div>
+  `;
 }
 </script>
 </body>
