@@ -27,6 +27,7 @@
 <div class="tab-bar" id="tab-bar">
   <div class="tab active" data-tab="resumen">Resumen</div>
   <div class="tab" data-tab="trabajo">Trabajo</div>
+  <div class="tab" data-tab="recurrentes">Recurrentes</div>
   <div class="tab" data-tab="personal">Personal</div>
   <div class="tab" data-tab="musica">Música</div>
   <div class="tab" data-tab="objetivos">Objetivos</div>
@@ -64,6 +65,7 @@ function renderTab(tab) {
   switch (tab) {
     case 'resumen': c.innerHTML = renderResumen(); break;
     case 'trabajo': c.innerHTML = renderTrabajo(); bindTrabajoActions(); break;
+    case 'recurrentes': c.innerHTML = renderRecurrentes(); break;
     case 'personal': c.innerHTML = renderPersonal(); break;
     case 'musica': c.innerHTML = renderMusica(); break;
     case 'objetivos': c.innerHTML = renderObjetivos(); break;
@@ -473,8 +475,376 @@ function bindTrabajoActions() {
 }
 
 // ============================================================
-// TAB PERSONAL
+// TAB RECURRENTES · cobros + pagos automáticos
 // ============================================================
+function renderRecurrentes() {
+  const cobros = Recurrentes.cobros();
+  const pagos = Recurrentes.pagos();
+  const sugerencias = Recurrentes.detectarPatron();
+
+  const totalCobrosMes = cobros.filter(c => c.activo && c.frecuencia === 'mensual').reduce((s, c) => s + c.monto, 0);
+  const totalPagosMes = pagos.filter(p => p.activo && p.frecuencia === 'mensual').reduce((s, p) => s + p.monto, 0);
+
+  let html = `
+    <!-- Dashboard MRR / pagos fijos -->
+    <div class="stat-grid cols-2" style="margin-bottom:14px;">
+      <div class="stat-card green">
+        <div class="stat-label" style="color:rgba(180,220,170,0.85);">MRR ENTRADAS</div>
+        <div class="stat-value tabular">${Util.fmtMoneyK(totalCobrosMes)}</div>
+        <div class="stat-meta">${cobros.filter(c => c.activo).length} activos</div>
+      </div>
+      <div class="stat-card alert">
+        <div class="stat-label" style="color:rgba(255,150,80,0.95);">FIJOS SALIDAS</div>
+        <div class="stat-value tabular">${Util.fmtMoneyK(totalPagosMes)}</div>
+        <div class="stat-meta">${pagos.filter(p => p.activo).length} activos</div>
+      </div>
+    </div>
+
+    <!-- Cobros recurrentes a clientes -->
+    <div class="section-eyebrow">
+      <div>
+        <div class="label">cobros recurrentes · clientes</div>
+        <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">cobros.g2c.com.mx genera la liga automática</div>
+      </div>
+      <div onclick="abrirNuevoCobro()" style="font-size:11px;color:rgba(180,220,170,0.95);cursor:pointer;">+ nuevo</div>
+    </div>
+
+    ${cobros.length ? cobros.map(c => {
+      const proxima = new Date(c.proximo_cobro);
+      const dias = Math.ceil((c.proximo_cobro - Date.now()) / 86400000);
+      const freq = Recurrentes.FRECUENCIAS[c.frecuencia]?.label || c.frecuencia;
+      const colorPill = c.activo ? (dias <= 3 ? 'orange' : (dias <= 7 ? 'yellow' : 'green')) : '';
+      return `
+        <div style="background:${c.activo ? 'rgba(180,220,170,0.04)' : 'rgba(244,243,239,0.02)'};border:0.5px solid ${c.activo ? 'rgba(180,220,170,0.2)' : 'var(--border-soft)'};border-radius:11px;padding:12px;margin-bottom:6px;${!c.activo ? 'opacity:0.6;' : ''}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                <div style="font-size:12px;font-weight:500;">${Util.esc(c.cliente_nombre)}</div>
+                <div class="pill ${colorPill}" style="font-size:9px;">${c.activo ? freq.toUpperCase() : 'PAUSADO'}</div>
+              </div>
+              <div style="font-size:10px;color:var(--text-tertiary);">${Util.esc(c.concepto)}</div>
+              <div style="font-size:9px;color:${dias <= 3 ? 'rgba(255,150,80,0.95)' : 'var(--text-tertiary)'};margin-top:3px;">próximo: ${proxima.toLocaleDateString('es-MX', {day:'numeric', month:'short'})} (${dias === 0 ? 'hoy' : (dias > 0 ? 'en ' + dias + 'd' : Math.abs(dias) + 'd vencido')})</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:14px;font-weight:500;color:rgba(180,220,170,0.95);">${Util.fmtMoney(c.monto)}</div>
+              <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">${c.cobros_generados || 0} cobrados</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+            <a href="${c.cobro_link}" target="_blank" style="flex:1;background:rgba(180,220,170,0.15);border:0.5px solid rgba(180,220,170,0.35);color:rgba(200,230,200,0.95);padding:6px;border-radius:6px;font-size:10px;font-weight:500;text-align:center;text-decoration:none;">Liga cobro</a>
+            ${c.activo ? `<button onclick="ejecutarCobroAhora('${c.id}')" style="flex:1;background:rgba(255,79,0,0.15);border:0.5px solid rgba(255,79,0,0.3);color:rgba(255,170,110,0.95);padding:6px;border-radius:6px;font-size:10px;font-weight:500;cursor:pointer;">Marcar cobrado</button>` : ''}
+            <button onclick="toggleCobro('${c.id}')" style="background:rgba(244,243,239,0.05);border:0.5px solid var(--border-mid);color:var(--text-secondary);padding:6px 9px;border-radius:6px;font-size:10px;cursor:pointer;">${c.activo ? 'Pausar' : 'Reactivar'}</button>
+            <button onclick="removerCobro('${c.id}')" style="background:rgba(255,79,0,0.05);border:0.5px solid rgba(255,79,0,0.2);color:rgba(255,170,110,0.85);padding:6px 9px;border-radius:6px;font-size:10px;cursor:pointer;">×</button>
+          </div>
+        </div>
+      `;
+    }).join('') : `
+      <div style="background:rgba(244,243,239,0.02);border:0.5px dashed rgba(244,243,239,0.1);border-radius:11px;padding:18px;text-align:center;">
+        <div style="font-size:11px;color:var(--text-tertiary);">Sin cobros recurrentes · agrega clientes con suscripción mensual</div>
+      </div>
+    `}
+
+    <!-- Pagos recurrentes a proveedores -->
+    <div class="section-eyebrow" style="margin-top:18px;">
+      <div>
+        <div class="label">pagos recurrentes · proveedores</div>
+        <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">cuando vence se agenda recordatorio + liga al proveedor</div>
+      </div>
+      <div onclick="abrirNuevoPago()" style="font-size:11px;color:rgba(255,150,80,0.95);cursor:pointer;">+ nuevo</div>
+    </div>
+
+    ${pagos.length ? pagos.map(p => {
+      const proxima = new Date(p.proximo_pago);
+      const dias = Math.ceil((p.proximo_pago - Date.now()) / 86400000);
+      const freq = Recurrentes.FRECUENCIAS[p.frecuencia]?.label || p.frecuencia;
+      const colorPill = p.activo ? (dias <= 3 ? 'orange' : (dias <= 7 ? 'yellow' : 'green')) : '';
+      return `
+        <div style="background:${p.activo ? 'rgba(244,213,128,0.04)' : 'rgba(244,243,239,0.02)'};border:0.5px solid ${p.activo ? 'rgba(244,213,128,0.2)' : 'var(--border-soft)'};border-radius:11px;padding:12px;margin-bottom:6px;${!p.activo ? 'opacity:0.6;' : ''}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                <div style="font-size:12px;font-weight:500;">${Util.esc(p.proveedor)}</div>
+                <div class="pill ${colorPill}" style="font-size:9px;">${p.activo ? freq.toUpperCase() : 'PAUSADO'}</div>
+              </div>
+              <div style="font-size:10px;color:var(--text-tertiary);">${Util.esc(p.concepto)}</div>
+              <div style="font-size:9px;color:${dias <= 3 ? 'rgba(255,150,80,0.95)' : 'var(--text-tertiary)'};margin-top:3px;">vence: ${proxima.toLocaleDateString('es-MX', {day:'numeric', month:'short'})} (${dias === 0 ? 'hoy' : (dias > 0 ? 'en ' + dias + 'd' : Math.abs(dias) + 'd vencido')})</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:14px;font-weight:500;color:rgba(244,213,128,0.95);">−${Util.fmtMoney(p.monto)}</div>
+              <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">${p.pagos_generados || 0} pagados</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+            ${p.link_pago ? `<a href="${p.link_pago}" target="_blank" style="flex:1;background:rgba(120,200,220,0.15);border:0.5px solid rgba(120,200,220,0.35);color:rgba(180,220,240,0.95);padding:6px;border-radius:6px;font-size:10px;font-weight:500;text-align:center;text-decoration:none;">Ir a pagar</a>` : ''}
+            ${p.activo ? `<button onclick="ejecutarPagoAhora('${p.id}')" style="flex:1;background:rgba(244,213,128,0.15);border:0.5px solid rgba(244,213,128,0.35);color:rgba(244,213,128,0.95);padding:6px;border-radius:6px;font-size:10px;font-weight:500;cursor:pointer;">Marcar pagado</button>` : ''}
+            <button onclick="togglePago('${p.id}')" style="background:rgba(244,243,239,0.05);border:0.5px solid var(--border-mid);color:var(--text-secondary);padding:6px 9px;border-radius:6px;font-size:10px;cursor:pointer;">${p.activo ? 'Pausar' : 'Reactivar'}</button>
+            <button onclick="removerPago('${p.id}')" style="background:rgba(255,79,0,0.05);border:0.5px solid rgba(255,79,0,0.2);color:rgba(255,170,110,0.85);padding:6px 9px;border-radius:6px;font-size:10px;cursor:pointer;">×</button>
+          </div>
+        </div>
+      `;
+    }).join('') : `
+      <div style="background:rgba(244,243,239,0.02);border:0.5px dashed rgba(244,243,239,0.1);border-radius:11px;padding:18px;text-align:center;">
+        <div style="font-size:11px;color:var(--text-tertiary);">Sin pagos recurrentes · agrega tus suscripciones (Netlify, Cloudflare, contador, etc.)</div>
+      </div>
+    `}
+  `;
+
+  // Sugerencias de auto-detección
+  if (sugerencias.length) {
+    html += `
+      <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.25);border-radius:12px;padding:13px;margin-top:14px;">
+        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">⚡ Mando detectó patrones</div>
+        <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;margin-bottom:10px;">Estos pagos parecen recurrentes · ¿quieres convertirlos en automáticos?</div>
+        ${sugerencias.map(s => `
+          <div style="background:rgba(244,243,239,0.03);border:0.5px solid var(--border-soft);border-radius:8px;padding:10px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:11px;font-weight:500;">${Util.esc(s.proveedor)}</div>
+              <div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">${s.ocurrencias} pagos · prom $${s.monto_promedio.toLocaleString()}</div>
+            </div>
+            <button onclick="convertirEnRecurrente('${Util.esc(s.proveedor).replace(/'/g, '&apos;')}', ${s.monto_promedio}, '${s.categoria || 'saas'}')" style="background:rgba(150,210,230,0.15);border:0.5px solid rgba(150,210,230,0.35);color:rgba(180,220,240,0.95);padding:6px 10px;border-radius:6px;font-size:10px;cursor:pointer;flex-shrink:0;">Convertir</button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  return html;
+}
+
+// === MODALES Y ACCIONES RECURRENTES ===
+function abrirNuevoCobro() {
+  let state = { frecuencia: 'mensual' };
+  const freqBtns = Object.entries(Recurrentes.FRECUENCIAS).map(([k, v]) =>
+    `<div class="g2c-quick-btn ${k === 'mensual' ? 'active' : ''}" data-freq="${k}"><div class="qb-label">${v.dias}d</div><div class="qb-value">${v.label}</div></div>`
+  ).join('');
+
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-cobro-recur';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot" style="background:rgba(180,220,170,1);"></div><div class="label">Cobro recurrente</div></div>
+      <div class="g2c-modal-title">Nuevo cliente con suscripción</div>
+
+      <div class="form-field">
+        <div class="field-label">CLIENTE</div>
+        <input type="text" class="field-input" id="cob-cliente" placeholder="Ej: NEOS Regenerative" style="font-size:16px !important;">
+      </div>
+      <div class="form-field">
+        <div class="field-label">CONCEPTO</div>
+        <input type="text" class="field-input" id="cob-concepto" placeholder="Ej: Plan Total · diciembre" style="font-size:16px !important;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="form-field">
+          <div class="field-label">MONTO ($)</div>
+          <input type="number" class="field-input" id="cob-monto" placeholder="16000" style="font-size:16px !important;">
+        </div>
+        <div class="form-field">
+          <div class="field-label">PRIMER COBRO</div>
+          <input type="date" class="field-input" id="cob-fecha" value="${new Date().toISOString().slice(0,10)}" style="font-size:16px !important;">
+        </div>
+      </div>
+      <div class="form-field">
+        <div class="field-label">FRECUENCIA</div>
+        <div class="g2c-quick-grid" style="grid-template-columns:repeat(3,1fr);">${freqBtns}</div>
+      </div>
+
+      <div style="background:rgba(120,200,220,0.06);border:0.5px solid rgba(120,200,220,0.2);border-radius:8px;padding:9px 11px;font-size:10px;color:rgba(150,210,230,0.95);margin-top:10px;">
+        Liga de cobro se genera automática en cobros.g2c.com.mx · Recordatorio 3 días antes de cada vencimiento.
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalCobroRecur()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarCobroRecur()">Crear</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalCobroRecur);
+  document.body.appendChild(modal);
+  window._cobState = state;
+
+  modal.querySelectorAll('[data-freq]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-freq]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._cobState.frecuencia = btn.dataset.freq;
+    });
+  });
+}
+
+function cerrarModalCobroRecur() {
+  const m = document.getElementById('modal-cobro-recur');
+  if (m) m.remove();
+  delete window._cobState;
+}
+
+function guardarCobroRecur() {
+  const cliente = document.getElementById('cob-cliente').value.trim();
+  const concepto = document.getElementById('cob-concepto').value.trim();
+  const monto = parseFloat(document.getElementById('cob-monto').value) || 0;
+  const fecha = document.getElementById('cob-fecha').value;
+
+  if (!cliente || !concepto || !monto) return UI.toast('Completa todo', 'error');
+
+  Recurrentes.crearCobro({
+    cliente_nombre: cliente,
+    concepto,
+    monto,
+    fecha_inicio: fecha ? new Date(fecha).getTime() : Date.now(),
+    frecuencia: window._cobState?.frecuencia || 'mensual'
+  });
+
+  UI.toast('Cobro recurrente creado · liga lista', 'success');
+  cerrarModalCobroRecur();
+  renderTab('recurrentes');
+}
+
+function abrirNuevoPago(prefill = null) {
+  let state = { frecuencia: 'mensual' };
+  const freqBtns = Object.entries(Recurrentes.FRECUENCIAS).map(([k, v]) =>
+    `<div class="g2c-quick-btn ${k === 'mensual' ? 'active' : ''}" data-freq="${k}"><div class="qb-label">${v.dias}d</div><div class="qb-value">${v.label}</div></div>`
+  ).join('');
+
+  const cats = Object.entries(Proveedores.CATEGORIAS).map(([k, v]) =>
+    `<option value="${k}" ${prefill?.categoria === k ? 'selected' : ''}>${v}</option>`
+  ).join('');
+
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-pago-recur';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot" style="background:rgba(244,213,128,1);"></div><div class="label">Pago recurrente</div></div>
+      <div class="g2c-modal-title">Nueva suscripción</div>
+
+      <div class="form-field">
+        <div class="field-label">PROVEEDOR</div>
+        <input type="text" class="field-input" id="pag-prov" placeholder="Ej: Netlify · Cloudflare · Contador" value="${prefill?.proveedor || ''}" style="font-size:16px !important;">
+      </div>
+      <div class="form-field">
+        <div class="field-label">CONCEPTO</div>
+        <input type="text" class="field-input" id="pag-concepto" placeholder="Ej: Plan Pro · hosting" value="${prefill?.concepto || ''}" style="font-size:16px !important;">
+      </div>
+      <div class="form-field">
+        <div class="field-label">CATEGORÍA</div>
+        <select class="field-select" id="pag-cat" style="font-size:16px !important;">${cats}</select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="form-field">
+          <div class="field-label">MONTO ($)</div>
+          <input type="number" class="field-input" id="pag-monto" placeholder="500" value="${prefill?.monto || ''}" style="font-size:16px !important;">
+        </div>
+        <div class="form-field">
+          <div class="field-label">PRÓXIMO PAGO</div>
+          <input type="date" class="field-input" id="pag-fecha" value="${new Date().toISOString().slice(0,10)}" style="font-size:16px !important;">
+        </div>
+      </div>
+      <div class="form-field">
+        <div class="field-label">FRECUENCIA</div>
+        <div class="g2c-quick-grid" style="grid-template-columns:repeat(3,1fr);">${freqBtns}</div>
+      </div>
+      <div class="form-field">
+        <div class="field-label">LIGA PARA PAGAR (opcional)</div>
+        <input type="url" class="field-input" id="pag-link" placeholder="https://app.netlify.com/billing" style="font-size:16px !important;">
+        <div style="font-size:9px;color:var(--text-tertiary);margin-top:4px;">URL del proveedor para pagar directo cuando llegue el recordatorio</div>
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalPagoRecur()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarPagoRecur()">Crear</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalPagoRecur);
+  document.body.appendChild(modal);
+  window._pagState = state;
+
+  modal.querySelectorAll('[data-freq]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-freq]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._pagState.frecuencia = btn.dataset.freq;
+    });
+  });
+}
+
+function cerrarModalPagoRecur() {
+  const m = document.getElementById('modal-pago-recur');
+  if (m) m.remove();
+  delete window._pagState;
+}
+
+function guardarPagoRecur() {
+  const proveedor = document.getElementById('pag-prov').value.trim();
+  const concepto = document.getElementById('pag-concepto').value.trim();
+  const cat = document.getElementById('pag-cat').value;
+  const monto = parseFloat(document.getElementById('pag-monto').value) || 0;
+  const fecha = document.getElementById('pag-fecha').value;
+  const link = document.getElementById('pag-link').value.trim();
+
+  if (!proveedor || !concepto || !monto) return UI.toast('Completa todo', 'error');
+
+  Recurrentes.crearPago({
+    proveedor,
+    concepto,
+    categoria: cat,
+    monto,
+    fecha_inicio: fecha ? new Date(fecha).getTime() : Date.now(),
+    frecuencia: window._pagState?.frecuencia || 'mensual',
+    link_pago: link
+  });
+
+  UI.toast('Pago recurrente creado · recordatorios agendados', 'success');
+  cerrarModalPagoRecur();
+  renderTab('recurrentes');
+}
+
+function ejecutarCobroAhora(id) {
+  if (!confirm('¿Marcar este cobro como recibido?')) return;
+  Recurrentes.ejecutarCobro(id);
+  UI.toast('Cobro ejecutado · ingreso registrado · próximo ciclo agendado', 'success');
+  renderTab('recurrentes');
+}
+
+function ejecutarPagoAhora(id) {
+  if (!confirm('¿Marcar este pago como hecho?')) return;
+  Recurrentes.ejecutarPago(id);
+  UI.toast('Pago registrado · gasto agregado · próximo ciclo agendado', 'success');
+  renderTab('recurrentes');
+}
+
+function toggleCobro(id) {
+  Recurrentes.toggleCobro(id);
+  renderTab('recurrentes');
+}
+
+function togglePago(id) {
+  Recurrentes.togglePago(id);
+  renderTab('recurrentes');
+}
+
+function removerCobro(id) {
+  if (!confirm('¿Eliminar este cobro recurrente? No borra los cobros ya registrados.')) return;
+  Recurrentes.removeCobro(id);
+  UI.toast('Eliminado', 'info');
+  renderTab('recurrentes');
+}
+
+function removerPago(id) {
+  if (!confirm('¿Eliminar este pago recurrente? No borra los pagos ya registrados.')) return;
+  Recurrentes.removePago(id);
+  UI.toast('Eliminado', 'info');
+  renderTab('recurrentes');
+}
+
+function convertirEnRecurrente(proveedor, monto, categoria) {
+  abrirNuevoPago({ proveedor, monto, categoria, concepto: 'Servicio mensual' });
+}
+
 function renderPersonal() {
   const movs = Store.get('alan_mando_movimientos', []);
   const personales = movs.filter(m => m.tipo === 'gasto' && (m.categoria || '').includes('personal'));
@@ -896,9 +1266,133 @@ function crearTareaSugerida(objId, titulo) {
 }
 
 function agregarTareaAObjetivo(objId) {
-  const titulo = prompt('Título de la tarea vinculada:');
-  if (!titulo) return;
-  crearTareaSugerida(objId, titulo);
+  const obj = Store.get(Store.KEYS.OBJETIVOS, []).find(o => o.id === objId);
+  cerrarDetalleObjetivo();
+
+  let modalState = { prioridad: 'media', dias: 7 };
+
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-vincular-tarea';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow">
+        <div class="dot"></div>
+        <div class="label">Vincular tarea</div>
+      </div>
+      <div class="g2c-modal-title">Tarea para "${Util.esc(obj?.nombre || 'objetivo')}"</div>
+
+      <div class="form-field">
+        <input type="text"
+               class="field-input"
+               id="vinc-titulo"
+               placeholder="Ej: Cerrar NEOS exp este mes"
+               autofocus
+               style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">PRIORIDAD</div>
+        <div class="g2c-quick-grid" id="vinc-prio">
+          <div class="g2c-quick-btn" data-prio="alta">
+            <div class="qb-label">ALTA</div>
+            <div class="qb-value" style="color:rgba(255,170,110,0.95);">Urgente</div>
+          </div>
+          <div class="g2c-quick-btn active" data-prio="media">
+            <div class="qb-label">MEDIA</div>
+            <div class="qb-value" style="color:rgba(244,213,128,0.95);">Esta semana</div>
+          </div>
+          <div class="g2c-quick-btn" data-prio="baja">
+            <div class="qb-label">BAJA</div>
+            <div class="qb-value" style="color:var(--text-secondary);">Cuando se pueda</div>
+          </div>
+          <div class="g2c-quick-btn" data-prio="critica">
+            <div class="qb-label">CRÍTICA</div>
+            <div class="qb-value" style="color:rgba(255,170,110,0.95);">Ahora</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">VENCE</div>
+        <div class="g2c-quick-grid" id="vinc-dias">
+          <div class="g2c-quick-btn" data-dias="0">
+            <div class="qb-label">HOY</div>
+            <div class="qb-value">Mismo día</div>
+          </div>
+          <div class="g2c-quick-btn" data-dias="3">
+            <div class="qb-label">3 DÍAS</div>
+            <div class="qb-value">Esta semana</div>
+          </div>
+          <div class="g2c-quick-btn active" data-dias="7">
+            <div class="qb-label">7 DÍAS</div>
+            <div class="qb-value">Próx. semana</div>
+          </div>
+          <div class="g2c-quick-btn" data-dias="30">
+            <div class="qb-label">30 DÍAS</div>
+            <div class="qb-value">Este mes</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarVincular()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarVinculacion('${objId}')">Vincular</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarVincular);
+  document.body.appendChild(modal);
+  window._vincState = modalState;
+
+  modal.querySelectorAll('[data-prio]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-prio]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._vincState.prioridad = btn.dataset.prio;
+    });
+  });
+  modal.querySelectorAll('[data-dias]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-dias]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._vincState.dias = parseInt(btn.dataset.dias);
+    });
+  });
+
+  setTimeout(() => document.getElementById('vinc-titulo')?.focus(), 100);
+}
+
+function cerrarVincular() {
+  const m = document.getElementById('modal-vincular-tarea');
+  if (m) m.remove();
+  delete window._vincState;
+}
+
+function guardarVinculacion(objId) {
+  const titulo = document.getElementById('vinc-titulo').value.trim();
+  if (!titulo) return UI.toast('Falta título', 'error');
+
+  const obj = Store.get(Store.KEYS.OBJETIVOS, []).find(o => o.id === objId);
+  const state = window._vincState || { prioridad: 'media', dias: 7 };
+
+  Store.push(Store.KEYS.PENDIENTES, {
+    id: 'pend_' + Date.now(),
+    titulo,
+    prioridad: state.prioridad === 'critica' ? 'alta' : state.prioridad,
+    urgente: state.dias <= 1 || state.prioridad === 'critica',
+    importante: state.prioridad === 'alta' || state.prioridad === 'critica',
+    objetivo_id: objId,
+    objetivo_nombre: obj?.nombre || '',
+    due_ts: Date.now() + state.dias * 86400000,
+    fecha_creacion: Date.now(),
+    done: false
+  });
+
+  UI.toast('Tarea vinculada al objetivo', 'success');
+  cerrarVincular();
+  setTimeout(() => verDetalleObjetivo(objId), 200);
 }
 
 function eliminarObjetivo(id) {

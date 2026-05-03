@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0F1419">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mando">
+<title>Cuidado Personal · Mando</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+.tab-pill {
+  background: rgba(244,243,239,0.04);
+  border: 0.5px solid var(--border-mid);
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: center;
+  font-weight: 500;
+}
+.tab-pill.active {
+  background: rgba(180,220,170,0.15);
+  border-color: rgba(180,220,170,0.4);
+  color: rgba(200,230,200,0.95);
+}
+
+.dashboard-card {
+  background: rgba(244,243,239,0.025);
+  border: 0.5px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 8px;
+}
+.dash-eyebrow { font-size: 9px; color: var(--text-tertiary); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin-bottom: 6px; }
+.dash-value { font-size: 24px; font-weight: 500; }
+.dash-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+.profile-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid rgba(244,243,239,0.04); gap: 8px; }
+.profile-row:last-child { border-bottom: none; }
+.profile-label { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
+.profile-input { background: rgba(15,20,25,0.6); border: 0.5px solid var(--border-mid); border-radius: 6px; padding: 7px 10px; font-size: 16px !important; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; outline: none; max-width: 140px; text-align: right; min-width: 0; }
+.profile-static { font-size: 12px; color: var(--text-primary); text-align: right; font-weight: 500; }
+
+.ent-card { background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 11px; padding: 11px; margin-bottom: 6px; display: flex; gap: 11px; align-items: center; }
+.ent-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+
+.dieta-day-card { background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+.dieta-day-name { font-size: 9px; color: rgba(255,150,80,0.95); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; }
+.dieta-meal { display: flex; gap: 10px; padding: 5px 0; align-items: center; }
+.dieta-meal-label { font-size: 9px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; min-width: 38px; flex-shrink: 0; }
+.dieta-meal-text { font-size: 11px; color: var(--text-secondary); flex: 1; }
+
+.ingrediente-row { display: flex; align-items: center; gap: 10px; padding: 8px 11px; background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 7px; margin-bottom: 4px; cursor: pointer; }
+.ingrediente-row.checked { background: rgba(180,220,170,0.06); border-color: rgba(180,220,170,0.2); }
+.ingrediente-row.checked .ing-text { text-decoration: line-through; color: var(--text-tertiary); }
+.ing-check { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid rgba(244,243,239,0.25); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.ingrediente-row.checked .ing-check { background: rgba(180,220,170,0.3); border-color: rgba(180,220,170,0.6); }
+.ing-text { font-size: 11px; color: var(--text-primary); flex: 1; }
+
+.budget-bar { height: 6px; background: rgba(244,243,239,0.04); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.budget-fill { height: 100%; transition: width 0.3s; border-radius: 3px; }
+.budget-fill.ok { background: linear-gradient(90deg, rgba(180,220,170,0.6), rgba(180,220,170,0.95)); }
+.budget-fill.cerca { background: linear-gradient(90deg, rgba(244,213,128,0.6), rgba(244,213,128,0.95)); }
+.budget-fill.rebasado { background: linear-gradient(90deg, rgba(255,170,110,0.7), rgba(255,79,0,0.95)); }
+</style>
+</head>
+<body>
+
+<div id="status-bar"></div>
+
+<header class="module-header">
+  <div class="module-eyebrow">
+    <div class="dot" style="background:rgba(180,220,170,1);"></div>
+    <div class="label" style="color:rgba(200,230,200,0.85);">Cuidado personal</div>
+  </div>
+  <div class="module-title">Tu sistema integral</div>
+  <div class="module-subtitle">Perfil físico · ejercicio · dieta · ocio · proyecciones</div>
+</header>
+
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:14px;">
+  <div class="tab-pill active" data-tab="perfil">Perfil</div>
+  <div class="tab-pill" data-tab="ejercicio">Ejercicio</div>
+  <div class="tab-pill" data-tab="dieta">Dieta</div>
+  <div class="tab-pill" data-tab="ocio">Ocio</div>
+  <div class="tab-pill" data-tab="proy">Proy</div>
+</div>
+
+<div id="content"></div>
+
+<div id="footer-host"></div>
+<div id="nav-host"></div>
+
+<script src="shared.js"></script>
+<script>
+(async function init() {
+  if (!Auth.enforce()) return;
+  document.getElementById('status-bar').innerHTML = UI.renderStatusBar();
+  document.getElementById('footer-host').innerHTML = UI.renderFooter();
+  document.getElementById('nav-host').innerHTML = UI.renderBottomNav('cuidado');
+
+  bindTabs();
+  renderTab('perfil');
+})();
+
+function bindTabs() {
+  document.querySelectorAll('.tab-pill').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab-pill').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      renderTab(t.dataset.tab);
+    });
+  });
+}
+
+function renderTab(tab) {
+  const c = document.getElementById('content');
+  switch (tab) {
+    case 'perfil': c.innerHTML = renderPerfil(); break;
+    case 'ejercicio': c.innerHTML = renderEjercicio(); break;
+    case 'dieta': c.innerHTML = renderDieta(); break;
+    case 'ocio': c.innerHTML = renderOcio(); break;
+    case 'proy': c.innerHTML = renderProy(); break;
+  }
+}
+
+// ============================================================
+// PERFIL FÍSICO
+// ============================================================
+function renderPerfil() {
+  const p = PerfilFisico.get();
+  const edad = PerfilFisico.edad();
+  const imc = PerfilFisico.imc();
+  const imcCat = PerfilFisico.imcCategoria();
+  const diasCumple = PerfilFisico.diasACumple();
+
+  // Análisis médicos cargados
+  const analisisAtt = Attach.list().filter(a => a.type === 'analisis_medico' || (a.title || '').toLowerCase().includes('análisis') || (a.title || '').toLowerCase().includes('analisis'));
+
+  return `
+    <div class="dashboard-card">
+      <div class="dash-eyebrow">datos básicos</div>
+      <div class="profile-row">
+        <div class="profile-label">Nombre</div>
+        <input type="text" class="profile-input" id="perf-nombre" value="${Util.esc(p.nombre || '')}" style="font-family:'Inter',sans-serif;max-width:200px;">
+      </div>
+      <div class="profile-row">
+        <div class="profile-label">Cumpleaños</div>
+        <input type="date" class="profile-input" id="perf-cumple" value="${p.fecha_nacimiento || ''}" style="max-width:170px;">
+      </div>
+      <div class="profile-row">
+        <div class="profile-label">Edad</div>
+        <div class="profile-static">${edad ? edad + ' años' : '—'}${diasCumple !== null && diasCumple < 30 ? ` · cumple en ${diasCumple}d` : ''}</div>
+      </div>
+      <div class="profile-row">
+        <div class="profile-label">Estatura (cm)</div>
+        <input type="number" class="profile-input" id="perf-estatura" value="${p.estatura_cm || ''}" placeholder="178">
+      </div>
+      <div class="profile-row">
+        <div class="profile-label">Peso (kg)</div>
+        <input type="number" class="profile-input" id="perf-peso" value="${p.peso_kg || ''}" placeholder="--" step="0.1">
+      </div>
+      ${imc ? `
+        <div class="profile-row">
+          <div class="profile-label">IMC</div>
+          <div class="profile-static" style="color:${imcCat.color};">${imc.toFixed(1)} · ${imcCat.label}</div>
+        </div>
+      ` : ''}
+      <div class="profile-row">
+        <div class="profile-label">Tipo sangre</div>
+        <input type="text" class="profile-input" id="perf-sangre" value="${Util.esc(p.sangre || '')}" placeholder="O+" maxlength="3" style="text-transform:uppercase;max-width:80px;">
+      </div>
+
+      <button class="btn primary-orange full" style="margin-top:12px;" onclick="guardarPerfil()">Guardar perfil</button>
+    </div>
+
+    <div class="dashboard-card">
+      <div class="dash-eyebrow">condiciones · usadas por toda sugerencia IA</div>
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.7;margin-top:4px;">
+        ${p.condiciones.map(c => `· ${Util.esc(c)}`).join('<br>')}
+      </div>
+      <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;margin-top:12px;margin-bottom:6px;">medicación</div>
+      <div style="font-size:11px;color:var(--text-secondary);">${p.medicacion.join(' · ')}</div>
+    </div>
+
+    <div class="dashboard-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="dash-eyebrow" style="margin-bottom:0;">expediente médico</div>
+        <a href="config.html" style="font-size:11px;color:rgba(255,150,80,0.9);text-decoration:none;">+ subir análisis</a>
+      </div>
+      ${(() => {
+        const ultimo = Expediente.ultimo();
+        if (!ultimo) {
+          return `<div style="font-size:11px;color:var(--text-tertiary);text-align:center;padding:14px;">Sin análisis cargados aún</div>`;
+        }
+        const alertas = Expediente.alertas();
+        const optimos = ultimo.valores.filter(v => v.estado === 'optimo' || v.estado === 'normal').length;
+        return `
+          <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:9px;padding:11px;margin-bottom:8px;">
+            <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:5px;">último análisis · ${ultimo.laboratorio}</div>
+            <div style="font-size:11px;font-weight:500;">${Util.esc(ultimo.fecha)} · ${ultimo.valores.length} biomarcadores</div>
+            <div style="display:flex;gap:8px;margin-top:6px;font-size:10px;">
+              <div style="color:rgba(180,220,170,0.95);">✓ ${optimos} normales</div>
+              ${alertas.length ? `<div style="color:rgba(255,170,110,0.95);">⚠ ${alertas.length} fuera de rango</div>` : ''}
+            </div>
+          </div>
+
+          ${alertas.length ? `
+            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;">requieren atención</div>
+            ${alertas.map(a => {
+              const colorEstado = a.estado === 'deficiencia' || a.estado === 'alto' ? 'rgba(255,170,110,0.95)' : 'rgba(244,213,128,0.95)';
+              return `
+                <div style="background:rgba(255,79,0,0.04);border:0.5px solid rgba(255,79,0,0.2);border-radius:8px;padding:10px;margin-bottom:5px;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;">
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:11px;font-weight:500;">${Util.esc(a.nombre)}</div>
+                      <div style="font-size:9px;color:var(--text-tertiary);margin-top:1px;">rango ${a.ref_min}${a.ref_max ? '-' + a.ref_max : '+'} ${a.unidad}</div>
+                    </div>
+                    <div style="text-align:right;">
+                      <div style="font-size:13px;font-weight:500;color:${colorEstado};">${a.valor}<span style="font-size:9px;color:var(--text-tertiary);"> ${a.unidad}</span></div>
+                      <div style="font-size:9px;color:${colorEstado};text-transform:uppercase;letter-spacing:0.05em;">${a.estado}</div>
+                    </div>
+                  </div>
+                  ${a.nota ? `<div style="font-size:10px;color:var(--text-secondary);line-height:1.4;margin-top:6px;border-top:0.5px solid rgba(244,243,239,0.05);padding-top:6px;">${Util.esc(a.nota)}</div>` : ''}
+                </div>
+              `;
+            }).join('')}
+          ` : ''}
+
+          <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;margin-top:10px;margin-bottom:6px;">resto del panel</div>
+          <details style="background:rgba(244,243,239,0.025);border:0.5px solid var(--border-soft);border-radius:8px;padding:10px;">
+            <summary style="font-size:11px;color:var(--text-secondary);cursor:pointer;font-weight:500;">Ver ${ultimo.valores.length - alertas.length} valores normales</summary>
+            <div style="margin-top:8px;">
+              ${ultimo.valores.filter(v => v.estado === 'normal' || v.estado === 'optimo' || v.estado === 'bajo_leve').map(v => `
+                <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:10px;">
+                  <div style="color:var(--text-secondary);">${Util.esc(v.nombre)}</div>
+                  <div style="color:${v.estado === 'optimo' ? 'rgba(180,220,170,0.95)' : 'var(--text-primary)'};">${v.valor} ${v.unidad}</div>
+                </div>
+              `).join('')}
+            </div>
+          </details>
+        `;
+      })()}
+    </div>
+  `;
+}
+
+function guardarPerfil() {
+  const nombre = document.getElementById('perf-nombre').value.trim();
+  const cumple = document.getElementById('perf-cumple').value;
+  const estatura = parseFloat(document.getElementById('perf-estatura').value) || null;
+  const peso = parseFloat(document.getElementById('perf-peso').value) || null;
+  const sangre = document.getElementById('perf-sangre').value.trim().toUpperCase();
+
+  PerfilFisico.set({
+    nombre,
+    fecha_nacimiento: cumple,
+    estatura_cm: estatura,
+    peso_kg: peso,
+    sangre
+  });
+
+  UI.toast('Perfil guardado', 'success');
+  renderTab('perfil');
+}
+
+// ============================================================
+// EJERCICIO
+// ============================================================
+function renderEjercicio() {
+  const cumpl = Ejercicio.cumplimiento(7);
+  const proximas = Ejercicio.proximasSesiones(5);
+  const recientes = Ejercicio.list().slice(0, 5);
+
+  return `
+    <!-- Dashboard -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+      <div class="dashboard-card" style="margin-bottom:0;">
+        <div class="dash-eyebrow">cumplimiento · 7 días</div>
+        <div class="dash-value" style="color:${cumpl.cumplimiento_pct >= 70 ? 'rgba(180,220,170,0.95)' : 'rgba(244,213,128,0.95)'};">${cumpl.cumplimiento_pct}%</div>
+        <div class="dash-sub">${cumpl.dias_activos} de ${cumpl.meta_dias} días meta</div>
+        <div class="budget-bar"><div class="budget-fill ${cumpl.cumplimiento_pct >= 70 ? 'ok' : 'cerca'}" style="width:${cumpl.cumplimiento_pct}%;"></div></div>
+      </div>
+      <div class="dashboard-card" style="margin-bottom:0;">
+        <div class="dash-eyebrow">tiempo total</div>
+        <div class="dash-value" style="color:rgba(150,210,230,0.95);">${cumpl.total_minutos}<span style="font-size:13px;color:var(--text-tertiary);"> min</span></div>
+        <div class="dash-sub">promedio ${cumpl.promedio_min_dia} min/día</div>
+      </div>
+    </div>
+
+    <button class="btn primary-orange full" onclick="abrirRegistrarEntrenamiento()" style="margin-bottom:8px;">+ Registrar entrenamiento</button>
+    <button class="btn full" onclick="abrirAgendarEjercicio()" style="margin-bottom:14px;">+ Agendar futuro</button>
+
+    <!-- Próximas sesiones -->
+    ${proximas.length ? `
+      <div class="section-eyebrow"><div><div class="label">próximas sesiones agendadas</div></div></div>
+      ${proximas.map(p => {
+        const tipoMeta = Ejercicio.TIPOS[p.tipo] || { label: p.tipo, color: 'gray', icon: '·' };
+        const dias = Util.daysUntil(p.fecha);
+        return `
+          <div class="ent-card">
+            <div class="ent-icon" style="background:${tipoMeta.color.replace('0.95', '0.15')};color:${tipoMeta.color};">${tipoMeta.icon}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:11px;font-weight:500;">${Util.esc(tipoMeta.label)}</div>
+              <div style="font-size:9px;color:var(--text-tertiary);">${dias === 0 ? 'hoy' : (dias === 1 ? 'mañana' : `en ${dias}d`)} · ${p.lugar || 'sin lugar'}</div>
+            </div>
+            <div style="font-size:10px;color:var(--text-tertiary);">${p.duracion_min || '?'}min</div>
+          </div>
+        `;
+      }).join('')}
+    ` : ''}
+
+    <!-- Historial reciente -->
+    ${recientes.length ? `
+      <div class="section-eyebrow" style="margin-top:14px;"><div><div class="label">últimos entrenamientos</div></div></div>
+      ${recientes.map(e => {
+        const tipoMeta = Ejercicio.TIPOS[e.tipo] || { label: e.tipo, color: 'gray', icon: '·' };
+        return `
+          <div class="ent-card">
+            <div class="ent-icon" style="background:${tipoMeta.color.replace('0.95', '0.15')};color:${tipoMeta.color};">${tipoMeta.icon}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:11px;font-weight:500;">${Util.esc(e.titulo || tipoMeta.label)}</div>
+              <div style="font-size:9px;color:var(--text-tertiary);">${Util.fmtDate(e.fecha, { short: true })} · ${Util.esc(e.lugar || 'sin lugar')}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:11px;color:rgba(180,220,170,0.95);font-weight:500;">${e.duracion_min || 0} min</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    ` : ''}
+  `;
+}
+
+function abrirRegistrarEntrenamiento() {
+  let state = { tipo: 'fuerza' };
+  const tipos = Ejercicio.TIPOS;
+  const tipoBtns = Object.entries(tipos).map(([k, t], i) =>
+    `<div class="g2c-quick-btn ${i === 0 ? 'active' : ''}" data-ent-tipo="${k}">
+      <div class="qb-label">${t.icon}</div>
+      <div class="qb-value" style="color:${t.color};">${t.label}</div>
+    </div>`
+  ).join('');
+
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-ent';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot" style="background:rgba(180,220,170,1);"></div><div class="label">Entrenamiento</div></div>
+      <div class="g2c-modal-title">Registrar sesión</div>
+
+      <div class="form-field">
+        <div class="field-label">TIPO</div>
+        <div class="g2c-quick-grid" style="grid-template-columns:repeat(2,1fr);">${tipoBtns}</div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">QUÉ HICISTE (opcional)</div>
+        <input type="text" class="field-input" id="ent-titulo" placeholder="Ej: Push day · piernas · 5K corrido" style="font-size:16px !important;">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="form-field">
+          <div class="field-label">DURACIÓN (MIN)</div>
+          <input type="number" class="field-input" id="ent-duracion" placeholder="30" style="font-size:16px !important;">
+        </div>
+        <div class="form-field">
+          <div class="field-label">CUÁNDO</div>
+          <input type="datetime-local" class="field-input" id="ent-fecha" value="${new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16)}" style="font-size:16px !important;">
+        </div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">LUGAR</div>
+        <input type="text" class="field-input" id="ent-lugar" placeholder="Casa · gym · alberca · zona Cacho" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">NOTAS (opcional)</div>
+        <textarea class="field-input field-textarea" id="ent-notas" placeholder="Cómo te sentiste, qué mejorar..." style="font-size:16px !important;"></textarea>
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalEnt()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarEntrenamiento()">Registrar</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalEnt);
+  document.body.appendChild(modal);
+  window._entState = state;
+
+  modal.querySelectorAll('[data-ent-tipo]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-ent-tipo]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._entState.tipo = btn.dataset.entTipo;
+    });
+  });
+}
+
+function cerrarModalEnt() {
+  const m = document.getElementById('modal-ent');
+  if (m) m.remove();
+  delete window._entState;
+}
+
+function guardarEntrenamiento() {
+  const titulo = document.getElementById('ent-titulo').value.trim();
+  const duracion = parseInt(document.getElementById('ent-duracion').value) || 0;
+  const fecha = document.getElementById('ent-fecha').value;
+  const lugar = document.getElementById('ent-lugar').value.trim();
+  const notas = document.getElementById('ent-notas').value.trim();
+
+  if (!duracion) return UI.toast('Pon la duración', 'error');
+
+  Ejercicio.registrar({
+    tipo: window._entState?.tipo || 'fuerza',
+    titulo,
+    duracion_min: duracion,
+    fecha: fecha ? new Date(fecha).getTime() : Date.now(),
+    lugar,
+    notas
+  });
+
+  UI.toast(`${duracion} min registrados`, 'success');
+  cerrarModalEnt();
+  renderTab('ejercicio');
+}
+
+function abrirAgendarEjercicio() {
+  let state = { tipo: 'fuerza' };
+  const tipos = Ejercicio.TIPOS;
+  const tipoBtns = Object.entries(tipos).map(([k, t], i) =>
+    `<div class="g2c-quick-btn ${i === 0 ? 'active' : ''}" data-ag-tipo="${k}">
+      <div class="qb-label">${t.icon}</div>
+      <div class="qb-value" style="color:${t.color};">${t.label}</div>
+    </div>`
+  ).join('');
+
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-agej';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot" style="background:rgba(120,200,220,1);"></div><div class="label">Agendar ejercicio</div></div>
+      <div class="g2c-modal-title">Sesión futura</div>
+
+      <div class="form-field">
+        <div class="field-label">TIPO</div>
+        <div class="g2c-quick-grid" style="grid-template-columns:repeat(2,1fr);">${tipoBtns}</div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">CUÁNDO</div>
+        <input type="datetime-local" class="field-input" id="agej-fecha" style="font-size:16px !important;">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="form-field">
+          <div class="field-label">DURACIÓN</div>
+          <input type="number" class="field-input" id="agej-dur" placeholder="30 min" style="font-size:16px !important;">
+        </div>
+        <div class="form-field">
+          <div class="field-label">LUGAR</div>
+          <input type="text" class="field-input" id="agej-lugar" placeholder="Casa · gym" style="font-size:16px !important;">
+        </div>
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalAgej()">Cancelar</button>
+        <button class="btn primary-cyan" onclick="guardarAgendaEjercicio()">Agendar</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalAgej);
+  document.body.appendChild(modal);
+  window._agejState = state;
+
+  modal.querySelectorAll('[data-ag-tipo]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-ag-tipo]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._agejState.tipo = btn.dataset.agTipo;
+    });
+  });
+}
+
+function cerrarModalAgej() {
+  const m = document.getElementById('modal-agej');
+  if (m) m.remove();
+}
+
+function guardarAgendaEjercicio() {
+  const fecha = document.getElementById('agej-fecha').value;
+  const dur = parseInt(document.getElementById('agej-dur').value) || 30;
+  const lugar = document.getElementById('agej-lugar').value.trim();
+
+  if (!fecha) return UI.toast('Pon fecha y hora', 'error');
+
+  const fechaTs = new Date(fecha).getTime();
+  Ejercicio.agendar({
+    tipo: window._agejState?.tipo || 'fuerza',
+    fecha: fechaTs,
+    duracion_min: dur,
+    lugar
+  });
+
+  // También crea recordatorio
+  Recordatorios.agendar({
+    tipo: 'salud',
+    titulo: `Ejercicio · ${Ejercicio.TIPOS[window._agejState?.tipo]?.label || 'sesión'}`,
+    body: `${dur} min en ${lugar || 'sin lugar definido'}`,
+    fecha: fechaTs - 30 * 60000, // 30 min antes
+    prioridad: 'media'
+  });
+
+  UI.toast('Agendado · recordatorio 30min antes', 'success');
+  cerrarModalAgej();
+  renderTab('ejercicio');
+}
+
+// ============================================================
+// DIETA SEMANAL
+// ============================================================
+function renderDieta() {
+  let plan = Dieta.semanaActual();
+  if (!plan) {
+    plan = Dieta.generarDefault();
+  }
+
+  const inicio = new Date(plan.semana_inicio);
+  const fin = new Date(plan.semana_inicio + 6 * 86400000);
+  const semanaLabel = `${inicio.getDate()} ${inicio.toLocaleDateString('es-MX', { month: 'short' })} – ${fin.getDate()} ${fin.toLocaleDateString('es-MX', { month: 'short' })}`;
+
+  const compradosCount = plan.comprados ? Object.values(plan.comprados).filter(Boolean).length : 0;
+  const totalIng = plan.ingredientes_mercado.length;
+
+  return `
+    <div class="dashboard-card">
+      <div class="dash-eyebrow">semana del ${semanaLabel}</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;margin-top:6px;">
+        Plan personalizado: anti-inflamatorio · sin picante · TDAH-friendly. Considera: ${PerfilFisico.get().condiciones.length} condiciones tuyas.
+      </div>
+      <button class="btn full" onclick="regenerarDieta()" style="margin-top:10px;font-size:11px;">↻ Regenerar plan semanal</button>
+    </div>
+
+    <div class="section-eyebrow"><div><div class="label">plan diario</div></div></div>
+    ${plan.dias.map(d => `
+      <div class="dieta-day-card">
+        <div class="dieta-day-name">${Util.esc(d.dia)}</div>
+        <div class="dieta-meal"><div class="dieta-meal-label">DESAY</div><div class="dieta-meal-text">${Util.esc(d.desayuno)}</div></div>
+        <div class="dieta-meal"><div class="dieta-meal-label">COMID</div><div class="dieta-meal-text">${Util.esc(d.comida)}</div></div>
+        <div class="dieta-meal"><div class="dieta-meal-label">CENA</div><div class="dieta-meal-text">${Util.esc(d.cena)}</div></div>
+      </div>
+    `).join('')}
+
+    <div class="section-eyebrow" style="margin-top:14px;">
+      <div>
+        <div class="label">lista de mercado</div>
+        <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">${compradosCount}/${totalIng} comprados</div>
+      </div>
+    </div>
+
+    <div id="ingredientes-list">
+      ${plan.ingredientes_mercado.map(ing => {
+        const checked = plan.comprados && plan.comprados[ing];
+        return `
+          <div class="ingrediente-row ${checked ? 'checked' : ''}" onclick="toggleIng('${Util.esc(ing).replace(/'/g, '&apos;')}')">
+            <div class="ing-check">${checked ? '<div style="color:rgba(180,220,170,1);font-size:11px;">✓</div>' : ''}</div>
+            <div class="ing-text">${Util.esc(ing)}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function regenerarDieta() {
+  if (!confirm('¿Regenerar el plan? Perderás los checks de comprados.')) return;
+  Dieta.generarDefault();
+  UI.toast('Plan semanal regenerado', 'success');
+  renderTab('dieta');
+}
+
+function toggleIng(ing) {
+  Dieta.toggleIngrediente(ing);
+  renderTab('dieta');
+}
+
+// ============================================================
+// OCIO TRACKING
+// ============================================================
+function renderOcio() {
+  const presupResumen = Presupuesto.resumen();
+  const motaSemana = OcioTrack.gastoMotaSemana();
+  const motaMes = OcioTrack.gastoMotaMes();
+  const shoppingMes = OcioTrack.gastoShoppingMes();
+  const gamingMin = OcioTrack.minutosGamingSemana();
+  const motaAlerta = presupResumen.mota_semanal;
+  const shoppingAlerta = presupResumen.shopping_mensual;
+
+  return `
+    <!-- Dashboard general -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div class="dashboard-card" style="margin-bottom:0;border-color:${motaAlerta?.nivel === 'rebasado' ? 'rgba(255,79,0,0.5)' : (motaAlerta?.nivel === 'cerca' ? 'rgba(244,213,128,0.4)' : 'rgba(120,200,80,0.3)')};background:${motaAlerta?.nivel === 'rebasado' ? 'rgba(255,79,0,0.05)' : 'rgba(120,200,80,0.04)'};">
+        <div class="dash-eyebrow" style="color:rgba(120,200,80,0.95);">marihuana · semana</div>
+        <div class="dash-value" style="color:${motaAlerta?.nivel === 'rebasado' ? 'rgba(255,170,110,0.95)' : 'rgba(180,220,170,0.95)'};">${Util.fmtMoney(motaSemana)}</div>
+        <div class="dash-sub">de ${Util.fmtMoney(motaAlerta?.limite || 0)} presup.</div>
+        <div class="budget-bar"><div class="budget-fill ${motaAlerta?.nivel || 'ok'}" style="width:${Math.min(motaAlerta?.pct || 0, 100)}%;"></div></div>
+      </div>
+      <div class="dashboard-card" style="margin-bottom:0;border-color:${shoppingAlerta?.nivel === 'rebasado' ? 'rgba(255,79,0,0.5)' : 'rgba(120,200,220,0.3)'};background:${shoppingAlerta?.nivel === 'rebasado' ? 'rgba(255,79,0,0.05)' : 'rgba(120,200,220,0.04)'};">
+        <div class="dash-eyebrow" style="color:rgba(150,210,230,0.95);">shopping · mes</div>
+        <div class="dash-value" style="color:rgba(150,210,230,0.95);">${Util.fmtMoney(shoppingMes)}</div>
+        <div class="dash-sub">de ${Util.fmtMoney(shoppingAlerta?.limite || 0)} presup.</div>
+        <div class="budget-bar"><div class="budget-fill ${shoppingAlerta?.nivel || 'ok'}" style="width:${Math.min(shoppingAlerta?.pct || 0, 100)}%;"></div></div>
+      </div>
+    </div>
+
+    <!-- Acciones rápidas -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
+      <button class="btn full" onclick="abrirRegistrarMota()" style="background:rgba(120,200,80,0.15);border-color:rgba(120,200,80,0.4);color:rgba(180,220,170,0.95);font-size:11px;">+ Compra mota</button>
+      <button class="btn full" onclick="abrirRegistrarShopping()" style="background:rgba(120,200,220,0.15);border-color:rgba(120,200,220,0.4);color:rgba(180,220,240,0.95);font-size:11px;">+ Viaje shopping</button>
+    </div>
+
+    <!-- Histórico mota -->
+    <div class="section-eyebrow"><div><div class="label">historial marihuana · ${OcioTrack.comprasMota().length} compras</div></div></div>
+    ${OcioTrack.comprasMota().slice(0, 5).map(c => `
+      <div class="ent-card" style="background:rgba(120,200,80,0.04);border-color:rgba(120,200,80,0.2);">
+        <div class="ent-icon" style="background:rgba(120,200,80,0.15);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2c-1.5 4-1 8 0 10 1-2 1.5-6 0-10zm-7 8c2 1 4 3 5 5-3 0-5-1-6-3 0-1 0-1 1-2zm14 0c-2 1-4 3-5 5 3 0 5-1 6-3 0-1 0-1-1-2zM5 14c2-1 5 0 7 2-2 1-5 1-7-1zm14 0c-2-1-5 0-7 2 2 1 5 1 7-1zm-7 4c-1 2-1 4 0 5 1-1 1-3 0-5z" fill="rgba(120,200,80,1)"/></svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-weight:500;color:rgba(180,220,170,0.95);">${c.cantidad || '?'} ${c.unidad || 'g'} · ${Util.esc(c.tipo || 'sin tipo')}</div>
+          <div style="font-size:9px;color:var(--text-tertiary);">${Util.fmtDate(c.fecha, { short: true })} · ${Util.esc(c.tienda || c.lugar || 'sin tienda')}</div>
+        </div>
+        <div style="font-size:11px;color:rgba(180,220,170,0.95);font-weight:500;">${Util.fmtMoney(c.costo)}</div>
+      </div>
+    `).join('') || '<div style="font-size:11px;color:var(--text-tertiary);text-align:center;padding:14px;">Sin compras registradas</div>'}
+
+    <!-- Histórico shopping -->
+    <div class="section-eyebrow" style="margin-top:14px;"><div><div class="label">viajes de shopping · ${OcioTrack.shopping().length}</div></div></div>
+    ${OcioTrack.shopping().slice(0, 5).map(v => `
+      <div class="ent-card">
+        <div class="ent-icon" style="background:rgba(120,200,220,0.15);color:rgba(180,220,240,0.95);">▦</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-weight:500;">${Util.esc(v.tienda || v.lugar)}</div>
+          <div style="font-size:9px;color:var(--text-tertiary);">${Util.fmtDate(v.fecha, { short: true })} · ${(v.items || []).length} items</div>
+        </div>
+        <div style="font-size:11px;color:rgba(180,220,240,0.95);font-weight:500;">${Util.fmtMoney(v.total)}</div>
+      </div>
+    `).join('') || '<div style="font-size:11px;color:var(--text-tertiary);text-align:center;padding:14px;">Sin viajes registrados</div>'}
+
+    <!-- Configurar presupuestos -->
+    <div class="dashboard-card" style="margin-top:14px;">
+      <div class="dash-eyebrow">presupuestos</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;margin-bottom:10px;">Pon límites · Mando te alerta cuando los rebases</div>
+      <button class="btn full" onclick="abrirPresupuestos()">Configurar límites</button>
+    </div>
+  `;
+}
+
+function abrirRegistrarMota() {
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-mota';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot" style="background:rgba(120,200,80,1);"></div><div class="label" style="color:rgba(180,220,170,0.95);">Compra marihuana</div></div>
+      <div class="g2c-modal-title">Nueva compra</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="form-field">
+          <div class="field-label">CANTIDAD</div>
+          <input type="number" class="field-input" id="mota-cant" placeholder="3.5" step="0.1" style="font-size:16px !important;">
+        </div>
+        <div class="form-field">
+          <div class="field-label">UNIDAD</div>
+          <select class="field-select" id="mota-unidad" style="font-size:16px !important;">
+            <option value="g">gramos</option>
+            <option value="oz">onzas</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="form-field">
+          <div class="field-label">COSTO ($MXN)</div>
+          <input type="number" class="field-input" id="mota-costo" placeholder="500" style="font-size:16px !important;">
+        </div>
+        <div class="form-field">
+          <div class="field-label">TIPO</div>
+          <select class="field-select" id="mota-tipo" style="font-size:16px !important;">
+            <option value="">—</option>
+            <option value="sativa">Sativa</option>
+            <option value="indica">Indica</option>
+            <option value="hibrida">Híbrida</option>
+            <option value="hash">Hash</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">DÓNDE COMPRASTE</div>
+        <input type="text" class="field-input" id="mota-tienda" placeholder="Dispensary Hollywood · TJ contacto · etc" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">CUÁNDO</div>
+        <input type="datetime-local" class="field-input" id="mota-fecha" value="${new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16)}" style="font-size:16px !important;">
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalMota()">Cancelar</button>
+        <button class="btn full" onclick="guardarMota()" style="background:rgba(120,200,80,0.18);border-color:rgba(120,200,80,0.4);color:rgba(180,220,170,0.95);">Registrar</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalMota);
+  document.body.appendChild(modal);
+}
+
+function cerrarModalMota() {
+  const m = document.getElementById('modal-mota');
+  if (m) m.remove();
+}
+
+function guardarMota() {
+  const cantidad = parseFloat(document.getElementById('mota-cant').value) || 0;
+  const unidad = document.getElementById('mota-unidad').value;
+  const costo = parseFloat(document.getElementById('mota-costo').value) || 0;
+  const tipo = document.getElementById('mota-tipo').value;
+  const tienda = document.getElementById('mota-tienda').value.trim();
+  const fechaStr = document.getElementById('mota-fecha').value;
+
+  if (!costo || !cantidad) return UI.toast('Completa cantidad y costo', 'error');
+
+  const r = OcioTrack.registrarMota({
+    cantidad, unidad, costo, tipo, tienda,
+    fecha: fechaStr ? new Date(fechaStr).getTime() : Date.now()
+  });
+
+  if (r.alerta && r.alerta.nivel === 'rebasado') {
+    UI.toast(`⚠ ${r.alerta.mensaje}`, 'error', 4000);
+    Alertas.emit({
+      tipo: 'presupuesto_rebasado',
+      subject: 'Te pasaste · marihuana',
+      body: r.alerta.mensaje,
+      prioridad: 'alta'
+    });
+  } else if (r.alerta && r.alerta.nivel === 'cerca') {
+    UI.toast(`Vas en ${r.alerta.pct}% del presupuesto semanal mota`, 'info', 3000);
+  } else {
+    UI.toast(`${Util.fmtMoney(costo)} registrado`, 'success');
+  }
+
+  cerrarModalMota();
+  renderTab('ocio');
+}
+
+function abrirRegistrarShopping() {
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-shop';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot" style="background:rgba(120,200,220,1);"></div><div class="label" style="color:rgba(180,220,240,0.95);">Viaje shopping</div></div>
+      <div class="g2c-modal-title">Registrar compras</div>
+
+      <div class="form-field">
+        <div class="field-label">TIENDA / LUGAR</div>
+        <input type="text" class="field-input" id="shop-tienda" placeholder="Las Americas · Melrose · etc" style="font-size:16px !important;">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="form-field">
+          <div class="field-label">TOTAL ($MXN)</div>
+          <input type="number" class="field-input" id="shop-total" placeholder="3500" style="font-size:16px !important;">
+        </div>
+        <div class="form-field">
+          <div class="field-label">CUÁNDO</div>
+          <input type="datetime-local" class="field-input" id="shop-fecha" value="${new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16)}" style="font-size:16px !important;">
+        </div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">QUÉ COMPRASTE (un item por línea)</div>
+        <textarea class="field-input field-textarea" id="shop-items" placeholder="Tenis Nike\nCamisa Zara\nPerfume" style="font-size:16px !important;min-height:90px;"></textarea>
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalShop()">Cancelar</button>
+        <button class="btn primary-cyan" onclick="guardarShopping()">Registrar</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalShop);
+  document.body.appendChild(modal);
+}
+
+function cerrarModalShop() {
+  const m = document.getElementById('modal-shop');
+  if (m) m.remove();
+}
+
+function guardarShopping() {
+  const tienda = document.getElementById('shop-tienda').value.trim();
+  const total = parseFloat(document.getElementById('shop-total').value) || 0;
+  const fechaStr = document.getElementById('shop-fecha').value;
+  const itemsStr = document.getElementById('shop-items').value.trim();
+
+  if (!tienda || !total) return UI.toast('Completa tienda y total', 'error');
+
+  const items = itemsStr.split('\n').map(s => s.trim()).filter(Boolean);
+
+  const r = OcioTrack.registrarShopping({
+    tienda,
+    total,
+    items,
+    fecha: fechaStr ? new Date(fechaStr).getTime() : Date.now()
+  });
+
+  if (r.alerta && r.alerta.nivel === 'rebasado') {
+    UI.toast(`⚠ ${r.alerta.mensaje}`, 'error', 4000);
+    Alertas.emit({
+      tipo: 'presupuesto_rebasado',
+      subject: 'Te pasaste · shopping',
+      body: r.alerta.mensaje,
+      prioridad: 'alta'
+    });
+  } else {
+    UI.toast(`Viaje a ${tienda} registrado`, 'success');
+  }
+
+  cerrarModalShop();
+  renderTab('ocio');
+}
+
+function abrirPresupuestos() {
+  const p = Presupuesto.get();
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-presup';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot"></div><div class="label">Presupuestos</div></div>
+      <div class="g2c-modal-title">Tus límites</div>
+      <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:14px;">Mando te alertará cuando los rebases · todo conectado a movimientos.</div>
+
+      <div class="form-field">
+        <div class="field-label">MARIHUANA · SEMANAL ($)</div>
+        <input type="number" class="field-input" id="pres-mota" value="${p.mota_semanal}" style="font-size:16px !important;">
+      </div>
+      <div class="form-field">
+        <div class="field-label">SHOPPING · MENSUAL ($)</div>
+        <input type="number" class="field-input" id="pres-shop" value="${p.shopping_mensual}" style="font-size:16px !important;">
+      </div>
+      <div class="form-field">
+        <div class="field-label">GASTO TOTAL · MENSUAL ($)</div>
+        <input type="number" class="field-input" id="pres-total" value="${p.gasto_total_mensual}" style="font-size:16px !important;">
+      </div>
+      <div class="form-field">
+        <div class="field-label">INGRESO MÍNIMO MES ($)</div>
+        <input type="number" class="field-input" id="pres-ing" value="${p.ingreso_minimo_mes}" style="font-size:16px !important;">
+      </div>
+      <div class="form-field">
+        <div class="field-label">GAMING SEMANAL (MIN)</div>
+        <input type="number" class="field-input" id="pres-gam" value="${p.gaming_minutos_semana}" style="font-size:16px !important;">
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalPresup()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarPresupuestos()">Guardar</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalPresup);
+  document.body.appendChild(modal);
+}
+
+function cerrarModalPresup() {
+  const m = document.getElementById('modal-presup');
+  if (m) m.remove();
+}
+
+function guardarPresupuestos() {
+  Presupuesto.set({
+    mota_semanal: parseFloat(document.getElementById('pres-mota').value) || 0,
+    shopping_mensual: parseFloat(document.getElementById('pres-shop').value) || 0,
+    gasto_total_mensual: parseFloat(document.getElementById('pres-total').value) || 0,
+    ingreso_minimo_mes: parseFloat(document.getElementById('pres-ing').value) || 0,
+    gaming_minutos_semana: parseFloat(document.getElementById('pres-gam').value) || 0
+  });
+  UI.toast('Presupuestos guardados', 'success');
+  cerrarModalPresup();
+  renderTab('ocio');
+}
+
+// ============================================================
+// PROYECCIONES
+// ============================================================
+function renderProy() {
+  return `
+    <div style="background:rgba(244,213,128,0.06);border:0.5px solid rgba(244,213,128,0.25);border-radius:12px;padding:13px;margin-bottom:14px;">
+      <div style="font-size:9px;color:rgba(244,213,128,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">qué quieres lograr</div>
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:11px;">
+        Pon una meta económica · Mando cruza tu MRR + tocadas + gastos y te dice cuántos meses tomaría · qué escenarios la aceleran.
+      </div>
+
+      <div class="form-field" style="margin-bottom:10px;">
+        <div class="field-label">META MONETARIA ($)</div>
+        <input type="number" class="field-input" id="proy-meta" placeholder="Ej: 350000 (Mazda CX-5)" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">¿CUÁNTO YA TIENES AHORRADO?</div>
+        <input type="number" class="field-input" id="proy-actual" placeholder="0" style="font-size:16px !important;">
+      </div>
+
+      <button class="btn primary-orange full" onclick="calcularProyeccion()" style="margin-top:10px;">Calcular proyección</button>
+    </div>
+
+    <div id="proy-output"></div>
+  `;
+}
+
+function calcularProyeccion() {
+  const meta = parseFloat(document.getElementById('proy-meta').value) || 0;
+  const actual = parseFloat(document.getElementById('proy-actual').value) || 0;
+
+  if (!meta) return UI.toast('Pon la meta primero', 'error');
+
+  const r = Proyecciones.calcular(meta, { ahorroActual: actual });
+  const out = document.getElementById('proy-output');
+
+  let html = '';
+  if (!r.meses_a_meta || r.meses_a_meta < 0) {
+    html += `
+      <div class="dashboard-card" style="background:rgba(255,79,0,0.08);border-color:rgba(255,79,0,0.3);">
+        <div class="dash-eyebrow" style="color:rgba(255,150,80,0.95);">no factible al ritmo actual</div>
+        <div style="font-size:14px;color:rgba(255,170,110,0.95);font-weight:500;margin-top:6px;">Tus ingresos netos no permiten ahorrar para esta meta.</div>
+        <div class="dash-sub">Ingresos: ${Util.fmtMoney(r.ingreso_mensual_estimado)}/mes · Gastos: ${Util.fmtMoney(r.gastos_mensuales_estimado)}/mes</div>
+      </div>
+    `;
+  } else {
+    const fechaLabel = r.fecha_estimada ? new Date(r.fecha_estimada).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : '';
+    html += `
+      <div class="dashboard-card" style="background:rgba(255,79,0,0.05);border-color:rgba(255,79,0,0.25);">
+        <div class="dash-eyebrow" style="color:rgba(255,150,80,0.95);">a este ritmo · llegas en</div>
+        <div class="dash-value" style="color:rgba(255,170,110,0.95);">${r.meses_a_meta} ${r.meses_a_meta === 1 ? 'mes' : 'meses'}</div>
+        <div class="dash-sub">Aprox: ${fechaLabel}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:0.5px solid rgba(255,79,0,0.15);">
+          <div>
+            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;">ingreso/mes</div>
+            <div style="font-size:13px;color:rgba(180,220,170,0.95);font-weight:500;margin-top:2px;">${Util.fmtMoney(r.ingreso_mensual_estimado)}</div>
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--text-tertiary);letter-spacing:0.05em;text-transform:uppercase;">ahorro/mes</div>
+            <div style="font-size:13px;color:rgba(150,210,230,0.95);font-weight:500;margin-top:2px;">${Util.fmtMoney(r.ahorro_mensual_disponible)}</div>
+          </div>
+        </div>
+        ${r.tip ? `<div style="background:rgba(244,213,128,0.08);border:0.5px solid rgba(244,213,128,0.25);border-radius:8px;padding:10px;margin-top:12px;font-size:11px;color:rgba(244,213,128,0.95);">⚠ ${Util.esc(r.tip)}</div>` : ''}
+      </div>
+    `;
+
+    if (r.escenarios.length) {
+      html += `<div class="section-eyebrow"><div><div class="label">escenarios para acelerar</div></div></div>`;
+      r.escenarios.forEach(e => {
+        html += `
+          <div class="dashboard-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:12px;font-weight:500;">${Util.esc(e.nombre)}</div>
+                <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">+${Util.fmtMoney(e.delta_mensual)}/mes</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:13px;font-weight:500;color:rgba(180,220,170,0.95);">${e.meses_resultado} meses</div>
+                <div style="font-size:9px;color:rgba(180,220,170,0.7);">ahorras ${e.ahorro_meses}m</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+  }
+
+  out.innerHTML = html;
+  out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>

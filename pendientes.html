@@ -34,9 +34,10 @@
 <!-- Tab bar de vistas -->
 <div class="tab-bar">
   <div class="tab active" data-vista="hoy">Hoy</div>
+  <div class="tab" data-vista="recordatorios">Recordatorios</div>
   <div class="tab" data-vista="eisenhower">Eisenhower</div>
   <div class="tab" data-vista="todos">Todos</div>
-  <div class="tab" data-vista="patron">Patrones IA</div>
+  <div class="tab" data-vista="patron">Patrones</div>
 </div>
 
 <div id="vista-content"></div>
@@ -90,9 +91,10 @@ function renderVista(v) {
   const c = document.getElementById('vista-content');
   switch (v) {
     case 'hoy': c.innerHTML = renderHoy(); bindActions(); break;
+    case 'recordatorios': c.innerHTML = renderRecordatoriosTab(); bindActions(); break;
     case 'eisenhower': c.innerHTML = renderEisenhower(); bindActions(); break;
     case 'todos': c.innerHTML = renderTodos(); bindActions(); break;
-    case 'patron': c.innerHTML = renderPatrones(); break;
+    case 'patron': renderPatronesAsync(c); break;
   }
 }
 
@@ -210,11 +212,16 @@ function renderPendienteCard(p) {
   `;
 }
 
-async function renderPatrones() {
-  return `<div class="loader-wrap"><div class="loader"></div></div>` || await analizarPatrones();
+function renderPatronesAsync(container) {
+  // Mostrar loader inmediatamente
+  container.innerHTML = `<div class="loader-wrap"><div class="loader"></div></div>`;
+  // Después de un tick, calcular y reemplazar
+  setTimeout(() => {
+    container.innerHTML = analizarPatrones();
+  }, 50);
 }
 
-async function analizarPatrones() {
+function analizarPatrones() {
   const pend = Store.get(Store.KEYS.PENDIENTES, []);
   const completados = pend.filter(p => p.done);
 
@@ -283,6 +290,207 @@ function eliminarPendiente(id) {
 
 // Estado temporal del modal
 let modalState = { prioridad: 'media', dias: 3 };
+
+// ============================================================
+// RECORDATORIOS · UI dedicada
+// ============================================================
+function renderRecordatoriosTab() {
+  const proximos = Recordatorios.proximos(20);
+  const tipos = Recordatorios.TIPOS;
+
+  let html = `
+    <div style="background:rgba(120,200,220,0.04);border:0.5px solid rgba(120,200,220,0.2);border-radius:11px;padding:12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:9px;color:rgba(150,210,230,0.95);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">recordatorios agendados</div>
+        <div style="font-size:11px;color:var(--text-tertiary);">${proximos.length} próximos</div>
+      </div>
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;">Cobros · pagos · ensayos · tocadas · SAT · ejercicio · todo en un lugar.</div>
+    </div>
+
+    <button class="btn primary-orange full" onclick="abrirNuevoRecordatorio()" style="margin-bottom:14px;">+ Nuevo recordatorio</button>
+  `;
+
+  if (!proximos.length) {
+    html += `
+      <div style="background:rgba(244,243,239,0.02);border:0.5px dashed rgba(244,243,239,0.1);border-radius:11px;padding:24px;text-align:center;">
+        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px;">Sin recordatorios agendados</div>
+        <div style="font-size:10px;color:var(--text-mute);">Los pagos recurrentes y ejercicios agendados crean recordatorios automáticamente</div>
+      </div>
+    `;
+    return html;
+  }
+
+  // Agrupar por día
+  const grupos = { hoy: [], mañana: [], esta_semana: [], despues: [] };
+  const ahora = Date.now();
+  const finHoy = new Date(); finHoy.setHours(23,59,59,999);
+  const finMañana = finHoy.getTime() + 86400000;
+  const finSemana = ahora + 7 * 86400000;
+
+  proximos.forEach(r => {
+    if (r.fecha <= finHoy.getTime()) grupos.hoy.push(r);
+    else if (r.fecha <= finMañana) grupos.mañana.push(r);
+    else if (r.fecha <= finSemana) grupos.esta_semana.push(r);
+    else grupos.despues.push(r);
+  });
+
+  const renderItem = (r) => {
+    const tipo = tipos[r.tipo] || { label: r.tipo, icon: '·' };
+    const fecha = new Date(r.fecha);
+    const horaLabel = fecha.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    const fechaLabel = fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    const colorBorder = r.prioridad === 'alta' ? 'rgba(255,79,0,0.25)' : (r.prioridad === 'media' ? 'rgba(244,213,128,0.25)' : 'var(--border-soft)');
+
+    return `
+      <div style="background:rgba(244,243,239,0.025);border:0.5px solid ${colorBorder};border-radius:10px;padding:11px;margin-bottom:5px;display:flex;gap:11px;align-items:center;">
+        <div style="width:34px;height:34px;background:rgba(120,200,220,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;color:rgba(180,220,240,0.95);flex-shrink:0;">${tipo.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-weight:500;">${Util.esc(r.titulo)}</div>
+          ${r.body ? `<div style="font-size:9px;color:var(--text-tertiary);margin-top:2px;">${Util.esc(r.body)}</div>` : ''}
+          <div style="font-size:9px;color:var(--text-tertiary);margin-top:3px;">${fechaLabel} · ${horaLabel}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          ${r.link ? `<a href="${r.link}" target="_blank" style="background:rgba(150,210,230,0.15);border:0.5px solid rgba(150,210,230,0.35);color:rgba(180,220,240,0.95);padding:5px 8px;border-radius:5px;font-size:10px;text-decoration:none;">ir →</a>` : ''}
+          <button onclick="completarRecordatorio('${r.id}')" style="background:rgba(180,220,170,0.15);border:0.5px solid rgba(180,220,170,0.35);color:rgba(200,230,200,0.95);padding:5px 8px;border-radius:5px;font-size:10px;cursor:pointer;">✓</button>
+          <button onclick="eliminarRecordatorio('${r.id}')" style="background:rgba(255,79,0,0.05);border:0.5px solid rgba(255,79,0,0.2);color:rgba(255,170,110,0.85);padding:5px 8px;border-radius:5px;font-size:10px;cursor:pointer;">×</button>
+        </div>
+      </div>
+    `;
+  };
+
+  if (grupos.hoy.length) {
+    html += `<div class="section-eyebrow"><div><div class="label" style="color:rgba(255,170,110,0.95);">hoy</div></div></div>`;
+    html += grupos.hoy.map(renderItem).join('');
+  }
+  if (grupos.mañana.length) {
+    html += `<div class="section-eyebrow" style="margin-top:10px;"><div><div class="label">mañana</div></div></div>`;
+    html += grupos.mañana.map(renderItem).join('');
+  }
+  if (grupos.esta_semana.length) {
+    html += `<div class="section-eyebrow" style="margin-top:10px;"><div><div class="label">esta semana</div></div></div>`;
+    html += grupos.esta_semana.map(renderItem).join('');
+  }
+  if (grupos.despues.length) {
+    html += `<div class="section-eyebrow" style="margin-top:10px;"><div><div class="label">después</div></div></div>`;
+    html += grupos.despues.map(renderItem).join('');
+  }
+
+  return html;
+}
+
+function abrirNuevoRecordatorio() {
+  const tipos = Recordatorios.TIPOS;
+  let state = { tipo: 'tarea' };
+  const tipoBtns = Object.entries(tipos).map(([k, v], i) =>
+    `<div class="g2c-quick-btn ${i === 0 ? 'active' : ''}" data-rec-tipo="${k}"><div class="qb-label">${v.icon}</div><div class="qb-value">${v.label}</div></div>`
+  ).join('');
+
+  const ahora = new Date(Date.now() + 60 * 60000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-rec';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow"><div class="dot" style="background:rgba(120,200,220,1);"></div><div class="label">Recordatorio</div></div>
+      <div class="g2c-modal-title">Nuevo recordatorio</div>
+
+      <div class="form-field">
+        <div class="field-label">TIPO</div>
+        <div class="g2c-quick-grid" style="grid-template-columns:repeat(2,1fr);">${tipoBtns}</div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">TÍTULO</div>
+        <input type="text" class="field-input" id="rec-titulo" placeholder="Ej: Ensayo banda · viernes 8pm" autofocus style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">CUÁNDO</div>
+        <input type="datetime-local" class="field-input" id="rec-fecha" value="${ahora}" style="font-size:16px !important;">
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">PRIORIDAD</div>
+        <div class="g2c-quick-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="g2c-quick-btn" data-rec-prio="alta"><div class="qb-label">ALTA</div><div class="qb-value" style="color:rgba(255,170,110,0.95);">crítico</div></div>
+          <div class="g2c-quick-btn active" data-rec-prio="media"><div class="qb-label">MEDIA</div><div class="qb-value" style="color:rgba(244,213,128,0.95);">normal</div></div>
+          <div class="g2c-quick-btn" data-rec-prio="baja"><div class="qb-label">BAJA</div><div class="qb-value">info</div></div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">NOTA (opcional)</div>
+        <input type="text" class="field-input" id="rec-body" placeholder="Detalles..." style="font-size:16px !important;">
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarModalRec()">Cancelar</button>
+        <button class="btn primary-orange" onclick="guardarRecordatorio()">Crear</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarModalRec);
+  document.body.appendChild(modal);
+  window._recState = state;
+  window._recPrio = 'media';
+
+  modal.querySelectorAll('[data-rec-tipo]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-rec-tipo]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._recState.tipo = btn.dataset.recTipo;
+    });
+  });
+  modal.querySelectorAll('[data-rec-prio]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('[data-rec-prio]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window._recPrio = btn.dataset.recPrio;
+    });
+  });
+  setTimeout(() => document.getElementById('rec-titulo')?.focus(), 100);
+}
+
+function cerrarModalRec() {
+  const m = document.getElementById('modal-rec');
+  if (m) m.remove();
+}
+
+function guardarRecordatorio() {
+  const titulo = document.getElementById('rec-titulo').value.trim();
+  const fecha = document.getElementById('rec-fecha').value;
+  const body = document.getElementById('rec-body').value.trim();
+
+  if (!titulo) return UI.toast('Falta título', 'error');
+  if (!fecha) return UI.toast('Falta fecha', 'error');
+
+  Recordatorios.agendar({
+    tipo: window._recState?.tipo || 'tarea',
+    titulo,
+    body,
+    fecha: new Date(fecha).getTime(),
+    prioridad: window._recPrio || 'media'
+  });
+
+  UI.toast('Recordatorio agendado', 'success');
+  cerrarModalRec();
+  renderVista('recordatorios');
+}
+
+function completarRecordatorio(id) {
+  Recordatorios.marcarDisparado(id);
+  UI.toast('Marcado como hecho', 'info');
+  renderVista('recordatorios');
+}
+
+function eliminarRecordatorio(id) {
+  if (!confirm('¿Eliminar recordatorio?')) return;
+  Recordatorios.remove(id);
+  UI.toast('Eliminado', 'info');
+  renderVista('recordatorios');
+}
 
 function agregarPendiente() {
   modalState = { prioridad: 'media', dias: 3 };

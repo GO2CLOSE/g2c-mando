@@ -59,7 +59,21 @@
 </header>
 
 <!-- ============================================================ -->
-<!-- 0 · DIAGNÓSTICO DEL SISTEMA -->
+<!-- 0 · ALERTAS DEL SISTEMA -->
+<!-- ============================================================ -->
+<div class="section-block" id="alertas-section" style="display:none;">
+  <div class="section-eyebrow">
+    <div>
+      <div class="label" style="color:rgba(255,170,110,0.95);">alertas activas</div>
+      <div style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:2px;">Mando te tiene informado · todo conectado</div>
+    </div>
+    <button onclick="marcarTodasLeidas()" style="font-size:11px;color:rgba(244,243,239,0.5);background:transparent;border:0.5px solid var(--border-mid);border-radius:7px;padding:5px 10px;cursor:pointer;">marcar todas leídas</button>
+  </div>
+  <div id="alertas-list"></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 1 · DIAGNÓSTICO DEL SISTEMA -->
 <!-- ============================================================ -->
 <div class="section-block" id="diag-section">
   <div class="section-eyebrow">
@@ -299,9 +313,64 @@
   loadSATCalendar();
   bindToggles();
 
+  // ProactivIA · revisar todo en background
+  await ProactivIA.ejecutar();
+  renderAlertas();
+
   // Diagnóstico automático al cargar
   ejecutarDiagnostico();
 })();
+
+// ============================================================
+// ALERTAS · sistema unificado
+// ============================================================
+function renderAlertas() {
+  const noLeidas = Alertas.noLeidas();
+  const section = document.getElementById('alertas-section');
+  const list = document.getElementById('alertas-list');
+
+  if (!noLeidas.length) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+
+  list.innerHTML = noLeidas.slice(0, 10).map(a => {
+    const colorPill = a.prioridad === 'alta' ? 'orange' : (a.prioridad === 'media' ? 'yellow' : 'green');
+    const bgColor = a.prioridad === 'alta' ? 'rgba(255,79,0,0.06)' : 'rgba(244,213,128,0.04)';
+    const borderColor = a.prioridad === 'alta' ? 'rgba(255,79,0,0.25)' : 'rgba(244,213,128,0.2)';
+    const fechaLabel = Util.fmtDate(a.ts, { short: true });
+
+    return `
+      <div style="background:${bgColor};border:0.5px solid ${borderColor};border-radius:11px;padding:12px;margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;">
+              <div class="pill ${colorPill}" style="font-size:9px;">${a.prioridad.toUpperCase()}</div>
+              <div style="font-size:9px;color:var(--text-tertiary);">${fechaLabel}</div>
+            </div>
+            <div style="font-size:12px;font-weight:500;margin-top:3px;">${Util.esc(a.subject)}</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;line-height:1.4;">${Util.esc(a.body)}</div>
+          </div>
+          <button onclick="marcarLeida('${a.id}')" style="background:rgba(244,243,239,0.05);border:0.5px solid var(--border-mid);color:var(--text-secondary);width:28px;height:28px;border-radius:7px;font-size:12px;cursor:pointer;flex-shrink:0;">✓</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function marcarLeida(id) {
+  Alertas.marcarLeida(id);
+  renderAlertas();
+}
+
+function marcarTodasLeidas() {
+  if (!confirm('¿Marcar todas las alertas como leídas?')) return;
+  Alertas.list().forEach(a => Alertas.marcarLeida(a.id));
+  renderAlertas();
+  UI.toast('Todas marcadas como leídas', 'info');
+}
 
 // ============================================================
 // DIAGNÓSTICO · qué está pasando con el cerebro IA
@@ -618,8 +687,28 @@ async function guardarAttachment() {
   try {
     const base64 = await Attach.fileToBase64(file);
     let extractedText = '';
+
     if (file.type === 'text/plain' || file.type === 'text/markdown') {
       extractedText = await file.text();
+    } else if (file.type === 'application/pdf') {
+      // Extraer texto del PDF con PDF.js
+      try {
+        if (!window.pdfjsLib) {
+          await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+        const pdfData = atob(base64.split(',')[1]);
+        const pdf = await window.pdfjsLib.getDocument({ data: pdfData }).promise;
+        const partes = [];
+        for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          partes.push(content.items.map(it => it.str).join(' '));
+        }
+        extractedText = partes.join('\n\n').slice(0, 8000); // máx 8KB texto
+      } catch (e) {
+        console.warn('No pude extraer texto del PDF:', e.message);
+      }
     }
 
     await Attach.save({
@@ -633,12 +722,101 @@ async function guardarAttachment() {
       notes
     });
 
-    UI.toast('Documento guardado · IA lo consultará', 'success');
+    // Si es análisis médico · auto-parsearlo y agregarlo a Expediente
+    if (attModalState.type === 'analisis_medico' && extractedText) {
+      const parsed = parsearAnalisisMedico(extractedText, title || file.name);
+      if (parsed.valores.length > 0) {
+        Expediente.agregar(parsed);
+        UI.toast(`Análisis cargado · ${parsed.valores.length} biomarcadores extraídos`, 'success', 4000);
+      } else {
+        UI.toast('Documento guardado · IA lo consultará', 'success');
+      }
+    } else {
+      UI.toast('Documento guardado · IA lo consultará', 'success');
+    }
+
     cerrarModalAttachment();
     renderAttachments();
   } catch (err) {
     UI.toast('Error: ' + err.message, 'error');
   }
+}
+
+/**
+ * Parser básico de análisis médicos · detecta biomarcadores comunes y sus valores.
+ * Funciona para LabExpress y formatos similares.
+ */
+function parsearAnalisisMedico(texto, titulo) {
+  const t = texto.replace(/\s+/g, ' ');
+  const valores = [];
+
+  // Patrones de biomarcadores conocidos
+  const biomarcadores = [
+    { nombre: 'Glucosa', regex: /GLUCOSA\s+(\d+(?:\.\d+)?)/i, unidad: 'mg/dL', ref_min: 70, ref_max: 99, categoria: 'metabolismo' },
+    { nombre: 'Colesterol total', regex: /COLESTEROL\s+TOTAL\s+(\d+(?:\.\d+)?)/i, unidad: 'mg/dL', ref_min: 120, ref_max: 200, categoria: 'lípidos' },
+    { nombre: 'Triglicéridos', regex: /TRIGLICERIDOS\s+(\d+(?:\.\d+)?)/i, unidad: 'mg/dL', ref_min: 40, ref_max: 160, categoria: 'lípidos' },
+    { nombre: 'HDL', regex: /HDL\s+COLESTEROL\s+(\d+(?:\.\d+)?)/i, unidad: 'mg/dL', ref_min: 35, ref_max: 59, categoria: 'lípidos' },
+    { nombre: 'LDL', regex: /COLESTEROL\s+LDL\s+(\d+(?:\.\d+)?)/i, unidad: 'mg/dL', ref_min: 62, ref_max: 130, categoria: 'lípidos' },
+    { nombre: 'Vitamina D 25-OH', regex: /VITAMINA\s+D\s+25\s+HIDROXI[^\d]+(\d+(?:\.\d+)?)/i, unidad: 'ng/mL', ref_min: 30, ref_max: 50, categoria: 'vitaminas' },
+    { nombre: 'Ácido úrico', regex: /ACIDO\s+URICO\s+(\d+(?:\.\d+)?)/i, unidad: 'mg/dL', ref_min: 3.4, ref_max: 7.0, categoria: 'metabolismo' },
+    { nombre: 'Creatinina', regex: /CREATININA\s+(\d+(?:\.\d+)?)/i, unidad: 'mg/dL', ref_min: 0.5, ref_max: 1.2, categoria: 'riñón' },
+    { nombre: 'TGO (AST)', regex: /TGO\s+\(AST\)\s+(\d+(?:\.\d+)?)/i, unidad: 'U/L', ref_min: 20, ref_max: 40, categoria: 'hígado' },
+    { nombre: 'TGP (ALT)', regex: /TGP\s+\(ALT\)\s+(\d+(?:\.\d+)?)/i, unidad: 'U/L', ref_min: 10, ref_max: 40, categoria: 'hígado' },
+    { nombre: 'TSH', regex: /TIROIDES\s+\(TSH\)\s+(\d+(?:\.\d+)?)/i, unidad: 'uUI/mL', ref_min: 0.40, ref_max: 4.0, categoria: 'tiroides' },
+    { nombre: 'T4 libre', regex: /T4\s+libre\s*\)\s+(\d+(?:\.\d+)?)/i, unidad: 'ng/dL', ref_min: 0.89, ref_max: 1.76, categoria: 'tiroides' },
+    { nombre: 'Albúmina', regex: /ALBUMINA\s+(\d+(?:\.\d+)?)/i, unidad: 'g/dL', ref_min: 3.5, ref_max: 5.0, categoria: 'general' },
+    { nombre: 'Proteínas totales', regex: /PROTEINAS\s+TOTALES\s+(\d+(?:\.\d+)?)/i, unidad: 'g/dL', ref_min: 6.4, ref_max: 8.3, categoria: 'general' },
+    { nombre: 'Sodio', regex: /SODIO\s+(\d+(?:\.\d+)?)/i, unidad: 'mmol/L', ref_min: 136, ref_max: 145, categoria: 'electrolitos' },
+    { nombre: 'Potasio', regex: /POTASIO\s+(\d+(?:\.\d+)?)/i, unidad: 'mmol/L', ref_min: 3.5, ref_max: 5.1, categoria: 'electrolitos' }
+  ];
+
+  biomarcadores.forEach(b => {
+    const m = t.match(b.regex);
+    if (m && m[1]) {
+      const valor = parseFloat(m[1]);
+      let estado = 'normal';
+      if (valor < b.ref_min) estado = 'bajo';
+      else if (b.ref_max && valor > b.ref_max) estado = 'alto';
+      // Vitamina D especial
+      if (b.nombre === 'Vitamina D 25-OH') {
+        if (valor < 20) estado = 'deficiencia';
+        else if (valor < 30) estado = 'bajo';
+      }
+      valores.push({
+        nombre: b.nombre,
+        valor,
+        unidad: b.unidad,
+        ref_min: b.ref_min,
+        ref_max: b.ref_max,
+        estado,
+        categoria: b.categoria
+      });
+    }
+  });
+
+  // Extraer fecha del documento
+  let fecha = new Date().toISOString().slice(0, 10);
+  const fechaMatch = t.match(/(\d{1,2})\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)\w*\s+(\d{4})/i);
+  if (fechaMatch) {
+    const meses = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11 };
+    const d = new Date(parseInt(fechaMatch[3]), meses[fechaMatch[2].toLowerCase().slice(0, 3)], parseInt(fechaMatch[1]));
+    fecha = d.toISOString().slice(0, 10);
+  }
+
+  // Extraer laboratorio
+  let laboratorio = 'Análisis cargado';
+  if (/labexpress/i.test(t)) laboratorio = 'LabExpress';
+  else if (/quest/i.test(t)) laboratorio = 'Quest Diagnostics';
+  else if (/chopo/i.test(t)) laboratorio = 'Chopo';
+  else if (/salud\s+digna/i.test(t)) laboratorio = 'Salud Digna';
+
+  return {
+    titulo,
+    fecha,
+    laboratorio,
+    valores,
+    fuente: 'auto-parseado'
+  };
 }
 
 function verAttachment(id) {
@@ -648,62 +826,171 @@ function verAttachment(id) {
     return;
   }
 
-  // Modal G2C interno · NO abre pestaña nueva
   const modal = document.createElement('div');
   modal.className = 'g2c-modal-backdrop active';
   modal.id = 'modal-viewer';
-  modal.style.cssText = 'background:rgba(0,0,0,0.92);align-items:stretch;padding:0;';
+  modal.style.cssText = 'background:rgba(0,0,0,0.92);align-items:stretch;padding:0;backdrop-filter:blur(4px);';
 
-  let viewerContent = '';
-  if (att.fileType?.startsWith('image/')) {
-    viewerContent = `<img src="${att.data_base64}" style="max-width:100%;max-height:100%;object-fit:contain;display:block;margin:auto;">`;
-  } else if (att.fileType === 'application/pdf') {
-    // iOS Safari NO renderiza PDFs base64 con <embed> · usar <iframe> con data URI o link directo
-    // Intentamos primero <iframe> · si no funciona, usuario verá botón de abrir nuevo tab
-    viewerContent = `
-      <iframe src="${att.data_base64}#toolbar=0&navpanes=0&view=FitH" style="width:100%;height:100%;border:0;background:white;"></iframe>
-      <div id="ios-pdf-fallback" style="display:none;padding:40px 20px;text-align:center;color:white;">
-        <div style="font-size:14px;margin-bottom:14px;">Tu navegador no muestra PDFs embebidos directamente.</div>
-        <a href="${att.data_base64}" download="${Util.esc(att.fileName)}" style="display:inline-block;background:rgba(255,79,0,0.2);border:0.5px solid rgba(255,79,0,0.5);color:rgba(255,170,110,0.95);padding:12px 24px;border-radius:9px;text-decoration:none;font-size:13px;">Descargar PDF</a>
-      </div>
-    `;
-  } else if (att.fileType?.includes('xml')) {
-    viewerContent = `<pre style="background:#0F1419;color:#F4F3EF;padding:20px;font-size:12px;overflow:auto;height:100%;margin:0;">${Util.esc(att.extracted_text || 'XML sin preview · descarga para ver')}</pre>`;
-  } else {
-    viewerContent = `<pre style="background:#0F1419;color:#F4F3EF;padding:20px;font-size:13px;overflow:auto;height:100%;margin:0;">${Util.esc(att.extracted_text || 'No hay preview disponible para este tipo · ' + att.fileType)}</pre>`;
-  }
+  const isPdf = att.fileType === 'application/pdf';
+  const isImg = att.fileType?.startsWith('image/');
+  const isXml = att.fileType?.includes('xml');
 
   modal.innerHTML = `
     <div style="display:flex;flex-direction:column;width:100%;height:100vh;">
-      <div style="background:rgba(15,20,25,0.95);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid rgba(244,243,239,0.1);">
+      <!-- Header -->
+      <div style="background:rgba(15,20,25,0.98);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid rgba(244,243,239,0.1);flex-shrink:0;">
         <div style="min-width:0;flex:1;">
-          <div style="font-size:12px;font-weight:500;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Util.esc(att.title || att.fileName)}</div>
-          <div style="font-size:9px;color:rgba(244,243,239,0.5);margin-top:2px;">${Util.esc(att.fileType)} · ${att.size_kb || '?'} KB</div>
+          <div style="font-size:9px;color:rgba(255,150,80,0.85);letter-spacing:0.18em;text-transform:uppercase;font-weight:500;">PREVIEW</div>
+          <div style="font-size:13px;font-weight:500;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">${Util.esc(att.title || att.fileName)}</div>
+          <div style="font-size:10px;color:rgba(244,243,239,0.5);margin-top:1px;">${Util.esc(att.fileType)} · ${att.size_kb || '?'} KB</div>
         </div>
-        <button onclick="cerrarVisor()" style="background:rgba(255,79,0,0.18);border:0.5px solid rgba(255,79,0,0.4);color:rgba(255,170,110,0.95);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;flex-shrink:0;margin-left:10px;">×</button>
+        <button onclick="cerrarVisor()" style="background:rgba(255,79,0,0.18);border:0.5px solid rgba(255,79,0,0.4);color:rgba(255,170,110,0.95);width:38px;height:38px;border-radius:9px;font-size:18px;cursor:pointer;flex-shrink:0;margin-left:10px;">×</button>
       </div>
-      <div style="flex:1;overflow:hidden;background:#1a1a1a;display:flex;align-items:center;justify-content:center;">
-        ${viewerContent}
+
+      <!-- Viewport · letter centered -->
+      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;background:rgba(20,25,33,0.6);-webkit-overflow-scrolling:touch;" id="viewer-area">
+        <div style="background:white;width:100%;max-width:612px;min-height:550px;box-shadow:0 8px 32px rgba(0,0,0,0.5);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;" id="viewer-letter-wrap">
+          ${isImg ? `
+            <img src="${att.data_base64}" style="max-width:100%;max-height:80vh;object-fit:contain;display:block;">
+          ` : isPdf ? `
+            <div id="pdf-canvas-container" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px 0;">
+              <div style="padding:40px;text-align:center;color:#666;font-size:13px;" id="pdf-loading">
+                <div style="margin-bottom:10px;">Cargando PDF...</div>
+                <div style="width:40px;height:40px;border:3px solid rgba(255,79,0,0.2);border-top-color:rgba(255,79,0,0.8);border-radius:50%;animation:spin 0.8s linear infinite;margin:auto;"></div>
+              </div>
+            </div>
+          ` : isXml ? `
+            <pre style="background:#0F1419;color:#F4F3EF;padding:20px;font-size:11px;overflow:auto;width:100%;max-height:80vh;margin:0;font-family:'JetBrains Mono',monospace;">${Util.esc(att.extracted_text || 'XML sin preview · descarga para ver')}</pre>
+          ` : `
+            <div style="padding:60px 24px;text-align:center;color:#666;">
+              <div style="font-size:40px;margin-bottom:12px;color:#999;">◇</div>
+              <div style="font-size:13px;margin-bottom:6px;color:#333;font-weight:500;">${Util.esc(att.fileName)}</div>
+              <div style="font-size:11px;color:#999;">Sin preview para este tipo de archivo</div>
+            </div>
+          `}
+        </div>
+      </div>
+
+      <!-- Footer · acciones -->
+      <div style="background:rgba(15,20,25,0.98);padding:12px 18px;display:flex;gap:8px;border-top:0.5px solid rgba(244,243,239,0.1);flex-shrink:0;padding-bottom:max(12px, env(safe-area-inset-bottom));">
+        <a href="${att.data_base64}"
+           download="${Util.esc(att.fileName)}"
+           style="flex:1;background:rgba(255,79,0,0.18);border:0.5px solid rgba(255,79,0,0.4);color:rgba(255,170,110,0.95);padding:11px;border-radius:9px;text-decoration:none;font-size:13px;font-weight:500;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Descargar
+        </a>
+        <button onclick="abrirExterno('${id}')" style="flex:1;background:rgba(120,200,220,0.12);border:0.5px solid rgba(120,200,220,0.3);color:rgba(150,210,230,0.95);padding:11px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M14 4h6v6m0-6L10 14M19 13v6H5V5h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Abrir
+        </button>
       </div>
     </div>
+    <style>
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
   `;
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
 
-  // iOS PDF fallback detection
-  if (att.fileType === 'application/pdf' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
-    setTimeout(() => {
-      const iframe = modal.querySelector('iframe');
-      const fallback = modal.querySelector('#ios-pdf-fallback');
-      if (iframe && fallback) {
-        try {
-          const isEmpty = !iframe.contentDocument || !iframe.contentDocument.body;
-          if (isEmpty) { iframe.style.display = 'none'; fallback.style.display = 'block'; }
-        } catch (e) {
-          // Cross-origin error ignorable
-        }
-      }
-    }, 1500);
+  // Render PDF con PDF.js
+  if (isPdf) {
+    renderPdfPreview(att.data_base64);
+  }
+}
+
+async function renderPdfPreview(base64) {
+  // Cargar PDF.js dinámicamente desde CDN (solo cuando se necesita)
+  if (!window.pdfjsLib) {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  try {
+    const pdfData = atob(base64.split(',')[1]);
+    const loadingTask = window.pdfjsLib.getDocument({ data: pdfData });
+    const pdf = await loadingTask.promise;
+
+    const container = document.getElementById('pdf-canvas-container');
+    if (!container) return;
+
+    const loading = document.getElementById('pdf-loading');
+    if (loading) loading.remove();
+
+    // Render máximo 5 páginas en preview (resto: descarga)
+    const maxPages = Math.min(pdf.numPages, 5);
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+
+      const viewportOriginal = page.getViewport({ scale: 1 });
+      const containerWidth = container.offsetWidth - 24;
+      const scale = containerWidth / viewportOriginal.width;
+      const viewport = page.getViewport({ scale });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.cssText = 'max-width:100%;border:1px solid rgba(0,0,0,0.08);box-shadow:0 2px 6px rgba(0,0,0,0.1);';
+
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      const pageWrap = document.createElement('div');
+      pageWrap.style.cssText = 'width:100%;display:flex;flex-direction:column;align-items:center;gap:6px;';
+      pageWrap.appendChild(canvas);
+
+      const pageLabel = document.createElement('div');
+      pageLabel.style.cssText = 'font-size:9px;color:#999;letter-spacing:0.05em;text-transform:uppercase;';
+      pageLabel.textContent = `Página ${i} de ${pdf.numPages}`;
+      pageWrap.appendChild(pageLabel);
+
+      container.appendChild(pageWrap);
+    }
+
+    if (pdf.numPages > maxPages) {
+      const more = document.createElement('div');
+      more.style.cssText = 'padding:16px;text-align:center;color:#666;font-size:11px;background:#f5f5f5;border-radius:6px;width:90%;';
+      more.textContent = `Vista previa: primeras ${maxPages} páginas. PDF tiene ${pdf.numPages} en total. Usa "Descargar" para ver completo.`;
+      container.appendChild(more);
+    }
+  } catch (err) {
+    const container = document.getElementById('pdf-canvas-container');
+    if (container) {
+      container.innerHTML = `
+        <div style="padding:40px 20px;text-align:center;color:#999;">
+          <div style="font-size:40px;margin-bottom:12px;">⚠</div>
+          <div style="font-size:13px;color:#333;margin-bottom:6px;">No se pudo renderizar el PDF</div>
+          <div style="font-size:11px;color:#999;">${Util.esc(err.message)}</div>
+          <div style="font-size:11px;color:#999;margin-top:8px;">Usa el botón "Descargar" abajo</div>
+        </div>
+      `;
+    }
+  }
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function abrirExterno(id) {
+  const att = Attach.list().find(a => a.id === id);
+  if (!att) return;
+  const w = window.open();
+  if (w) {
+    w.document.title = att.fileName || 'Documento';
+    w.document.body.style.cssText = 'margin:0;background:#222;';
+    if (att.fileType?.startsWith('image/')) {
+      w.document.write(`<img src="${att.data_base64}" style="max-width:100%;display:block;margin:auto;">`);
+    } else {
+      w.document.write(`<embed src="${att.data_base64}" style="width:100%;height:100vh;border:0;">`);
+    }
+  } else {
+    UI.toast('Bloqueador popup activo · usa Descargar', 'error');
   }
 }
 
@@ -966,12 +1253,60 @@ function importarDatos() {
 }
 
 function borrarTodo() {
-  const c1 = prompt('Escribe BORRAR para confirmar (irreversible):');
-  if (c1 !== 'BORRAR') return;
+  const modal = document.createElement('div');
+  modal.className = 'g2c-modal-backdrop active';
+  modal.id = 'modal-borrar';
+  modal.innerHTML = `
+    <div class="g2c-modal" onclick="event.stopPropagation()" style="max-width:380px;">
+      <div class="g2c-modal-handle"></div>
+      <div class="g2c-modal-eyebrow">
+        <div class="dot" style="background:rgba(255,79,0,1);"></div>
+        <div class="label" style="color:rgba(255,170,110,0.95);">Acción destructiva</div>
+      </div>
+      <div class="g2c-modal-title" style="color:rgba(255,170,110,0.95);">Borrar TODOS los datos</div>
+
+      <div style="background:rgba(255,79,0,0.05);border:0.5px solid rgba(255,79,0,0.25);border-radius:9px;padding:11px;margin-bottom:14px;">
+        <div style="font-size:11px;color:rgba(244,243,239,0.85);line-height:1.6;">Esto borra: clientes, finanzas, pendientes, objetivos, calendario, repertorio, attachments, conexiones API y configuración. <strong style="color:rgba(255,170,110,0.95);">Irreversible.</strong></div>
+      </div>
+
+      <div class="form-field">
+        <div class="field-label">ESCRIBE "BORRAR" PARA CONFIRMAR</div>
+        <input type="text" class="field-input" id="confirm-borrar" placeholder="BORRAR" autocapitalize="characters" style="font-size:16px !important;">
+      </div>
+
+      <div class="g2c-modal-actions">
+        <button class="btn" onclick="cerrarBorrar()" style="flex:2;">Cancelar</button>
+        <button class="btn" onclick="confirmarBorrar()" style="flex:1;background:rgba(255,79,0,0.18);border-color:rgba(255,79,0,0.4);color:rgba(255,170,110,0.95);">Borrar</button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', cerrarBorrar);
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('confirm-borrar')?.focus(), 100);
+}
+
+function cerrarBorrar() {
+  const m = document.getElementById('modal-borrar');
+  if (m) m.remove();
+}
+
+function confirmarBorrar() {
+  const v = document.getElementById('confirm-borrar').value.trim().toUpperCase();
+  if (v !== 'BORRAR') return UI.toast('Escribe "BORRAR" exacto', 'error');
   for (const k of Object.values(Store.KEYS)) localStorage.removeItem(k);
   localStorage.removeItem('alan_mando_movimientos');
   localStorage.removeItem('alan_mando_current_song');
   localStorage.removeItem('alan_mando_sat_calendar');
+  localStorage.removeItem('alan_mando_lyrics');
+  localStorage.removeItem('alan_mando_proveedores');
+  localStorage.removeItem('alan_mando_gastos_negocio');
+  localStorage.removeItem('alan_mando_perfil_fisico');
+  localStorage.removeItem('alan_mando_entrenamientos');
+  localStorage.removeItem('alan_mando_dieta_semanal');
+  localStorage.removeItem('alan_mando_compras_mota');
+  localStorage.removeItem('alan_mando_compras_shopping');
+  localStorage.removeItem('alan_mando_presupuestos');
+  localStorage.removeItem('alan_mando_recordatorios');
   UI.toast('Todos los datos borrados', 'info');
   setTimeout(() => location.href = 'index.html', 1200);
 }

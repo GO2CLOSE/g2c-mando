@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.3.0',
+  version: '1.5.0',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -35,7 +35,7 @@ const G2C = {
     haiku: 'claude-haiku-4-5-20251001'
   },
   auth: {
-    hash: '0db087d6b415b97c7641ef7862e88c9aa88323f3c488150ed09d6d1c45c6efc0'
+    hash: '9a631086b6658d811f1acb4d6111843f78427c5f9a28edcb755137e105a5df6f'
   },
   push: {
     vapid_public: 'BL7J3TfdZEosrdDc5IWs5BBzM6uj0-1PiOPmhNeo0fp08E_NQdrW-VWB8u0b9zANoL5zd2su8gCEcPg8d79fwVM',
@@ -365,24 +365,35 @@ const IA = {
       let data;
       try { data = await res.json(); } catch (e) { data = null; }
 
+      // Helper para extraer string limpio de cualquier estructura de error
+      const extractErrMsg = (errObj) => {
+        if (!errObj) return null;
+        if (typeof errObj === 'string') return errObj;
+        if (errObj.message) return String(errObj.message);
+        if (errObj.error) return extractErrMsg(errObj.error);
+        if (errObj.hint) return String(errObj.hint);
+        try { return JSON.stringify(errObj); } catch (e) { return 'Error desconocido'; }
+      };
+
       if (!res.ok) {
-        const errMsg = data?.error || data?.hint || `Worker ${res.status}`;
+        const errMsg = extractErrMsg(data?.error) || extractErrMsg(data?.hint) || `Worker HTTP ${res.status}`;
         throw new Error(errMsg);
       }
 
       // Anthropic responde con error en lugar de content si hay problema con la key
       if (data && data.type === 'error') {
-        throw new Error(data.error?.message || 'Anthropic API error');
+        throw new Error(extractErrMsg(data.error) || 'Anthropic API error');
       }
 
       this.trackUsage(model, data.usage);
       return data;
     } catch (e) {
-      console.error('IA call error:', e.message);
+      const cleanMsg = (e && e.message) ? String(e.message) : (typeof e === 'string' ? e : 'Error desconocido');
+      console.error('IA call error:', cleanMsg);
       return {
         content: null,
         error: true,
-        error_message: e.message
+        error_message: cleanMsg
       };
     }
   },
@@ -443,6 +454,8 @@ ${KB.reglas.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 # ESTADO ACTUAL DEL ERP DE ALAN (${date})
 ${this.buildStateContext(snap)}
 ${typeof Attach !== 'undefined' ? Attach.buildContext() : ''}
+${typeof Expediente !== 'undefined' ? Expediente.buildContext() : ''}
+${typeof Presupuesto !== 'undefined' ? this.buildPresupuestoContext() : ''}
 
 # CÓMO RESPONDER
 1. Si Alan menciona algo personal/emocional → reconócelo ANTES de operar. Tono cálido pero no empalagoso.
@@ -514,6 +527,29 @@ ${typeof Attach !== 'undefined' ? Attach.buildContext() : ''}
     }
 
     return lines.length ? lines.join('\n') : 'ERP recién inicializado · sin datos aún';
+  },
+
+  /**
+   * Inyecta estado de presupuestos al system prompt para que la IA pueda alertar.
+   */
+  buildPresupuestoContext() {
+    if (typeof Presupuesto === 'undefined') return '';
+    const resumen = Presupuesto.resumen();
+    const lines = ['\n# PRESUPUESTOS Y LÍMITES PERSONALES'];
+    let alguno = false;
+
+    Object.entries(resumen).forEach(([tipo, estado]) => {
+      if (!estado || !estado.limite) return;
+      const label = tipo.replace(/_/g, ' ');
+      const sufijo = tipo === 'mota_semanal' ? '/semana' : (tipo.includes('mensual') ? '/mes' : (tipo.includes('semana') ? '/semana' : ''));
+      const moneda = tipo.includes('minutos') ? '' : '$';
+      lines.push(`· ${label}: gastado ${moneda}${estado.gasto.toLocaleString()} de ${moneda}${estado.limite.toLocaleString()}${sufijo} (${estado.pct}%)`);
+      if (estado.nivel === 'rebasado') { lines.push(`  ⚠ REBASADO · debes alertar a Alan sobre esto si es relevante`); alguno = true; }
+      if (estado.nivel === 'cerca') { lines.push(`  ⚠ CERCA DEL LÍMITE · si Alan menciona gastar más, advierte`); alguno = true; }
+    });
+
+    if (alguno) lines.push('REGLA: Si Alan menciona gastar en una categoría rebasada, dile el monto exacto que se pasó. Sin sermonear, solo dato.');
+    return lines.length > 1 ? lines.join('\n') : '';
   },
 
   /**
@@ -796,7 +832,82 @@ const Cascada = {
     }
 
     this.recalcularProyeccion();
+
+    // ============================================================
+    // AUTO-DETECCIÓN GASTO DÍA · ping proactivo
+    // ============================================================
+    if (mov.tipo === 'gasto') {
+      this.evaluarGastoDia(mov.monto);
+    }
+
     return { ok: true, movimiento: mov, tags };
+  },
+
+  /**
+   * Evalúa el gasto acumulado del día y emite alerta si excede umbrales.
+   * Llamado tras cada movimiento de gasto.
+   */
+  evaluarGastoDia(montoNuevo) {
+    if (typeof Alertas === 'undefined' || typeof Presupuesto === 'undefined') return;
+
+    const inicioDia = new Date(); inicioDia.setHours(0, 0, 0, 0);
+    const movs = Store.get('alan_mando_movimientos', []);
+    const gastoHoy = movs
+      .filter(m => m.tipo === 'gasto' && m.ts >= inicioDia.getTime())
+      .reduce((s, m) => s + (m.monto || 0), 0);
+
+    const presupMensual = Presupuesto.get().gasto_total_mensual || 30000;
+    const presupDiarioPromedio = presupMensual / 30;
+
+    const stateKey = 'alan_mando_gasto_dia_alerts';
+    const state = Store.get(stateKey, {});
+    const dayKey = inicioDia.toISOString().slice(0, 10);
+    const yaEmitido = state[dayKey] || {};
+
+    // Umbral 1: 80% del promedio diario
+    if (gastoHoy >= presupDiarioPromedio * 0.8 && !yaEmitido.amarillo) {
+      Alertas.emit({
+        tipo: 'gasto_dia_alto',
+        subject: `Hoy llevas $${Math.round(gastoHoy).toLocaleString()} gastados`,
+        body: `Vas en ${Math.round((gastoHoy / presupDiarioPromedio) * 100)}% del promedio diario ($${Math.round(presupDiarioPromedio).toLocaleString()}). Modera el resto del día.`,
+        prioridad: 'media',
+        amount: gastoHoy
+      });
+      yaEmitido.amarillo = true;
+    }
+
+    // Umbral 2: 120% rebasado
+    if (gastoHoy >= presupDiarioPromedio * 1.2 && !yaEmitido.rojo) {
+      Alertas.emit({
+        tipo: 'gasto_dia_rebasado',
+        subject: `⚠ Te pasaste · día caro`,
+        body: `Hoy llevas $${Math.round(gastoHoy).toLocaleString()} · 20% arriba del diario promedio. Si sigue así, revienta el mes.`,
+        prioridad: 'alta',
+        amount: gastoHoy - presupDiarioPromedio
+      });
+      yaEmitido.rojo = true;
+    }
+
+    // Umbral 3: gasto individual MUY grande (>50% del diario)
+    if (montoNuevo >= presupDiarioPromedio * 0.5 && !yaEmitido[`grande_${montoNuevo}`]) {
+      Alertas.emit({
+        tipo: 'gasto_individual_alto',
+        subject: `Gasto fuerte · $${Math.round(montoNuevo).toLocaleString()}`,
+        body: `Ese solo movimiento es ${Math.round((montoNuevo / presupDiarioPromedio) * 100)}% de tu diario promedio. Respira y revisa si fue necesario.`,
+        prioridad: 'media',
+        amount: montoNuevo
+      });
+      yaEmitido[`grande_${montoNuevo}`] = true;
+    }
+
+    state[dayKey] = yaEmitido;
+
+    // Limpiar días viejos (>14 días)
+    Object.keys(state).forEach(k => {
+      const d = new Date(k);
+      if (Date.now() - d.getTime() > 14 * 86400000) delete state[k];
+    });
+    Store.set(stateKey, state);
   },
 
   /**
@@ -858,7 +969,7 @@ const UI = {
       { key: 'calendario', label: 'Calend', href: 'calendario.html', icon: '<rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3 9h18" stroke="currentColor" stroke-width="1.5"/>' },
       { key: 'finanzas', label: 'Finanzas', href: 'finanzas.html', icon: '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="1.5" fill="none"/>' },
       { key: 'musica', label: 'Música', href: 'musica.html', icon: '<path d="M9 18V5l12-2v13" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>' },
-      { key: 'pendientes', label: 'Pendts', href: 'pendientes.html', icon: '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.5"/>' }
+      { key: 'cuidado', label: 'Cuidado', href: 'cuidado.html', icon: '<path d="M12 21s-7-4.35-7-10a5 5 0 019-3 5 5 0 019 3c0 5.65-7 10-7 10z" stroke="currentColor" stroke-width="1.5" fill="none"/>' }
     ];
     return `<nav class="bottom-nav">${items.map(i => `
       <a href="${i.href}" class="bottom-nav-item ${active === i.key ? 'active' : ''}">
@@ -1185,6 +1296,8 @@ const Attach = {
   TYPES: {
     cedula_fiscal: { label: 'Cédula fiscal · RFC', icon: '◈', accept: 'image/*,application/pdf' },
     constancia_situacion_fiscal: { label: 'Constancia de Situación Fiscal', icon: '◆', accept: 'application/pdf,image/*' },
+    analisis_medico: { label: 'Análisis médico · laboratorio', icon: '⊕', accept: 'application/pdf,image/*' },
+    receta_medica: { label: 'Receta médica', icon: '℞', accept: 'application/pdf,image/*' },
     declaracion_anual: { label: 'Declaración anual', icon: '▣', accept: 'application/pdf' },
     declaracion_mensual: { label: 'Declaración mensual', icon: '▤', accept: 'application/pdf' },
     opinion_cumplimiento: { label: 'Opinión cumplimiento SAT', icon: '✓', accept: 'application/pdf,image/*' },
@@ -2082,7 +2195,1122 @@ const ObjetivosLink = {
 };
 
 // ============================================================
-// 18 · INICIALIZACIÓN
+// 18 · EXPEDIENTE · biomarcadores médicos extraídos de análisis
+// ============================================================
+
+const Expediente = {
+  KEY: 'alan_mando_expediente',
+
+  /**
+   * Biomarcadores PRECARGADOS desde el análisis MR5330-0015 (LabExpress · 26 nov 2025).
+   * Cuando Alan suba un análisis nuevo, se agrega aquí un nuevo registro con fecha.
+   */
+  BIOMARCADORES_PRECARGADOS: {
+    folio: 'MR5330-0015',
+    laboratorio: 'LabExpress',
+    fecha: '2025-11-26',
+    medico: 'Dr. Gonzalez Ocampo Eduardo',
+    paciente_edad: 33,
+    valores: [
+      // CRÍTICOS · fuera de rango
+      { nombre: 'Glucosa', valor: 114, unidad: 'mg/dL', ref_min: 70, ref_max: 99, estado: 'alto', categoria: 'metabolismo', nota: 'Prediabetes leve · vigilar carbos refinados + ejercicio aeróbico' },
+      { nombre: 'Vitamina D 25-OH', valor: 18.9, unidad: 'ng/mL', ref_min: 30, ref_max: 50, estado: 'deficiencia', categoria: 'vitaminas', nota: 'Deficiencia franca · suplementar 4000-5000 UI/día por 2-3 meses + sol matutino 15min' },
+      { nombre: 'Ácido úrico', valor: 3.12, unidad: 'mg/dL', ref_min: 3.4, ref_max: 7.0, estado: 'bajo', categoria: 'metabolismo', nota: 'Ligeramente bajo · ojo con dieta muy restringida en proteína' },
+      // NORMALES · referencia
+      { nombre: 'Colesterol total', valor: 194, unidad: 'mg/dL', ref_min: 120, ref_max: 200, estado: 'normal', categoria: 'lípidos' },
+      { nombre: 'HDL', valor: 66.5, unidad: 'mg/dL', ref_min: 35, ref_max: 59, estado: 'optimo', categoria: 'lípidos', nota: 'Excelente · arriba del rango referencia (protector)' },
+      { nombre: 'LDL', valor: 109.1, unidad: 'mg/dL', ref_min: 62, ref_max: 130, estado: 'normal', categoria: 'lípidos' },
+      { nombre: 'Triglicéridos', valor: 92, unidad: 'mg/dL', ref_min: 40, ref_max: 160, estado: 'normal', categoria: 'lípidos' },
+      { nombre: 'Índice aterogénico', valor: 2.9, unidad: '', ref_min: 0, ref_max: 4.0, estado: 'normal', categoria: 'lípidos' },
+      { nombre: 'TGO (AST)', valor: 18, unidad: 'U/L', ref_min: 20, ref_max: 40, estado: 'bajo_leve', categoria: 'hígado', nota: 'Hígado bien · sin alarma' },
+      { nombre: 'TGP (ALT)', valor: 14, unidad: 'U/L', ref_min: 10, ref_max: 40, estado: 'normal', categoria: 'hígado' },
+      { nombre: 'Creatinina', valor: 0.73, unidad: 'mg/dL', ref_min: 0.5, ref_max: 1.2, estado: 'normal', categoria: 'riñón' },
+      { nombre: 'Filtrado glomerular', valor: 90, unidad: 'mL/min', ref_min: 90, ref_max: null, estado: 'normal', categoria: 'riñón' },
+      { nombre: 'Proteínas totales', valor: 7.1, unidad: 'g/dL', ref_min: 6.4, ref_max: 8.3, estado: 'normal', categoria: 'general' },
+      { nombre: 'Albúmina', valor: 4.73, unidad: 'g/dL', ref_min: 3.5, ref_max: 5.0, estado: 'normal', categoria: 'general' },
+      { nombre: 'TSH', valor: 0.68, unidad: 'uUI/mL', ref_min: 0.40, ref_max: 4.0, estado: 'normal', categoria: 'tiroides' },
+      { nombre: 'T4 libre', valor: 0.94, unidad: 'ng/dL', ref_min: 0.89, ref_max: 1.76, estado: 'normal', categoria: 'tiroides', nota: 'En rango bajo · seguir' },
+      { nombre: 'Sodio', valor: 140, unidad: 'mmol/L', ref_min: 136, ref_max: 145, estado: 'normal', categoria: 'electrolitos' },
+      { nombre: 'Potasio', valor: 4.5, unidad: 'mmol/L', ref_min: 3.5, ref_max: 5.1, estado: 'normal', categoria: 'electrolitos' },
+      { nombre: 'Apolipoproteína A1', valor: 1.88, unidad: 'g/L', ref_min: 0.73, ref_max: 1.86, estado: 'optimo', categoria: 'lípidos' },
+      { nombre: 'Apolipoproteína B', valor: 0.84, unidad: 'g/L', ref_min: 0.54, ref_max: 1.63, estado: 'normal', categoria: 'lípidos' },
+      { nombre: 'Índice ApoB/A1', valor: 0.5, unidad: '', ref_min: 0, ref_max: 0.70, estado: 'normal', categoria: 'lípidos' }
+    ]
+  },
+
+  /**
+   * Lista de análisis (cada uno con sus biomarcadores).
+   */
+  list() {
+    const stored = Store.get(this.KEY, null);
+    if (stored && stored.length) return stored;
+    // Si no hay nada guardado, devolver el precargado
+    return [{ ...this.BIOMARCADORES_PRECARGADOS, id: 'pre_mr5330', precargado: true }];
+  },
+
+  agregar(analisis) {
+    const all = this.list().filter(a => !a.precargado);
+    all.unshift({ ...analisis, id: 'an_' + Date.now(), agregado_at: Date.now() });
+    Store.set(this.KEY, all);
+    return analisis;
+  },
+
+  /**
+   * Último análisis (más reciente).
+   */
+  ultimo() {
+    const all = this.list();
+    return all[0] || null;
+  },
+
+  /**
+   * Valores fuera de rango del análisis más reciente.
+   */
+  alertas() {
+    const ultimo = this.ultimo();
+    if (!ultimo) return [];
+    return ultimo.valores.filter(v => v.estado !== 'normal' && v.estado !== 'optimo');
+  },
+
+  /**
+   * Construye contexto para inyectar al system prompt de la IA.
+   */
+  buildContext() {
+    const ultimo = this.ultimo();
+    if (!ultimo) return '';
+
+    const alertas = this.alertas();
+    let ctx = `\n# EXPEDIENTE MÉDICO DE ALAN (último análisis ${ultimo.fecha} · ${ultimo.laboratorio})\n`;
+
+    if (alertas.length) {
+      ctx += 'BIOMARCADORES FUERA DE RANGO · considéralos al sugerir dieta, ejercicio, suplementación:\n';
+      alertas.forEach(a => {
+        ctx += `· ${a.nombre}: ${a.valor} ${a.unidad} (rango ${a.ref_min}${a.ref_max ? '-' + a.ref_max : '+'}) · ${a.estado.toUpperCase()}`;
+        if (a.nota) ctx += ` · ${a.nota}`;
+        ctx += '\n';
+      });
+    }
+
+    const optimos = ultimo.valores.filter(v => v.estado === 'optimo');
+    if (optimos.length) {
+      ctx += 'Excelentes: ' + optimos.map(v => v.nombre).join(', ') + '\n';
+    }
+
+    ctx += 'REGLA: cuando Alan pregunte por dieta/ejercicio/salud, considera estos valores ANTES de sugerir.\n';
+    return ctx;
+  }
+};
+
+// ============================================================
+// 19 · PERFIL FÍSICO · datos personales para sugerencias aterrizadas
+// ============================================================
+
+const PerfilFisico = {
+  KEY: 'alan_mando_perfil_fisico',
+
+  /**
+   * Datos PRECARGADOS desde sistema basados en lo que sabemos de Alan.
+   * Si el usuario los ha actualizado, gana lo del usuario.
+   */
+  DEFAULTS: {
+    nombre: 'Alan Davis',
+    fecha_nacimiento: '1992-06-07',
+    estatura_cm: 178, // estimado · usuario debe ajustar
+    peso_kg: null, // usuario debe ingresar
+    sangre: null, // usuario · útil para emergencia
+    alergias: [],
+    condiciones: ['estrés crónico moderado', 'inflamación gastrointestinal recurrente', 'TDAH', 'TOC'],
+    medicacion: ['Ritalin 20mg AM'],
+    contactos_emergencia: [],
+    objetivos_salud: ['mantener peso saludable', 'reducir inflamación', 'mejorar sueño', 'energía estable durante el día']
+  },
+
+  get() {
+    const stored = Store.get(this.KEY, null);
+    if (stored && Object.keys(stored).length > 0) {
+      return { ...this.DEFAULTS, ...stored };
+    }
+    return { ...this.DEFAULTS };
+  },
+
+  set(updates) {
+    const current = this.get();
+    Store.set(this.KEY, { ...current, ...updates, updated_at: Date.now() });
+    return this.get();
+  },
+
+  /**
+   * Calcula edad a partir de fecha nacimiento.
+   */
+  edad() {
+    const p = this.get();
+    if (!p.fecha_nacimiento) return null;
+    const fn = new Date(p.fecha_nacimiento);
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - fn.getFullYear();
+    const m = hoy.getMonth() - fn.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < fn.getDate())) edad--;
+    return edad;
+  },
+
+  /**
+   * IMC calculado.
+   */
+  imc() {
+    const p = this.get();
+    if (!p.peso_kg || !p.estatura_cm) return null;
+    const m = p.estatura_cm / 100;
+    return p.peso_kg / (m * m);
+  },
+
+  imcCategoria() {
+    const v = this.imc();
+    if (v === null) return null;
+    if (v < 18.5) return { label: 'Bajo peso', color: 'rgba(150,210,230,0.95)' };
+    if (v < 25) return { label: 'Normal', color: 'rgba(180,220,170,0.95)' };
+    if (v < 30) return { label: 'Sobrepeso', color: 'rgba(244,213,128,0.95)' };
+    return { label: 'Obesidad', color: 'rgba(255,170,110,0.95)' };
+  },
+
+  /**
+   * Días hasta el próximo cumpleaños.
+   */
+  diasACumple() {
+    const p = this.get();
+    if (!p.fecha_nacimiento) return null;
+    const fn = new Date(p.fecha_nacimiento);
+    const hoy = new Date();
+    const proxCumple = new Date(hoy.getFullYear(), fn.getMonth(), fn.getDate());
+    if (proxCumple < hoy) proxCumple.setFullYear(hoy.getFullYear() + 1);
+    return Math.ceil((proxCumple - hoy) / 86400000);
+  }
+};
+
+// ============================================================
+// XX · RECURRENTES · cobros automáticos + pagos a proveedores recurrentes
+// ============================================================
+
+const Recurrentes = {
+  COBROS_KEY: 'alan_mando_cobros_recurrentes',
+  PAGOS_KEY: 'alan_mando_pagos_recurrentes',
+
+  /**
+   * Frecuencias soportadas.
+   */
+  FRECUENCIAS: {
+    semanal: { label: 'Semanal', dias: 7 },
+    quincenal: { label: 'Quincenal', dias: 15 },
+    mensual: { label: 'Mensual', dias: 30 },
+    bimestral: { label: 'Bimestral', dias: 60 },
+    trimestral: { label: 'Trimestral', dias: 90 },
+    semestral: { label: 'Semestral', dias: 180 },
+    anual: { label: 'Anual', dias: 365 }
+  },
+
+  // ================== COBROS RECURRENTES (clientes) ==================
+
+  cobros() { return Store.get(this.COBROS_KEY, []); },
+
+  /**
+   * Crear cobro recurrente. Auto-genera link MercadoPago a cobros.g2c.com.mx
+   * y agenda recordatorios para cada vencimiento.
+   */
+  crearCobro(c) {
+    const all = this.cobros();
+    c.id = 'cob_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    c.tipo_recurrencia = 'cobro';
+    c.created_at = Date.now();
+    c.activo = true;
+    c.cobro_link = c.cobro_link || `https://cobros.g2c.com.mx/?cliente=${encodeURIComponent(c.cliente_id || c.cliente_nombre)}&monto=${c.monto}&concepto=${encodeURIComponent(c.concepto || '')}`;
+    c.proximo_cobro = c.fecha_inicio || Date.now();
+    c.cobros_generados = 0;
+
+    all.unshift(c);
+    Store.set(this.COBROS_KEY, all);
+
+    // Agendar primer recordatorio 3 días antes del vencimiento
+    if (typeof Recordatorios !== 'undefined') {
+      Recordatorios.agendar({
+        tipo: 'cobro',
+        titulo: `Cobrar ${c.cliente_nombre} · $${c.monto.toLocaleString()}`,
+        body: `${c.concepto} · liga lista en cobros.g2c.com.mx`,
+        fecha: c.proximo_cobro - 3 * 86400000,
+        prioridad: 'alta',
+        ref_id: c.id,
+        ref_tipo: 'cobro_recurrente'
+      });
+    }
+
+    return c;
+  },
+
+  /**
+   * Toggle activo/pausado.
+   */
+  toggleCobro(id) {
+    const all = this.cobros();
+    const c = all.find(x => x.id === id);
+    if (c) { c.activo = !c.activo; Store.set(this.COBROS_KEY, all); }
+    return c;
+  },
+
+  removeCobro(id) {
+    Store.set(this.COBROS_KEY, this.cobros().filter(c => c.id !== id));
+  },
+
+  /**
+   * Marca un cobro como ejecutado · avanza siguiente fecha + cascada a movimientos.
+   */
+  ejecutarCobro(id, montoCobrado = null) {
+    const all = this.cobros();
+    const c = all.find(x => x.id === id);
+    if (!c) return null;
+
+    const monto = montoCobrado || c.monto;
+    const freq = this.FRECUENCIAS[c.frecuencia] || this.FRECUENCIAS.mensual;
+
+    c.cobros_generados = (c.cobros_generados || 0) + 1;
+    c.ultimo_cobro = Date.now();
+    c.proximo_cobro = c.proximo_cobro + freq.dias * 86400000;
+
+    Store.set(this.COBROS_KEY, all);
+
+    // Cascada a movimientos
+    const movs = Store.get('alan_mando_movimientos', []);
+    movs.push({
+      id: 'mov_' + Date.now(),
+      ts: Date.now(),
+      tipo: 'ingreso',
+      monto,
+      concepto: `${c.concepto} · ${c.cliente_nombre}`,
+      categoria: 'g2c_recurrente',
+      cobro_recurrente_id: c.id
+    });
+    Store.set('alan_mando_movimientos', movs);
+
+    // Agendar próximo recordatorio
+    if (typeof Recordatorios !== 'undefined') {
+      Recordatorios.agendar({
+        tipo: 'cobro',
+        titulo: `Cobrar ${c.cliente_nombre} · $${c.monto.toLocaleString()}`,
+        body: `${c.concepto} · próximo ciclo`,
+        fecha: c.proximo_cobro - 3 * 86400000,
+        prioridad: 'alta',
+        ref_id: c.id,
+        ref_tipo: 'cobro_recurrente'
+      });
+    }
+
+    return c;
+  },
+
+  /**
+   * Cobros próximos a vencer (siguientes N días).
+   */
+  cobrosProximos(diasMax = 30) {
+    const limite = Date.now() + diasMax * 86400000;
+    return this.cobros().filter(c => c.activo && c.proximo_cobro <= limite).sort((a, b) => a.proximo_cobro - b.proximo_cobro);
+  },
+
+  // ================== PAGOS RECURRENTES (proveedores) ==================
+
+  pagos() { return Store.get(this.PAGOS_KEY, []); },
+
+  /**
+   * Crea pago recurrente · agenda recordatorios automáticos.
+   */
+  crearPago(p) {
+    const all = this.pagos();
+    p.id = 'pag_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    p.tipo_recurrencia = 'pago';
+    p.created_at = Date.now();
+    p.activo = true;
+    p.proximo_pago = p.fecha_inicio || Date.now();
+    p.pagos_generados = 0;
+
+    all.unshift(p);
+    Store.set(this.PAGOS_KEY, all);
+
+    // Agendar recordatorio 3 días antes
+    if (typeof Recordatorios !== 'undefined') {
+      Recordatorios.agendar({
+        tipo: 'fiscal',
+        titulo: `Pagar ${p.proveedor} · $${p.monto.toLocaleString()}`,
+        body: `${p.concepto}${p.link_pago ? ' · ' + p.link_pago : ''}`,
+        fecha: p.proximo_pago - 3 * 86400000,
+        prioridad: 'alta',
+        ref_id: p.id,
+        ref_tipo: 'pago_recurrente',
+        link: p.link_pago
+      });
+    }
+
+    return p;
+  },
+
+  togglePago(id) {
+    const all = this.pagos();
+    const p = all.find(x => x.id === id);
+    if (p) { p.activo = !p.activo; Store.set(this.PAGOS_KEY, all); }
+    return p;
+  },
+
+  removePago(id) {
+    Store.set(this.PAGOS_KEY, this.pagos().filter(p => p.id !== id));
+  },
+
+  /**
+   * Marca pago como ejecutado · avanza siguiente fecha.
+   */
+  ejecutarPago(id, montoPagado = null) {
+    const all = this.pagos();
+    const p = all.find(x => x.id === id);
+    if (!p) return null;
+
+    const monto = montoPagado || p.monto;
+    const freq = this.FRECUENCIAS[p.frecuencia] || this.FRECUENCIAS.mensual;
+
+    p.pagos_generados = (p.pagos_generados || 0) + 1;
+    p.ultimo_pago = Date.now();
+    p.proximo_pago = p.proximo_pago + freq.dias * 86400000;
+
+    Store.set(this.PAGOS_KEY, all);
+
+    // Cascada: registra como gasto en proveedores y movimientos
+    if (typeof Proveedores !== 'undefined') {
+      Proveedores.registrarGasto({
+        proveedor_nombre: p.proveedor,
+        proveedor_id: 'prov_' + p.proveedor.toLowerCase().replace(/\s+/g, '_'),
+        categoria: p.categoria || 'saas',
+        concepto: p.concepto,
+        monto,
+        pago_recurrente_id: p.id
+      });
+    }
+
+    // Agendar próximo recordatorio
+    if (typeof Recordatorios !== 'undefined') {
+      Recordatorios.agendar({
+        tipo: 'fiscal',
+        titulo: `Pagar ${p.proveedor} · $${monto.toLocaleString()}`,
+        body: `${p.concepto} · próximo ciclo`,
+        fecha: p.proximo_pago - 3 * 86400000,
+        prioridad: 'alta',
+        ref_id: p.id,
+        ref_tipo: 'pago_recurrente',
+        link: p.link_pago
+      });
+    }
+
+    return p;
+  },
+
+  pagosProximos(diasMax = 30) {
+    const limite = Date.now() + diasMax * 86400000;
+    return this.pagos().filter(p => p.activo && p.proximo_pago <= limite).sort((a, b) => a.proximo_pago - b.proximo_pago);
+  },
+
+  /**
+   * Detección de patrones · sugiere convertir gastos repetidos en recurrentes.
+   * Si el mismo proveedor aparece 2+ veces con monto similar, sugiere.
+   */
+  detectarPatron() {
+    if (typeof Proveedores === 'undefined') return [];
+    const gastos = Proveedores.gastos();
+    const porProveedor = {};
+    gastos.forEach(g => {
+      if (!g.proveedor_nombre) return;
+      const key = g.proveedor_nombre.toLowerCase();
+      if (!porProveedor[key]) porProveedor[key] = [];
+      porProveedor[key].push(g);
+    });
+
+    const sugerencias = [];
+    Object.entries(porProveedor).forEach(([prov, lista]) => {
+      if (lista.length < 2) return;
+      // Ya está como recurrente?
+      const yaRecurrente = this.pagos().some(p => p.proveedor.toLowerCase() === prov);
+      if (yaRecurrente) return;
+
+      // Calcular si los montos son similares (±15%)
+      const montos = lista.map(g => g.monto);
+      const promedio = montos.reduce((s, m) => s + m, 0) / montos.length;
+      const variabilidad = Math.max(...montos.map(m => Math.abs(m - promedio) / promedio));
+
+      if (variabilidad < 0.15) {
+        sugerencias.push({
+          proveedor: lista[0].proveedor_nombre,
+          categoria: lista[0].categoria,
+          monto_promedio: Math.round(promedio),
+          ocurrencias: lista.length,
+          ultimo_concepto: lista[0].concepto
+        });
+      }
+    });
+    return sugerencias;
+  }
+};
+
+// ============================================================
+// 19 · EJERCICIO · calendario activo + registro real de entrenamientos
+// ============================================================
+
+const Ejercicio = {
+  KEY: 'alan_mando_entrenamientos',
+  AGENDA_KEY: 'alan_mando_ejercicio_agenda',
+
+  TIPOS: {
+    fuerza: { label: 'Fuerza · pesas', color: 'rgba(255,170,110,0.95)', icon: '⚙' },
+    cardio: { label: 'Cardio', color: 'rgba(255,79,0,0.95)', icon: '↗' },
+    natacion: { label: 'Natación', color: 'rgba(120,200,220,0.95)', icon: '~' },
+    caminata: { label: 'Caminata · Pepe', color: 'rgba(180,220,170,0.95)', icon: '◆' },
+    flexibilidad: { label: 'Estiramiento · yoga', color: 'rgba(200,180,220,0.95)', icon: '·' },
+    deporte: { label: 'Deporte', color: 'rgba(244,213,128,0.95)', icon: '◉' }
+  },
+
+  /**
+   * Lista de entrenamientos completados.
+   */
+  list() { return Store.get(this.KEY, []); },
+
+  /**
+   * Registrar entrenamiento completado.
+   */
+  registrar(ent) {
+    const all = this.list();
+    ent.id = 'ent_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    ent.created_at = Date.now();
+    if (!ent.fecha) ent.fecha = Date.now();
+    all.unshift(ent);
+    Store.set(this.KEY, all);
+    return ent;
+  },
+
+  /**
+   * Eliminar entrenamiento.
+   */
+  remove(id) {
+    Store.set(this.KEY, this.list().filter(e => e.id !== id));
+  },
+
+  /**
+   * Agenda de ejercicio (planificación futura).
+   */
+  agenda() { return Store.get(this.AGENDA_KEY, []); },
+
+  agendar(item) {
+    const all = this.agenda();
+    item.id = 'agej_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    item.created_at = Date.now();
+    all.push(item);
+    Store.set(this.AGENDA_KEY, all);
+    return item;
+  },
+
+  /**
+   * Stats de cumplimiento últimos N días.
+   */
+  cumplimiento(dias = 7) {
+    const desde = Date.now() - dias * 86400000;
+    const ents = this.list().filter(e => e.fecha >= desde);
+    const totalMinutos = ents.reduce((s, e) => s + (e.duracion_min || 0), 0);
+    const porTipo = {};
+    ents.forEach(e => {
+      porTipo[e.tipo] = (porTipo[e.tipo] || 0) + 1;
+    });
+
+    const diasConActividad = new Set(ents.map(e => new Date(e.fecha).toDateString())).size;
+    const meta = 5; // 5 días/semana objetivo
+    const pct = Math.round((diasConActividad / meta) * 100);
+
+    return {
+      total: ents.length,
+      total_minutos: totalMinutos,
+      dias_activos: diasConActividad,
+      meta_dias: meta,
+      cumplimiento_pct: Math.min(pct, 100),
+      por_tipo: porTipo,
+      promedio_min_dia: diasConActividad > 0 ? Math.round(totalMinutos / diasConActividad) : 0
+    };
+  },
+
+  /**
+   * Próximas sesiones agendadas.
+   */
+  proximasSesiones(limit = 5) {
+    const ahora = Date.now();
+    return this.agenda()
+      .filter(a => a.fecha >= ahora && !a.completado)
+      .sort((a, b) => a.fecha - b.fecha)
+      .slice(0, limit);
+  }
+};
+
+// ============================================================
+// 20 · DIETA SEMANAL · plan + lista de mercado
+// ============================================================
+
+const Dieta = {
+  KEY: 'alan_mando_dieta_semanal',
+
+  /**
+   * Plan de la semana actual.
+   * { semana_inicio: timestamp, dias: [{dia, desayuno, comida, cena, snacks}], ingredientes_mercado: [] }
+   */
+  semanaActual() {
+    const stored = Store.get(this.KEY, null);
+    if (!stored) return null;
+
+    // Si la semana guardada ya terminó, regresa null para que se regenere
+    const inicioActual = this.inicioSemana();
+    if (stored.semana_inicio !== inicioActual) return null;
+    return stored;
+  },
+
+  inicioSemana() {
+    const hoy = new Date();
+    const dia = hoy.getDay(); // 0 = domingo
+    const diff = dia === 0 ? -6 : 1 - dia; // lunes = inicio
+    const lunes = new Date(hoy);
+    lunes.setDate(hoy.getDate() + diff);
+    lunes.setHours(0, 0, 0, 0);
+    return lunes.getTime();
+  },
+
+  guardar(plan) {
+    plan.semana_inicio = this.inicioSemana();
+    plan.created_at = Date.now();
+    Store.set(this.KEY, plan);
+    return plan;
+  },
+
+  /**
+   * Genera plan default basado en alimentos seguros para Alan.
+   */
+  generarDefault() {
+    const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const desayunos = ['Avena con plátano + miel', 'Huevos revueltos con espinaca', 'Yogurt griego con arándanos', 'Smoothie verde con jengibre', 'Pan integral con aguacate y huevo', 'Hot cakes integrales con fruta', 'Chilaquiles verdes (sin chile picante)'];
+    const comidas = ['Salmón al horno + arroz integral + brócoli', 'Pollo asado + camote + ensalada', 'Pasta con pesto + pollo + tomate', 'Tacos de pescado (sin salsa picante)', 'Bowl poke de atún + edamame', 'Caldo de pollo con verduras + arroz', 'Filete de res + papas asadas + ensalada'];
+    const cenas = ['Sopa de lentejas + verduras', 'Tostadas de aguacate con huevo', 'Ensalada quinoa con manzana y nuez', 'Wrap de pollo con vegetales', 'Crema de calabaza + queso panela', 'Sándwich integral pavo y queso', 'Pescado a la plancha + verduras'];
+
+    const plan = {
+      dias: dias.map((dia, i) => ({
+        dia,
+        desayuno: desayunos[i],
+        comida: comidas[i],
+        cena: cenas[i]
+      })),
+      ingredientes_mercado: [
+        // Proteínas
+        'Salmón fresco (300g)', 'Filete de pollo (500g)', 'Atún fresco (200g)', 'Huevos (12)', 'Pavo rebanado (250g)', 'Filete de res (300g)',
+        // Verduras
+        'Espinaca baby', 'Brócoli (1 pieza)', 'Calabaza (2)', 'Aguacate (5)', 'Tomate cherry', 'Lechugas mixtas', 'Repollo morado',
+        // Carbos complejos
+        'Arroz integral', 'Pasta integral', 'Avena', 'Pan integral', 'Camote (3)', 'Quinoa (250g)', 'Papas',
+        // Grasas buenas
+        'Almendras', 'Nueces', 'Aceite de oliva', 'Tahini', 'Edamame congelado',
+        // Lácteos
+        'Yogurt griego natural (1L)', 'Queso panela (200g)',
+        // Frutas
+        'Plátano (6)', 'Manzana (5)', 'Arándanos', 'Limones (8)',
+        // Otros
+        'Lentejas (500g)', 'Pesto', 'Salsa de soya', 'Miel', 'Canela', 'Jengibre fresco', 'Cilantro'
+      ]
+    };
+
+    return this.guardar(plan);
+  },
+
+  /**
+   * Toggle ingrediente comprado.
+   */
+  toggleIngrediente(ingrediente) {
+    const plan = this.semanaActual();
+    if (!plan) return;
+    plan.comprados = plan.comprados || {};
+    plan.comprados[ingrediente] = !plan.comprados[ingrediente];
+    Store.set(this.KEY, plan);
+    return plan;
+  }
+};
+
+// ============================================================
+// 21 · OCIO TRACKING · marihuana + shopping con presupuestos
+// ============================================================
+
+const OcioTrack = {
+  MOTA_KEY: 'alan_mando_compras_mota',
+  SHOPPING_KEY: 'alan_mando_compras_shopping',
+  GAMING_KEY: 'alan_mando_gaming_sesiones',
+
+  // ================== MARIHUANA ==================
+  comprasMota() { return Store.get(this.MOTA_KEY, []); },
+
+  registrarMota(c) {
+    const all = this.comprasMota();
+    c.id = 'mota_' + Date.now();
+    c.fecha = c.fecha || Date.now();
+    c.created_at = Date.now();
+    all.unshift(c);
+    Store.set(this.MOTA_KEY, all);
+
+    // Cascada: registra en movimientos generales
+    const movs = Store.get('alan_mando_movimientos', []);
+    movs.push({
+      id: 'mov_' + Date.now(),
+      ts: c.fecha,
+      tipo: 'gasto',
+      monto: c.costo,
+      concepto: `marihuana · ${c.cantidad || ''} ${c.unidad || 'g'} · ${c.tienda || 'sin tienda'}`,
+      categoria: 'ocio_marihuana',
+      tags: ['marihuana']
+    });
+    Store.set('alan_mando_movimientos', movs);
+
+    // Verificar presupuesto
+    const alerta = Presupuesto.checkLimite('mota_semanal', this.gastoMotaSemana());
+    return { compra: c, alerta };
+  },
+
+  gastoMotaSemana() {
+    const inicio = Date.now() - 7 * 86400000;
+    return this.comprasMota().filter(c => c.fecha >= inicio).reduce((s, c) => s + c.costo, 0);
+  },
+
+  gastoMotaMes() {
+    const inicio = Date.now() - 30 * 86400000;
+    return this.comprasMota().filter(c => c.fecha >= inicio).reduce((s, c) => s + c.costo, 0);
+  },
+
+  // ================== SHOPPING ==================
+  shopping() { return Store.get(this.SHOPPING_KEY, []); },
+
+  registrarShopping(viaje) {
+    const all = this.shopping();
+    viaje.id = 'shop_' + Date.now();
+    viaje.fecha = viaje.fecha || Date.now();
+    viaje.created_at = Date.now();
+    viaje.items = viaje.items || [];
+    all.unshift(viaje);
+    Store.set(this.SHOPPING_KEY, all);
+
+    // Cascada a movimientos
+    const movs = Store.get('alan_mando_movimientos', []);
+    movs.push({
+      id: 'mov_' + Date.now(),
+      ts: viaje.fecha,
+      tipo: 'gasto',
+      monto: viaje.total,
+      concepto: `shopping · ${viaje.tienda || viaje.lugar} · ${viaje.items.length} items`,
+      categoria: 'ocio_shopping'
+    });
+    Store.set('alan_mando_movimientos', movs);
+
+    const alerta = Presupuesto.checkLimite('shopping_mensual', this.gastoShoppingMes());
+    return { viaje, alerta };
+  },
+
+  gastoShoppingMes() {
+    const inicio = Date.now() - 30 * 86400000;
+    return this.shopping().filter(c => c.fecha >= inicio).reduce((s, c) => s + (c.total || 0), 0);
+  },
+
+  // ================== GAMING (PS5) ==================
+  sesionesGaming() { return Store.get(this.GAMING_KEY, []); },
+
+  registrarGaming(s) {
+    const all = this.sesionesGaming();
+    s.id = 'gam_' + Date.now();
+    s.fecha = s.fecha || Date.now();
+    all.unshift(s);
+    Store.set(this.GAMING_KEY, all);
+    return s;
+  },
+
+  minutosGamingSemana() {
+    const inicio = Date.now() - 7 * 86400000;
+    return this.sesionesGaming().filter(s => s.fecha >= inicio).reduce((s, x) => s + (x.minutos || 0), 0);
+  }
+};
+
+// ============================================================
+// 22 · PRESUPUESTOS · límites + alertas
+// ============================================================
+
+const Presupuesto = {
+  KEY: 'alan_mando_presupuestos',
+
+  /**
+   * Estructura: { mota_semanal: 1500, shopping_mensual: 5000, gasto_total_mensual: 30000, ingreso_minimo_mes: 25000 }
+   */
+  DEFAULTS: {
+    mota_semanal: 1500,
+    shopping_mensual: 5000,
+    gasto_total_mensual: 30000,
+    ingreso_minimo_mes: 25000,
+    gaming_minutos_semana: 600 // 10 horas
+  },
+
+  get() {
+    const stored = Store.get(this.KEY, {});
+    return { ...this.DEFAULTS, ...stored };
+  },
+
+  set(updates) {
+    const current = this.get();
+    Store.set(this.KEY, { ...current, ...updates, updated_at: Date.now() });
+    return this.get();
+  },
+
+  checkLimite(tipo, gastoActual) {
+    const presup = this.get();
+    const limite = presup[tipo];
+    if (!limite) return null;
+
+    const pct = (gastoActual / limite) * 100;
+    if (pct >= 100) {
+      return {
+        nivel: 'rebasado',
+        pct: Math.round(pct),
+        mensaje: `Te pasaste $${(gastoActual - limite).toFixed(0)} del presupuesto ${tipo.replace('_', ' ')}`,
+        gasto: gastoActual,
+        limite
+      };
+    } else if (pct >= 80) {
+      return {
+        nivel: 'cerca',
+        pct: Math.round(pct),
+        mensaje: `Vas en ${Math.round(pct)}% del presupuesto ${tipo.replace('_', ' ')}`,
+        gasto: gastoActual,
+        limite
+      };
+    }
+    return { nivel: 'ok', pct: Math.round(pct), gasto: gastoActual, limite };
+  },
+
+  /**
+   * Resumen de TODOS los presupuestos con su estado actual.
+   */
+  resumen() {
+    return {
+      mota_semanal: this.checkLimite('mota_semanal', OcioTrack.gastoMotaSemana()),
+      shopping_mensual: this.checkLimite('shopping_mensual', OcioTrack.gastoShoppingMes()),
+      gaming_minutos_semana: this.checkLimite('gaming_minutos_semana', OcioTrack.minutosGamingSemana())
+    };
+  }
+};
+
+// ============================================================
+// 23 · ALERTAS · sistema unificado
+// ============================================================
+
+const Alertas = {
+  KEY: 'alan_mando_alertas',
+
+  list() { return Store.get(this.KEY, []); },
+
+  /**
+   * Registra una alerta. Si es la primera vez en N horas, también notifica.
+   */
+  emit(alerta) {
+    const all = this.list();
+    alerta.id = 'alert_' + Date.now();
+    alerta.ts = Date.now();
+    alerta.leida = false;
+    all.unshift(alerta);
+    if (all.length > 100) all.length = 100; // máx 100
+    Store.set(this.KEY, all);
+    return alerta;
+  },
+
+  marcarLeida(id) {
+    const all = this.list();
+    const a = all.find(x => x.id === id);
+    if (a) { a.leida = true; Store.set(this.KEY, all); }
+  },
+
+  noLeidas() { return this.list().filter(a => !a.leida); },
+
+  /**
+   * Análisis automático: revisa todos los presupuestos y emite alertas.
+   * Llamar cada vez que se hace un movimiento.
+   */
+  evaluarPresupuestos() {
+    const resumen = Presupuesto.resumen();
+    const emitidas = [];
+    Object.entries(resumen).forEach(([tipo, estado]) => {
+      if (estado && estado.nivel === 'rebasado') {
+        emitidas.push(this.emit({
+          tipo: 'presupuesto_rebasado',
+          subject: 'Presupuesto rebasado',
+          body: estado.mensaje,
+          presupuesto: tipo,
+          gasto: estado.gasto,
+          limite: estado.limite,
+          prioridad: 'alta'
+        }));
+      } else if (estado && estado.nivel === 'cerca') {
+        emitidas.push(this.emit({
+          tipo: 'presupuesto_cerca',
+          subject: 'Cerca del límite',
+          body: estado.mensaje,
+          presupuesto: tipo,
+          gasto: estado.gasto,
+          limite: estado.limite,
+          prioridad: 'media'
+        }));
+      }
+    });
+    return emitidas;
+  }
+};
+
+// ============================================================
+// 24 · RECORDATORIOS · sistema agendado
+// ============================================================
+
+const Recordatorios = {
+  KEY: 'alan_mando_recordatorios',
+
+  TIPOS: {
+    tarea: { label: 'Tarea', icon: '◇' },
+    musical: { label: 'Musical · ensayo', icon: '♪' },
+    tocada: { label: 'Tocada', icon: '★' },
+    fiscal: { label: 'Fiscal · SAT', icon: '$' },
+    cobro: { label: 'Cobro', icon: '◆' },
+    salud: { label: 'Salud · ejercicio', icon: '◉' },
+    personal: { label: 'Personal', icon: '·' }
+  },
+
+  list() { return Store.get(this.KEY, []); },
+
+  agendar(r) {
+    const all = this.list();
+    r.id = 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    r.created_at = Date.now();
+    r.disparado = false;
+    all.push(r);
+    Store.set(this.KEY, all);
+    return r;
+  },
+
+  remove(id) {
+    Store.set(this.KEY, this.list().filter(r => r.id !== id));
+  },
+
+  marcarDisparado(id) {
+    const all = this.list();
+    const r = all.find(x => x.id === id);
+    if (r) { r.disparado = true; Store.set(this.KEY, all); }
+  },
+
+  /**
+   * Próximos N recordatorios.
+   */
+  proximos(limit = 5) {
+    const ahora = Date.now();
+    return this.list()
+      .filter(r => r.fecha >= ahora && !r.disparado)
+      .sort((a, b) => a.fecha - b.fecha)
+      .slice(0, limit);
+  },
+
+  /**
+   * Recordatorios que deberían dispararse YA (vencidos en últimos 5 min).
+   */
+  vencidos() {
+    const ahora = Date.now();
+    const margen = 5 * 60000;
+    return this.list().filter(r => !r.disparado && r.fecha <= ahora && r.fecha > ahora - margen);
+  }
+};
+
+// ============================================================
+// 25 · PROACTIV-IA · monitor que dispara alertas sin pedirlo
+// ============================================================
+
+const ProactivIA = {
+  /**
+   * Estado interno · guarda última ejecución para no repetir alertas.
+   */
+  STATE_KEY: 'alan_mando_proactiv_state',
+
+  state() { return Store.get(this.STATE_KEY, { ultima_revision: 0, alertas_emitidas: {} }); },
+  saveState(s) { Store.set(this.STATE_KEY, s); },
+
+  /**
+   * Ejecuta TODOS los chequeos · llamar al cargar cualquier página.
+   * Throttle: solo corre 1 vez cada 30 min para no saturar.
+   */
+  async ejecutar(forzar = false) {
+    const s = this.state();
+    const ahora = Date.now();
+    const minutosDesdeUltima = (ahora - s.ultima_revision) / 60000;
+
+    if (!forzar && minutosDesdeUltima < 30) {
+      return { skipped: true, proxima_en_min: Math.round(30 - minutosDesdeUltima) };
+    }
+
+    const alertasNuevas = [];
+
+    // 1. Presupuestos rebasados o cerca
+    if (typeof Presupuesto !== 'undefined') {
+      const resumen = Presupuesto.resumen();
+      Object.entries(resumen).forEach(([tipo, estado]) => {
+        if (!estado || !estado.limite) return;
+        const alertKey = `presup_${tipo}_${estado.nivel}_${this.diaActualKey()}`;
+        if (s.alertas_emitidas[alertKey]) return; // ya emitida hoy
+
+        if (estado.nivel === 'rebasado') {
+          alertasNuevas.push({
+            tipo: 'presupuesto_rebasado',
+            subject: `Te pasaste · ${tipo.replace(/_/g, ' ')}`,
+            body: estado.mensaje,
+            prioridad: 'alta',
+            amount: estado.gasto - estado.limite,
+            categoria: tipo
+          });
+          s.alertas_emitidas[alertKey] = ahora;
+        } else if (estado.nivel === 'cerca') {
+          alertasNuevas.push({
+            tipo: 'presupuesto_cerca',
+            subject: `${estado.pct}% de presupuesto · ${tipo.replace(/_/g, ' ')}`,
+            body: estado.mensaje,
+            prioridad: 'media',
+            categoria: tipo
+          });
+          s.alertas_emitidas[alertKey] = ahora;
+        }
+      });
+    }
+
+    // 2. Cobros vencidos o por vencer (clientes)
+    const clientes = Store.get(Store.KEYS.CLIENTES, []);
+    const vencidos = clientes.filter(c => c.status === 'vencido');
+    if (vencidos.length) {
+      const alertKey = `cobros_venc_${vencidos.length}_${this.diaActualKey()}`;
+      if (!s.alertas_emitidas[alertKey]) {
+        const totalVencido = vencidos.reduce((sum, c) => sum + (c.monto_pendiente || c.monto_mensual || 0), 0);
+        alertasNuevas.push({
+          tipo: 'cobro_vencido',
+          subject: `${vencidos.length} cobro${vencidos.length > 1 ? 's' : ''} vencido${vencidos.length > 1 ? 's' : ''}`,
+          body: `${vencidos.map(c => c.nombre).join(', ')} · total $${totalVencido.toLocaleString()}`,
+          prioridad: 'alta',
+          amount: totalVencido,
+          link: 'https://cobros.g2c.com.mx'
+        });
+        s.alertas_emitidas[alertKey] = ahora;
+      }
+    }
+
+    // 3. Recurrentes próximos a vencer (3 días)
+    if (typeof Recurrentes !== 'undefined') {
+      const cobrosProx = Recurrentes.cobrosProximos(3);
+      if (cobrosProx.length) {
+        const alertKey = `recur_cob_${this.diaActualKey()}`;
+        if (!s.alertas_emitidas[alertKey]) {
+          alertasNuevas.push({
+            tipo: 'cobro_recurrente_proximo',
+            subject: `${cobrosProx.length} cobro${cobrosProx.length > 1 ? 's' : ''} recurrente${cobrosProx.length > 1 ? 's' : ''} esta semana`,
+            body: cobrosProx.map(c => `${c.cliente_nombre} ($${c.monto.toLocaleString()})`).join(' · '),
+            prioridad: 'media'
+          });
+          s.alertas_emitidas[alertKey] = ahora;
+        }
+      }
+
+      const pagosProx = Recurrentes.pagosProximos(3);
+      if (pagosProx.length) {
+        const alertKey = `recur_pag_${this.diaActualKey()}`;
+        if (!s.alertas_emitidas[alertKey]) {
+          alertasNuevas.push({
+            tipo: 'pago_recurrente_proximo',
+            subject: `${pagosProx.length} pago${pagosProx.length > 1 ? 's' : ''} recurrente${pagosProx.length > 1 ? 's' : ''} esta semana`,
+            body: pagosProx.map(p => `${p.proveedor} ($${p.monto.toLocaleString()})`).join(' · '),
+            prioridad: 'media'
+          });
+          s.alertas_emitidas[alertKey] = ahora;
+        }
+      }
+    }
+
+    // 4. SAT vence en 7 días
+    if (typeof SAT !== 'undefined') {
+      const cal = Store.get('alan_mando_sat_calendar', []);
+      const proxFiscal = cal.filter(e => e.fecha > ahora && e.fecha <= ahora + 7 * 86400000)[0];
+      if (proxFiscal) {
+        const alertKey = `sat_${proxFiscal.id}_${this.diaActualKey()}`;
+        if (!s.alertas_emitidas[alertKey]) {
+          const dias = Math.ceil((proxFiscal.fecha - ahora) / 86400000);
+          alertasNuevas.push({
+            tipo: 'fiscal',
+            subject: `SAT · ${proxFiscal.titulo} en ${dias}d`,
+            body: proxFiscal.descripcion,
+            prioridad: dias <= 3 ? 'alta' : 'media'
+          });
+          s.alertas_emitidas[alertKey] = ahora;
+        }
+      }
+    }
+
+    // 5. Patrón de pagos · sugerir hacerlos recurrentes
+    if (typeof Recurrentes !== 'undefined') {
+      const sugerencias = Recurrentes.detectarPatron();
+      if (sugerencias.length) {
+        const alertKey = `patron_recur_${this.diaActualKey()}`;
+        if (!s.alertas_emitidas[alertKey]) {
+          alertasNuevas.push({
+            tipo: 'sugerencia_recurrente',
+            subject: `${sugerencias.length} pago${sugerencias.length > 1 ? 's' : ''} parece${sugerencias.length === 1 ? '' : 'n'} recurrente${sugerencias.length > 1 ? 's' : ''}`,
+            body: `${sugerencias.map(s => s.proveedor).join(', ')} · ¿quieres convertirlos en pagos automáticos?`,
+            prioridad: 'baja',
+            sugerencias
+          });
+          s.alertas_emitidas[alertKey] = ahora;
+        }
+      }
+    }
+
+    // 6. Tocada en próximos 7 días sin set list listo
+    const eventos = Store.get(Store.KEYS.EVENTOS_MUSICA, []);
+    const proxTocada = eventos.find(e => e.tipo === 'tocada' && e.ts > ahora && e.ts <= ahora + 7 * 86400000);
+    if (proxTocada && (!proxTocada.set_list || proxTocada.set_list.length === 0)) {
+      const alertKey = `tocada_setlist_${proxTocada.id || proxTocada.ts}`;
+      if (!s.alertas_emitidas[alertKey]) {
+        alertasNuevas.push({
+          tipo: 'tocada',
+          subject: `Tocada en ${Util.daysUntil(proxTocada.ts)}d sin set list`,
+          body: `${proxTocada.lugar || 'sin lugar'} · falta armar repertorio`,
+          prioridad: 'alta'
+        });
+        s.alertas_emitidas[alertKey] = ahora;
+      }
+    }
+
+    // 7. Limpiar alertas viejas (>7 días)
+    const sieteSemanasAtras = ahora - 7 * 86400000;
+    Object.keys(s.alertas_emitidas).forEach(k => {
+      if (s.alertas_emitidas[k] < sieteSemanasAtras) delete s.alertas_emitidas[k];
+    });
+
+    s.ultima_revision = ahora;
+    this.saveState(s);
+
+    // Emitir todas las alertas nuevas al sistema
+    if (typeof Alertas !== 'undefined') {
+      alertasNuevas.forEach(a => Alertas.emit(a));
+    }
+
+    return { alertas_nuevas: alertasNuevas, total: alertasNuevas.length };
+  },
+
+  diaActualKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+};
+
+// ============================================================
+// 26 · INICIALIZACIÓN
 // ============================================================
 
 window.G2C = G2C;
@@ -2103,6 +3331,16 @@ window.Lyrics = Lyrics;
 window.Proveedores = Proveedores;
 window.Proyecciones = Proyecciones;
 window.ObjetivosLink = ObjetivosLink;
+window.PerfilFisico = PerfilFisico;
+window.Ejercicio = Ejercicio;
+window.Dieta = Dieta;
+window.OcioTrack = OcioTrack;
+window.Presupuesto = Presupuesto;
+window.Alertas = Alertas;
+window.Recordatorios = Recordatorios;
+window.Expediente = Expediente;
+window.Recurrentes = Recurrentes;
+window.ProactivIA = ProactivIA;
 
 console.log(`%cG2C Mando v${G2C.version}`, 'color:#FF4F00;font-weight:bold;font-size:14px;');
 console.log('%cCreated by Alan Davis · powered by g2c.com.mx', 'color:rgba(244,243,239,0.5);font-size:11px;');
