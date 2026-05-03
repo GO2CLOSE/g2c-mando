@@ -37,7 +37,7 @@
   </div>
 </header>
 
-<div id="chat-thread" class="chat-thread" style="margin-bottom:140px;"></div>
+<div id="chat-thread" class="chat-thread" style="padding-bottom: calc(220px + env(safe-area-inset-bottom, 0px));"></div>
 
 <div id="chat-input-host"></div>
 <div id="footer-host" style="display:none;"></div>
@@ -395,15 +395,21 @@ function appendAIWithCards({ text, tone = 'operador', cards = [] }) {
   appendAI({ text, tone });
 
   if (!cards.length) return;
-  const container = document.getElementById('chat-messages') || document.querySelector('.chat-messages') || document.body;
+
+  // CRÍTICO: container correcto · chat-thread (NO body)
+  const container = document.getElementById('chat-thread');
+  if (!container) return;
+
+  // Limpiar quick_choices anteriores · solo el más reciente debe estar visible
+  document.querySelectorAll('.quick-choices-dock').forEach(el => el.remove());
 
   cards.forEach((card, i) => {
     const cardId = 'card_' + Date.now() + '_' + i;
     const wrap = document.createElement('div');
     wrap.id = cardId;
-    wrap.style.cssText = 'margin: 8px 0 12px; max-width: 92%; align-self: flex-start;';
 
     if (card.type === 'suggestion') {
+      wrap.style.cssText = 'margin: 8px 0 12px;';
       const accion = card.sugerencia.accion;
       const argsTxt = JSON.stringify(card.sugerencia.args || {}, null, 0).slice(0, 200);
       wrap.innerHTML = `
@@ -418,7 +424,9 @@ function appendAIWithCards({ text, tone = 'operador', cards = [] }) {
           </div>
         </div>
       `;
+      container.appendChild(wrap);
     } else if (card.type === 'confirm') {
+      wrap.style.cssText = 'margin: 8px 0 12px;';
       wrap.innerHTML = `
         <div style="background: rgba(255,79,0,0.06); border: 0.5px solid rgba(255,79,0,0.3); border-radius: 11px; padding: 11px;">
           <div style="font-size: 9px; color: rgba(255,150,80,0.95); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin-bottom: 6px;">⚠ Confirmar acción</div>
@@ -429,24 +437,28 @@ function appendAIWithCards({ text, tone = 'operador', cards = [] }) {
           </div>
         </div>
       `;
+      container.appendChild(wrap);
     } else if (card.type === 'undo') {
+      wrap.style.cssText = 'margin: 8px 0 12px;';
       wrap.innerHTML = `
         <div style="background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 9px; padding: 9px 11px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
           <div style="font-size: 11px; color: var(--text-secondary); flex: 1; min-width: 0;">${escapeHtml(card.mensaje)}</div>
           <button onclick='deshacerAccion(${JSON.stringify(card.accion)}, ${JSON.stringify(card.args)}, "${cardId}")' style="background: transparent; border: 0.5px solid rgba(120,200,220,0.3); color: rgba(180,220,240,0.95); padding: 6px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 500; flex-shrink: 0;">↶ Deshacer</button>
         </div>
       `;
+      container.appendChild(wrap);
     } else if (card.type === 'quick_choices') {
+      // QUICK CHOICES van como DOCK FIXED arriba del chat input · NO inline en thread
       const buttons = card.choices.map((c, idx) => {
         const safeText = escapeHtml(c);
         const accent = idx === 0;
         return `<button onclick='enviarChoice(${JSON.stringify(c)}, "${cardId}")' style="
           flex: 1 1 calc(50% - 4px);
-          min-width: 100px;
-          background: ${accent ? 'rgba(255,79,0,0.16)' : 'rgba(244,243,239,0.04)'};
+          min-width: 90px;
+          background: ${accent ? 'rgba(255,79,0,0.18)' : 'rgba(30,35,40,0.95)'};
           border: 0.5px solid ${accent ? 'rgba(255,79,0,0.4)' : 'var(--border-mid)'};
           color: ${accent ? 'rgba(255,170,110,0.98)' : 'var(--text-primary)'};
-          padding: 11px 13px;
+          padding: 10px 12px;
           border-radius: 9px;
           font-size: 12px;
           font-weight: 500;
@@ -456,32 +468,38 @@ function appendAIWithCards({ text, tone = 'operador', cards = [] }) {
           text-align: center;
           transition: opacity 0.15s;
           -webkit-tap-highlight-color: transparent;
+          backdrop-filter: blur(10px);
         ">${safeText}</button>`;
       }).join('');
 
-      wrap.innerHTML = `
-        <div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 6px;">
-          ${buttons}
-        </div>
+      wrap.className = 'quick-choices-dock';
+      wrap.style.cssText = `
+        position: fixed;
+        bottom: calc(var(--pad-bottom-nav) + 64px + 56px + env(safe-area-inset-bottom, 0px));
+        left: var(--pad-side);
+        right: var(--pad-side);
+        z-index: 49;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        background: linear-gradient(to top, rgba(15,20,25,0.98) 60%, rgba(15,20,25,0));
+        padding: 12px 0 6px;
       `;
+      wrap.innerHTML = buttons;
+      document.body.appendChild(wrap);
     }
-
-    container.appendChild(wrap);
   });
 
-  // Scroll abajo
-  if (container.scrollTop !== undefined) {
+  // Scroll abajo del thread (no del body)
+  setTimeout(() => {
     container.scrollTop = container.scrollHeight;
-  }
+    window.scrollTo(0, document.body.scrollHeight);
+  }, 50);
 }
 
 function enviarChoice(text, cardId) {
-  // Deshabilitar visualmente el card de choices
-  const card = document.getElementById(cardId);
-  if (card) {
-    card.style.opacity = '0.4';
-    card.style.pointerEvents = 'none';
-  }
+  // Quitar dock de quick_choices · ya no aplica una vez elegida
+  document.querySelectorAll('.quick-choices-dock').forEach(el => el.remove());
   // Llamar handleSend directo · es el flujo estándar
   if (typeof handleSend === 'function') {
     handleSend(text);
@@ -607,6 +625,7 @@ function clearChat() {
     conversationHistory = [];
     Store.set(Store.KEYS.CHAT_CONV, []);
     document.getElementById('chat-thread').innerHTML = '';
+    document.querySelectorAll('.quick-choices-dock').forEach(el => el.remove());
     showWelcome();
   }
 }

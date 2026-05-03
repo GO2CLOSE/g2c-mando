@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.6.5',
+  version: '1.6.6',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
