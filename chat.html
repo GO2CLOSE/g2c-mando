@@ -252,12 +252,45 @@ async function handleSend(text) {
   let cards = [];
   let executedOk = 0;
   let executedFail = 0;
+  let detectedFakeExecution = false;
 
   if (!res.error && typeof Actions !== 'undefined') {
     const blocks = Actions.parseFromResponse(responseText);
+
+    // Detectar "false claim of execution" · IA dice que hizo algo pero no metió bloque
+    if (blocks.length === 0) {
+      const tl = responseText.toLowerCase();
+      const claims = [
+        'ya lo edité', 'ya edité', 'lo edité', 'editado', 'actualizado',
+        'ya lo eliminé', 'eliminé', 'eliminado', 'borré', 'borrado',
+        'ya lo creé', 'creé', 'creado', 'agregué', 'agregado',
+        'ya lo registré', 'registré', 'registrado',
+        'ya lo agendé', 'agendé', 'agendado',
+        'ya quedó', 'listo, ya', 'ya está', 'hecho',
+        'cambié', 'cambiado', 'modifiqué', 'modificado',
+        'marqué', 'completé'
+      ];
+      const matched = claims.find(c => tl.includes(c));
+      if (matched) {
+        detectedFakeExecution = true;
+        console.warn('[Actions] IA dijo "'+matched+'" pero NO emitió bloque action');
+      }
+    }
+
     if (blocks.length) {
       const feedbackLines = [];
       blocks.forEach(b => {
+        console.log('[Actions] Ejecutando:', b.name, b.args);
+
+        // Caso 0: quick_choices → solo se renderizan como botones, no ejecuta nada
+        if (b.name === 'quick_choices') {
+          const choices = (b.args && b.args.choices) || [];
+          if (choices.length) {
+            cards.push({ type: 'quick_choices', choices });
+          }
+          return;
+        }
+
         // Caso 1: la acción es "sugerir" → IA propone, generamos tarjeta de aprobación
         if (b.name === 'sugerir') {
           const r = Actions.execute(b.name, b.args);
@@ -269,6 +302,7 @@ async function handleSend(text) {
 
         // Caso 2: ejecución normal
         const r = Actions.execute(b.name, b.args);
+        console.log('[Actions] Resultado:', r);
 
         // Caso 2a: requires_confirm → crear tarjeta de confirmación
         if (r.requires_confirm) {
@@ -293,6 +327,11 @@ async function handleSend(text) {
       if (feedbackLines.length) {
         responseText = feedbackLines.join('\n') + (responseText ? '\n\n' : '') + responseText;
       }
+    }
+
+    // Si detectamos claim falso, agregamos alerta visible
+    if (detectedFakeExecution) {
+      responseText = '⚠ La IA dice que ejecutó algo pero NO emitió el bloque action válido. Reintenta o verifica.\n\n' + responseText;
     }
   }
 
@@ -359,6 +398,34 @@ function appendAIWithCards({ text, tone = 'operador', cards = [] }) {
           <button onclick='deshacerAccion(${JSON.stringify(card.accion)}, ${JSON.stringify(card.args)}, "${cardId}")' style="background: transparent; border: 0.5px solid rgba(120,200,220,0.3); color: rgba(180,220,240,0.95); padding: 6px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 500; flex-shrink: 0;">↶ Deshacer</button>
         </div>
       `;
+    } else if (card.type === 'quick_choices') {
+      const buttons = card.choices.map((c, idx) => {
+        const safeText = escapeHtml(c);
+        const accent = idx === 0;
+        return `<button onclick='enviarChoice(${JSON.stringify(c)}, "${cardId}")' style="
+          flex: 1 1 calc(50% - 4px);
+          min-width: 100px;
+          background: ${accent ? 'rgba(255,79,0,0.16)' : 'rgba(244,243,239,0.04)'};
+          border: 0.5px solid ${accent ? 'rgba(255,79,0,0.4)' : 'var(--border-mid)'};
+          color: ${accent ? 'rgba(255,170,110,0.98)' : 'var(--text-primary)'};
+          padding: 11px 13px;
+          border-radius: 9px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          font-family: inherit;
+          line-height: 1.3;
+          text-align: center;
+          transition: opacity 0.15s;
+          -webkit-tap-highlight-color: transparent;
+        ">${safeText}</button>`;
+      }).join('');
+
+      wrap.innerHTML = `
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 6px;">
+          ${buttons}
+        </div>
+      `;
     }
 
     container.appendChild(wrap);
@@ -367,6 +434,19 @@ function appendAIWithCards({ text, tone = 'operador', cards = [] }) {
   // Scroll abajo
   if (container.scrollTop !== undefined) {
     container.scrollTop = container.scrollHeight;
+  }
+}
+
+function enviarChoice(text, cardId) {
+  // Deshabilitar visualmente el card de choices
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.style.opacity = '0.4';
+    card.style.pointerEvents = 'none';
+  }
+  // Llamar handleSend directo · es el flujo estándar
+  if (typeof handleSend === 'function') {
+    handleSend(text);
   }
 }
 

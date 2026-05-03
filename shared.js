@@ -15,7 +15,7 @@
 // ============================================================
 
 const G2C = {
-  version: '1.6.3',
+  version: '1.6.4',
   user: {
     name: 'Alan',
     fullName: 'Alan Davis',
@@ -1626,6 +1626,18 @@ const Actions = {
         Store.set('alan_mando_sugerencias', sugs);
         return { ok: true, msg: 'Sugerencia creada', data: sug, is_suggestion: true };
       }
+    },
+
+    // ===== QUICK CHOICES · botones de decisión rápida =====
+    // Esta NO se ejecuta · solo se renderiza como botones tappeables abajo del mensaje.
+    // La IA debe agregar quick_choices a CADA respuesta para forzar próxima acción.
+    quick_choices: {
+      description: 'OBLIGATORIO en CADA respuesta. Termina TODA respuesta con 2-4 botones de acción rápida. Cada botón es texto que se "envía" como si Alan hubiera escrito eso. Hace tu respuesta tappeable, no que tenga que escribir.',
+      parameters: ['choices'],
+      execute(args) {
+        // No ejecuta nada · solo se renderiza como botones inline en chat.html
+        return { ok: true, msg: '', data: { choices: args.choices || [] }, is_quick_choices: true };
+      }
     }
   },
 
@@ -1642,30 +1654,58 @@ const Actions = {
 
     let txt = '\n# ACCIONES QUE PUEDES EJECUTAR EN EL SISTEMA\n';
     txt += `Hora actual MX: ${ahoraMX} (ISO: ${isoMX})\n\n`;
-    txt += 'Para EJECUTAR una acción de inmediato, abre tu respuesta con bloque:\n';
-    txt += '\\`\\`\\`action\n{"action": "nombre", "args": {...}}\n\\`\\`\\`\n';
-    txt += 'Después escribe lenguaje natural confirmando lo hecho.\n\n';
-    txt += 'Para SUGERIR una acción (cuando NO te la pidió explícito pero la inferes), usa la acción "sugerir" · le aparece tarjeta con botones Aprobar/Rechazar. NO ejecutes directo lo que no te pidió.\n\n';
+    txt += '## CÓMO EJECUTAR ACCIONES\n';
+    txt += 'INMEDIATAMENTE al inicio de tu respuesta abre un bloque (literal con tres backticks):\n\n';
+    txt += '```action\n';
+    txt += '{"action": "nombre_accion", "args": {"campo": "valor"}}\n';
+    txt += '```\n\n';
+    txt += 'CRÍTICO: el bloque DEBE empezar con tres backticks + "action" + newline. Sin eso NO se ejecuta. Si dices que ejecutaste algo SIN emitir el bloque, mientes.\n';
+    txt += 'Después del bloque, escribe lenguaje natural CORTO confirmando lo hecho.\n\n';
+
+    txt += '## OBLIGATORIO · RESPUESTA TERMINA CON BOTONES\n';
+    txt += 'CADA respuesta SIEMPRE termina con un segundo bloque action que define 2-4 botones de "respuesta rápida":\n\n';
+    txt += '```action\n';
+    txt += '{"action": "quick_choices", "args": {"choices": ["Sí, hazlo", "Cambiar fecha", "Cancelar"]}}\n';
+    txt += '```\n\n';
+    txt += 'Cada choice es texto corto (máx 5 palabras) que aparece como botón. Tap = se envía como si Alan lo escribiera.\n';
+    txt += 'NO uses preguntas largas. Convierte preguntas → botones.\n';
+    txt += 'NO escribas párrafos largos cuando puedes dar 3 botones de decisión.\n';
+    txt += 'EJEMPLOS de choices buenos:\n';
+    txt += '  · ["Confirmar $7500", "Mejor $6500", "Pausar cliente"]\n';
+    txt += '  · ["Mover a mañana 9am", "Mover a viernes", "Eliminar"]\n';
+    txt += '  · ["Crear pendiente alta", "Solo recordatorio", "Olvídalo"]\n';
+    txt += '  · ["Sí, registra ingreso", "Es gasto, no ingreso", "Cancela"]\n\n';
+
+    txt += '## SUGERENCIAS\n';
+    txt += 'Para SUGERIR (cuando NO te lo pidió explícito), usa "sugerir" · sale tarjeta Aprobar/Rechazar. NO ejecutes lo que no te pidieron.\n\n';
 
     txt += 'CATÁLOGO COMPLETO:\n';
     Object.entries(this.CATALOG).forEach(([name, def]) => {
       txt += `· ${name}(${def.parameters.join(', ')}): ${def.description}\n`;
     });
 
-    txt += '\nREGLAS DURAS:\n';
-    txt += '1. PEDIDO EXPLÍCITO ("agrega", "registra", "elimina", "edita", "recuérdame", "cambia") → EJECUTA con bloque action · NUNCA digas "hazlo tú desde la interfaz".\n';
-    txt += '2. INFERENCIA (Alan menciona algo al pasar que parece accionable) → usa "sugerir" · NO ejecutes directo.\n';
-    txt += '3. ELIMINACIONES → la primera vez sin "confirmar:true" la acción retorna requires_confirm; aparece tarjeta de confirmación · TÚ no insistas, deja que el sistema lo maneje.\n';
-    txt += '4. EDICIONES → usa el id si lo tienes; si no, usa nombre/título parcial (id_o_titulo, id_o_nombre, id_o_cliente, id_o_proveedor, id_o_concepto) · el sistema busca case-insensitive.\n';
-    txt += '5. FECHAS → SIEMPRE formato ISO YYYY-MM-DDTHH:mm:00 en zona MX. "hoy 9pm" → calcula con base en la hora actual de arriba.\n';
-    txt += '6. SI NO HAY DATA SUFICIENTE → primero "listar" o pregunta UNA cosa puntual.\n';
-    txt += '7. NUNCA respondas que no puedes editar/eliminar algo · TODO se puede vía editar_*/eliminar_*.\n';
-    txt += '\nEJEMPLOS:\n';
-    txt += '· "agrega recordatorio cumple charly hoy 9pm" → ejecuta crear_recordatorio con fecha_iso calculada.\n';
-    txt += '· "mueve el ensayo del miércoles al jueves misma hora" → primero listar tocadas si no sabes cuál, luego editar_tocada con id_o_titulo:"ensayo" + nuevo fecha_iso.\n';
-    txt += '· "Lanmarc ahora paga 7500" → editar_cliente id_o_nombre:"Lanmarc" monto:7500.\n';
-    txt += '· "olvídate del cliente Acme" → eliminar_cliente id_o_nombre:"Acme" (sin confirmar · sistema pedirá confirmación).\n';
-    txt += '· Alan dice "está pesada la semana" Y NO te pide nada → puedes "sugerir" un recordatorio para revisar agenda mañana, NO crearlo directo.\n';
+    txt += '\n## REGLAS DURAS\n';
+    txt += '1. PEDIDO EXPLÍCITO ("agrega", "edita", "elimina", "cambia", "recuérdame") → EJECUTA con bloque action · NUNCA digas "hazlo tú desde la interfaz".\n';
+    txt += '2. SIEMPRE termina con bloque quick_choices con 2-4 botones · NUNCA dejes a Alan sin opciones tappeables.\n';
+    txt += '3. INFERENCIA → usa "sugerir" · NO ejecutes directo.\n';
+    txt += '4. ELIMINACIONES → primera vez sin "confirmar:true" · sistema pedirá confirmación · TÚ no insistas.\n';
+    txt += '5. EDICIONES → usa id_o_nombre/id_o_titulo con búsqueda parcial case-insensitive.\n';
+    txt += '6. FECHAS → ISO YYYY-MM-DDTHH:mm:00 zona MX. Calcula con base en la hora actual de arriba.\n';
+    txt += '7. SI NO HAY DATA → "listar" primero o pregunta UNA cosa puntual (PERO con quick_choices al final).\n';
+    txt += '8. NUNCA digas "no puedo editar/eliminar X" · TODO se puede.\n';
+    txt += '9. RESPUESTAS CORTAS · máximo 3 oraciones de texto + bloques action. Alan tiene poco tiempo.\n';
+    txt += '10. CERO sugerencias de "escríbele a alguien" o "habla con tu contador" · ejecuta o sugiere acción del sistema.\n\n';
+
+    txt += '## EJEMPLO COMPLETO DE RESPUESTA\n';
+    txt += 'Alan: "Lanmarc ahora paga 7500"\n';
+    txt += 'Tu respuesta debe ser EXACTAMENTE así:\n\n';
+    txt += '```action\n';
+    txt += '{"action": "editar_cliente", "args": {"id_o_nombre": "Lanmarc", "monto": 7500}}\n';
+    txt += '```\n\n';
+    txt += 'Subido a 7500. ¿Aplica desde el próximo cobro o ya?\n\n';
+    txt += '```action\n';
+    txt += '{"action": "quick_choices", "args": {"choices": ["Desde próximo cobro", "Aplica ya este mes", "Ver todos los cobros"]}}\n';
+    txt += '```\n';
     return txt;
   },
 
@@ -1689,22 +1729,63 @@ const Actions = {
    * Soporta:
    *   ```action\n{...}\n```
    *   ```json\n{...}\n```  (si el JSON tiene "action")
+   *   {"action":"...","args":{...}}  inline al inicio (sin fences)
    * Retorna array de {name, args, raw}
    */
   parseFromResponse(text) {
     if (!text || typeof text !== 'string') return [];
     const blocks = [];
-    const re = /```(?:action|json)\s*\n([\s\S]*?)\n```/g;
+    const seen = new Set();
+
+    // 1. Bloques con fences ```action``` o ```json``` (con o sin newline)
+    const re1 = /```(?:action|json|tool|tool_use)\s*([\s\S]*?)```/gi;
     let m;
-    while ((m = re.exec(text)) !== null) {
-      try {
-        const parsed = JSON.parse(m[1].trim());
-        if (parsed.action && typeof parsed.action === 'string') {
-          blocks.push({ name: parsed.action, args: parsed.args || {}, raw: m[0] });
-        }
-      } catch (e) { /* ignorar */ }
+    while ((m = re1.exec(text)) !== null) {
+      this._tryAddBlock(m[1].trim(), m[0], blocks, seen);
     }
+
+    // 2. Bloques sin lenguaje, pero con {"action": ...} dentro
+    const re2 = /```\s*([\s\S]*?)```/g;
+    while ((m = re2.exec(text)) !== null) {
+      const inner = m[1].trim();
+      if (inner.includes('"action"') && (inner.startsWith('{') || inner.startsWith('['))) {
+        this._tryAddBlock(inner, m[0], blocks, seen);
+      }
+    }
+
+    // 3. JSON inline al inicio del texto (último recurso) si la IA olvidó fences
+    const trimmed = text.trim();
+    if (trimmed.startsWith('{') && trimmed.includes('"action"')) {
+      // intentar extraer el primer objeto JSON balanceado
+      let depth = 0, end = -1;
+      for (let i = 0; i < trimmed.length; i++) {
+        if (trimmed[i] === '{') depth++;
+        else if (trimmed[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+      }
+      if (end > 0) {
+        this._tryAddBlock(trimmed.slice(0, end), trimmed.slice(0, end), blocks, seen);
+      }
+    }
+
     return blocks;
+  },
+
+  _tryAddBlock(jsonStr, raw, blocks, seen) {
+    try {
+      // Soportar arrays de acciones también
+      const parsed = JSON.parse(jsonStr);
+      const items = Array.isArray(parsed) ? parsed : [parsed];
+      items.forEach(p => {
+        if (p && p.action && typeof p.action === 'string') {
+          const key = p.action + JSON.stringify(p.args || {});
+          if (seen.has(key)) return;
+          seen.add(key);
+          blocks.push({ name: p.action, args: p.args || {}, raw });
+        }
+      });
+    } catch (e) {
+      console.warn('[Actions.parse] JSON inválido:', e.message, jsonStr.slice(0, 100));
+    }
   },
 
   /**
@@ -1712,7 +1793,24 @@ const Actions = {
    */
   stripFromResponse(text) {
     if (!text) return '';
-    return text.replace(/```(?:action|json)\s*\n[\s\S]*?\n```\s*/g, '').trim();
+    let out = text;
+    // 1. Fences con etiqueta
+    out = out.replace(/```(?:action|json|tool|tool_use)\s*[\s\S]*?```\s*/gi, '');
+    // 2. Fences anónimos que contengan "action"
+    out = out.replace(/```\s*([\s\S]*?)```\s*/g, (full, inner) => {
+      return inner.includes('"action"') ? '' : full;
+    });
+    // 3. JSON inline al inicio
+    const trimmed = out.trim();
+    if (trimmed.startsWith('{') && trimmed.includes('"action"')) {
+      let depth = 0, end = -1;
+      for (let i = 0; i < trimmed.length; i++) {
+        if (trimmed[i] === '{') depth++;
+        else if (trimmed[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+      }
+      if (end > 0) out = trimmed.slice(end).trim();
+    }
+    return out.trim();
   }
 };
 

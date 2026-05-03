@@ -519,13 +519,13 @@ function renderRecurrentes() {
       return `
         <div style="background:${c.activo ? 'rgba(180,220,170,0.04)' : 'rgba(244,243,239,0.02)'};border:0.5px solid ${c.activo ? 'rgba(180,220,170,0.2)' : 'var(--border-soft)'};border-radius:11px;padding:12px;margin-bottom:6px;${!c.activo ? 'opacity:0.6;' : ''}">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-            <div style="flex:1;min-width:0;">
+            <div style="flex:1;min-width:0;cursor:pointer;" onclick="abrirDetalleCliente('${c.id}', 'cobro')">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
-                <div style="font-size:12px;font-weight:500;">${Util.esc(c.cliente_nombre)}</div>
+                <div style="font-size:12px;font-weight:500;text-decoration:underline;text-decoration-color:rgba(180,220,170,0.3);text-underline-offset:3px;">${Util.esc(c.cliente_nombre)}</div>
                 <div class="pill ${colorPill}" style="font-size:9px;">${c.activo ? freq.toUpperCase() : 'PAUSADO'}</div>
               </div>
               <div style="font-size:10px;color:var(--text-tertiary);">${Util.esc(c.concepto)}</div>
-              <div style="font-size:9px;color:${dias <= 3 ? 'rgba(255,150,80,0.95)' : 'var(--text-tertiary)'};margin-top:3px;">próximo: ${proxima.toLocaleDateString('es-MX', {day:'numeric', month:'short'})} (${dias === 0 ? 'hoy' : (dias > 0 ? 'en ' + dias + 'd' : Math.abs(dias) + 'd vencido')})</div>
+              <div style="font-size:9px;color:${dias <= 3 ? 'rgba(255,150,80,0.95)' : 'var(--text-tertiary)'};margin-top:3px;">próximo: ${proxima.toLocaleDateString('es-MX', {day:'numeric', month:'short'})} (${dias === 0 ? 'hoy' : (dias > 0 ? 'en ' + dias + 'd' : Math.abs(dias) + 'd vencido')}) · tap para detalle</div>
             </div>
             <div style="text-align:right;flex-shrink:0;">
               <div style="font-size:14px;font-weight:500;color:rgba(180,220,170,0.95);">${Util.fmtMoney(c.monto)}</div>
@@ -803,6 +803,232 @@ function guardarPagoRecur() {
   UI.toast('Pago recurrente creado · recordatorios agendados', 'success');
   cerrarModalPagoRecur();
   renderTab('recurrentes');
+}
+
+// ============================================================
+// MODAL · DETALLE COMPLETO DE CLIENTE
+// ============================================================
+function abrirDetalleCliente(refId, contexto = 'cobro') {
+  // 1. Encontrar el cliente · puede venir por id de cobro recurrente o id de cliente directo
+  let clienteNombre = '';
+  let clienteObj = null;
+
+  if (contexto === 'cobro') {
+    const cobro = Recurrentes.cobros().find(x => x.id === refId);
+    if (cobro) clienteNombre = cobro.cliente_nombre;
+  }
+  if (contexto === 'cliente') {
+    const cli = Store.get(Store.KEYS.CLIENTES, []).find(x => x.id === refId);
+    if (cli) { clienteObj = cli; clienteNombre = cli.nombre; }
+  }
+  if (!clienteNombre) {
+    UI.toast('Cliente no encontrado', 'error');
+    return;
+  }
+
+  // Si no encontramos por id, buscar por nombre
+  if (!clienteObj) {
+    const clientes = Store.get(Store.KEYS.CLIENTES, []);
+    clienteObj = clientes.find(c => c.nombre.toLowerCase().includes(clienteNombre.toLowerCase())) ||
+                 clientes.find(c => clienteNombre.toLowerCase().includes(c.nombre.toLowerCase()));
+  }
+
+  // 2. Cruzar TODA la data del cliente
+  const lcase = clienteNombre.toLowerCase();
+  const movs = Store.get('alan_mando_movimientos', [])
+    .filter(m => (m.cliente_id && clienteObj && m.cliente_id === clienteObj.id) ||
+                 (m.concepto && m.concepto.toLowerCase().includes(lcase)))
+    .sort((a, b) => b.ts - a.ts);
+  const cobrosRec = Recurrentes.cobros().filter(c => c.cliente_nombre.toLowerCase().includes(lcase));
+  const ccCobrar = Store.get(Store.KEYS.CUENTAS_COBRAR || 'alan_mando_cuentas_cobrar', [])
+    .filter(c => c.cliente && c.cliente.toLowerCase().includes(lcase));
+  const pendientes = Store.get(Store.KEYS.PENDIENTES, [])
+    .filter(p => !p.done && p.titulo && p.titulo.toLowerCase().includes(lcase));
+  const objetivosVinculados = Store.get(Store.KEYS.OBJETIVOS, [])
+    .filter(o => !o.completed && ((o.nombre || o.titulo || '').toLowerCase().includes(lcase) ||
+                                   (o.descripcion || '').toLowerCase().includes(lcase)));
+
+  // 3. Calcular métricas
+  const totalIngresos = movs.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + (m.monto || 0), 0);
+  const totalCobrados = cobrosRec.reduce((s, c) => s + ((c.cobros_generados || 0) * c.monto), 0);
+  const proximoCobro = cobrosRec.filter(c => c.activo).sort((a,b) => a.proximo_cobro - b.proximo_cobro)[0];
+  const cobrosPendientes = ccCobrar.filter(c => !c.cobrado).reduce((s, c) => s + (c.monto || 0), 0);
+  const lifetimeValue = totalIngresos + totalCobrados;
+
+  // 4. Crear modal
+  let backdrop = document.getElementById('cliente-modal-backdrop');
+  if (backdrop) backdrop.remove();
+
+  backdrop = document.createElement('div');
+  backdrop.id = 'cliente-modal-backdrop';
+  backdrop.style.cssText = `
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: flex; align-items: flex-end; justify-content: center;
+    z-index: 9999; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  `;
+  backdrop.onclick = (e) => { if (e.target === backdrop) cerrarModalCliente(); };
+
+  const fmtFecha = (ts) => {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const status = clienteObj?.status || 'activo';
+  const plan = clienteObj?.plan || (cobrosRec[0] ? 'Visor' : '—');
+  const monto = clienteObj?.monto || (cobrosRec[0]?.monto || 0);
+
+  backdrop.innerHTML = `
+    <div style="
+      background: #0F1419;
+      border-top: 0.5px solid rgba(244,243,239,0.1);
+      border-radius: 18px 18px 0 0;
+      max-width: 480px;
+      width: 100%;
+      max-height: 92vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease-out;
+    ">
+      <!-- Header con nombre -->
+      <div style="position: sticky; top: 0; background: #0F1419; padding: 16px 18px 12px; border-bottom: 0.5px solid rgba(244,243,239,0.06); z-index: 10;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 9px; color: rgba(255,150,80,0.95); letter-spacing: 0.18em; text-transform: uppercase; font-weight: 500; margin-bottom: 2px;">cliente</div>
+            <div style="font-size: 22px; font-weight: 500; line-height: 1.2; word-break: break-word;">${Util.esc(clienteNombre)}</div>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+              ${plan !== '—' ? `Plan ${Util.esc(plan)} · ` : ''}<span class="pill ${status === 'activo' ? 'green' : ''}" style="font-size: 9px;">${status.toUpperCase()}</span>
+            </div>
+          </div>
+          <button onclick="cerrarModalCliente()" style="background: rgba(244,243,239,0.05); border: 0.5px solid var(--border-mid); color: var(--text-secondary); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 16px; flex-shrink: 0;">×</button>
+        </div>
+      </div>
+
+      <div style="padding: 14px 18px 80px;">
+
+        <!-- KPIs -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px;">
+          <div class="stat-card green">
+            <div class="stat-label" style="color:rgba(180,220,170,0.85);">LIFETIME VALUE</div>
+            <div class="stat-value tabular">${Util.fmtMoneyK(lifetimeValue)}</div>
+            <div class="stat-meta">${movs.length} movs históricos</div>
+          </div>
+          <div class="stat-card cyan">
+            <div class="stat-label" style="color:rgba(150,210,230,0.95);">MRR ACTUAL</div>
+            <div class="stat-value tabular">${monto > 0 ? Util.fmtMoneyK(monto) : '—'}</div>
+            <div class="stat-meta">${cobrosRec.filter(c => c.activo).length} cobro${cobrosRec.length !== 1 ? 's' : ''} activo${cobrosRec.length !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+
+        ${proximoCobro ? `
+          <div style="background: rgba(255,79,0,0.06); border: 0.5px solid rgba(255,79,0,0.25); border-radius: 11px; padding: 12px; margin-bottom: 12px;">
+            <div style="font-size: 9px; color: rgba(255,150,80,0.95); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin-bottom: 5px;">próximo cobro</div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 13px; font-weight: 500;">${fmtFecha(proximoCobro.proximo_cobro)}</div>
+                <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">${Util.esc(proximoCobro.concepto)}</div>
+              </div>
+              <div style="font-size: 16px; font-weight: 500; color: rgba(255,170,110,0.95); font-family: 'JetBrains Mono', monospace;">${Util.fmtMoney(proximoCobro.monto)}</div>
+            </div>
+          </div>
+        ` : ''}
+
+        ${cobrosPendientes > 0 ? `
+          <div style="background: rgba(244,213,128,0.06); border: 0.5px solid rgba(244,213,128,0.25); border-radius: 11px; padding: 12px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-size: 12px; color: rgba(244,213,128,0.95); font-weight: 500;">⚠ Cobros pendientes</div>
+              <div style="font-size: 14px; color: rgba(244,213,128,0.95); font-weight: 500;">${Util.fmtMoney(cobrosPendientes)}</div>
+            </div>
+            <div style="font-size: 10px; color: var(--text-secondary); margin-top: 4px;">${ccCobrar.filter(c => !c.cobrado).length} cuentas por cobrar abiertas</div>
+          </div>
+        ` : ''}
+
+        <!-- Acciones rápidas -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px;">
+          ${proximoCobro ? `<button onclick="ejecutarCobroAhora('${proximoCobro.id}'); cerrarModalCliente();" style="background: rgba(180,220,170,0.15); border: 0.5px solid rgba(180,220,170,0.35); color: rgba(200,230,200,0.95); padding: 11px; border-radius: 9px; font-size: 11px; font-weight: 500; cursor: pointer;">Marcar cobrado</button>` : ''}
+          ${proximoCobro ? `<a href="${proximoCobro.cobro_link}" target="_blank" style="background: rgba(120,200,220,0.15); border: 0.5px solid rgba(120,200,220,0.35); color: rgba(180,220,240,0.95); padding: 11px; border-radius: 9px; font-size: 11px; font-weight: 500; cursor: pointer; text-decoration: none; text-align: center;">Liga cobro</a>` : ''}
+          <button onclick="editarClienteFromModal('${Util.esc(clienteNombre)}')" style="background: rgba(244,243,239,0.04); border: 0.5px solid var(--border-mid); color: var(--text-primary); padding: 11px; border-radius: 9px; font-size: 11px; cursor: pointer; font-weight: 500;">Editar monto/plan</button>
+          <button onclick="abrirChatCliente('${Util.esc(clienteNombre)}')" style="background: rgba(255,79,0,0.12); border: 0.5px solid rgba(255,79,0,0.3); color: rgba(255,170,110,0.95); padding: 11px; border-radius: 9px; font-size: 11px; cursor: pointer; font-weight: 500;">Preguntar a IA</button>
+        </div>
+
+        <!-- Historial movimientos -->
+        ${movs.length ? `
+          <div style="font-size: 9px; color: var(--text-tertiary); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin: 14px 0 8px;">historial · últimos ${Math.min(movs.length, 8)} movs</div>
+          <div style="background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 11px; overflow: hidden;">
+            ${movs.slice(0, 8).map((m, i) => `
+              <div style="padding: 10px 12px; ${i < movs.slice(0,8).length - 1 ? 'border-bottom: 0.5px solid rgba(244,243,239,0.04);' : ''} display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 11px; font-weight: 500;">${Util.esc(m.concepto || '—')}</div>
+                  <div style="font-size: 9px; color: var(--text-tertiary); margin-top: 2px;">${fmtFecha(m.ts)} · ${m.categoria || 'general'}</div>
+                </div>
+                <div style="font-size: 12px; font-weight: 500; font-family: 'JetBrains Mono', monospace; color: ${m.tipo === 'ingreso' ? 'rgba(180,220,170,0.95)' : 'rgba(255,170,110,0.95)'};">
+                  ${m.tipo === 'ingreso' ? '+' : '−'}${Util.fmtMoney(m.monto)}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : `
+          <div style="background: rgba(244,243,239,0.02); border: 0.5px dashed rgba(244,243,239,0.1); border-radius: 11px; padding: 16px; text-align: center; margin-top: 12px;">
+            <div style="font-size: 11px; color: var(--text-tertiary);">Sin movimientos registrados</div>
+          </div>
+        `}
+
+        <!-- Pendientes vinculados -->
+        ${pendientes.length ? `
+          <div style="font-size: 9px; color: var(--text-tertiary); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin: 16px 0 8px;">pendientes con este cliente</div>
+          <div style="background: rgba(244,213,128,0.04); border: 0.5px solid rgba(244,213,128,0.2); border-radius: 11px; padding: 10px;">
+            ${pendientes.map(p => `
+              <div style="font-size: 11px; color: var(--text-secondary); padding: 4px 0; line-height: 1.5;">· ${Util.esc(p.titulo)}${p.due_ts ? ` <span style="color: var(--text-tertiary); font-size: 9px;">(${fmtFecha(p.due_ts)})</span>` : ''}</div>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        <!-- Objetivos -->
+        ${objetivosVinculados.length ? `
+          <div style="font-size: 9px; color: var(--text-tertiary); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin: 16px 0 8px;">objetivos relacionados</div>
+          ${objetivosVinculados.map(o => `
+            <div style="background: rgba(150,210,230,0.04); border: 0.5px solid rgba(150,210,230,0.2); border-radius: 9px; padding: 10px; margin-bottom: 5px;">
+              <div style="font-size: 11px; font-weight: 500;">${Util.esc(o.nombre || o.titulo)}</div>
+              <div style="font-size: 9px; color: var(--text-tertiary); margin-top: 2px;">${o.progreso || 0}% completado</div>
+            </div>
+          `).join('')}
+        ` : ''}
+
+        ${clienteObj && clienteObj.notas ? `
+          <div style="font-size: 9px; color: var(--text-tertiary); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin: 16px 0 8px;">notas</div>
+          <div style="background: rgba(244,243,239,0.025); border: 0.5px solid var(--border-soft); border-radius: 9px; padding: 10px; font-size: 11px; color: var(--text-secondary); line-height: 1.5;">${Util.esc(clienteObj.notas)}</div>
+        ` : ''}
+
+      </div>
+    </div>
+
+    <style>
+      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    </style>
+  `;
+  document.body.appendChild(backdrop);
+}
+
+function cerrarModalCliente() {
+  const m = document.getElementById('cliente-modal-backdrop');
+  if (m) m.remove();
+}
+
+function editarClienteFromModal(nombre) {
+  const monto = prompt(`Nuevo monto mensual para ${nombre}:`);
+  if (!monto || isNaN(parseFloat(monto))) return;
+  const r = Actions.execute('editar_cliente', { id_o_nombre: nombre, monto: parseFloat(monto) });
+  if (r.ok) {
+    UI.toast(r.msg, 'success');
+    cerrarModalCliente();
+    renderTab(document.querySelector('.tab.active')?.dataset.tab || 'recurrentes');
+  } else {
+    UI.toast(r.msg, 'error');
+  }
+}
+
+function abrirChatCliente(nombre) {
+  cerrarModalCliente();
+  window.location.href = 'chat.html?msg=' + encodeURIComponent(`Dame el resumen estratégico del cliente ${nombre}: lifetime, riesgo de churn, próxima acción para crecerlo.`);
 }
 
 function ejecutarCobroAhora(id) {
